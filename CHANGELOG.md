@@ -41,6 +41,10 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Accessibility**: full ARIA grid semantics — `aria-rowcount`/`aria-colcount`,
   per-row/cell `aria-rowindex`/`aria-colindex`, `aria-activedescendant`,
   `aria-multiselectable`, and `aria-hidden` virtualization duplicates.
+- **Custom cells**: `type: 'custom'` columns rendered by a `cell` snippet
+  receiving `{ row, column, value }`.
+- **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
+  publish.
 - **Theming**: dark-first, self-contained CSS variables (`--bo-grid-*`), no CSS
   import required.
 

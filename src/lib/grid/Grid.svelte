@@ -5,6 +5,7 @@
 
 <script lang="ts">
   import { untrack } from 'svelte';
+  import type { Snippet } from 'svelte';
   import type { ColumnDef, GridRow, SortState, CellEditEvent } from './column';
   import { colStyle, isNumeric, isSortable, isEditable, compareRows, formatCell } from './column';
   import { arrangePinned } from './pin';
@@ -32,6 +33,7 @@
     onCellEdit,
     rowHeight,
     theme,
+    cell,
   }: {
     rows: GridRow[];
     columns: ColumnDef[];
@@ -51,6 +53,8 @@
     source?: RowSource;
     /** Called when an editable cell is committed. Update your row data in here. */
     onCellEdit?: (e: CellEditEvent) => void;
+    /** Render content for `type: 'custom'` columns. */
+    cell?: Snippet<[{ row: GridRow; column: ColumnDef; value: unknown }]>;
   } = $props();
 
   const ROW_H = 36;
@@ -338,7 +342,7 @@
       const cells: string[] = [];
       for (let c = b.c0; c <= cEnd; c++) {
         const col = cols[c];
-        cells.push(col.type === 'sparkline' ? '' : formatCell(col, row[col.key]));
+        cells.push(col.type === 'sparkline' || col.type === 'custom' ? '' : formatCell(col, row[col.key]));
       }
       lines.push(cells.join('\t'));
     }
@@ -505,6 +509,7 @@
                 c={ci}
                 colIndex={ci + 1}
                 cellId={`${gid}-r${item.vr}-c${ci}`}
+                cellSnippet={cell}
                 selected={sel.contains(item.vr, ci)}
                 focused={sel.isFocus(item.vr, ci)}
                 pinned={pinned && layout.info[ci].pinned}

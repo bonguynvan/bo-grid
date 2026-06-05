@@ -75,9 +75,22 @@ keep frames smooth.
 
 ## Column types
 
-`text` · `price` · `percent` · `volume` · `number` · `date` · `heatmap` · `sparkline`
+`text` · `price` · `percent` · `volume` · `number` · `date` · `heatmap` · `sparkline` · `custom`
 
 Sizing: `width` (px) or `flex` (grow weight). See `ColumnDef` for per-type options.
+
+### Custom cells
+
+Use `type: 'custom'` and pass a `cell` snippet to render anything — badges,
+buttons, links. The snippet receives `{ row, column, value }`:
+
+```svelte
+{#snippet cell({ row })}
+  <span class:up={row.changePct > 0}>{row.changePct > 0 ? '▲' : '▼'}</span>
+{/snippet}
+
+<Grid {rows} {columns} {cell} height={640} />
+```
 
 ## Row height
 

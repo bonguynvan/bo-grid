@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import type { ColumnDef, GridRow } from './column';
   import { formatCell, colStyle, candlesOf } from './column';
   import { heatColor } from './heatmap';
@@ -18,6 +19,7 @@
     editing = false,
     colIndex,
     cellId,
+    cellSnippet,
     onCellDown,
     onCellEnter,
     onCellDblClick,
@@ -38,6 +40,7 @@
     editing?: boolean;
     colIndex?: number;
     cellId?: string;
+    cellSnippet?: Snippet<[{ row: GridRow; column: ColumnDef; value: unknown }]>;
     onCellDown?: (r: number, c: number, e: PointerEvent) => void;
     onCellEnter?: (r: number, c: number, e: PointerEvent) => void;
     onCellDblClick?: (r: number, c: number) => void;
@@ -114,6 +117,8 @@
       onpointerdown={(e) => e.stopPropagation()}
       ondblclick={(e) => e.stopPropagation()}
     />
+  {:else if col.type === 'custom'}
+    {#if cellSnippet}{@render cellSnippet({ row, column: col, value })}{:else}{value ?? ''}{/if}
   {:else if col.type === 'sparkline'}
     <Sparkline candles={candlesOf(row, col.sparkKey)} />
   {:else if col.type === 'text'}

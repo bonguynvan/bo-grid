@@ -29,7 +29,7 @@ export function rowsToMatrix(
   columns: readonly ColumnDef[],
   opts: ExportOptions = {},
 ): Cell[][] {
-  const cols = columns.filter((c) => c.type !== 'sparkline');
+  const cols = columns.filter((c) => c.type !== 'sparkline' && c.type !== 'custom');
   const matrix: Cell[][] = [];
   if (opts.header !== false) matrix.push(cols.map((c) => c.header));
   for (const row of rows) {

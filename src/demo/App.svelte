@@ -13,6 +13,7 @@
     { type: 'price', key: 'price', header: 'Price', width: 88, flash: true, groupAgg: 'avg' },
     { type: 'percent', key: 'changePct', header: 'Chg %', width: 84 },
     { type: 'heatmap', key: 'changePct', header: 'Heat', width: 76, min: -5, max: 5 },
+    { type: 'custom', key: 'changePct', header: 'Signal', width: 66, sortable: false },
     { type: 'volume', key: 'volume', header: 'Volume', width: 90, groupAgg: 'sum' },
     { type: 'number', key: 'target', header: 'Target', width: 78, decimals: 2, editable: true },
     { type: 'date', key: 'listedAt', header: 'Listed', width: 92, dateStyle: 'short' },
@@ -89,6 +90,13 @@
   const fpsClass = $derived(meter.fps >= 55 ? 'ok' : meter.fps >= 40 ? 'warn' : 'bad');
 </script>
 
+{#snippet cell({ row }: { row: GridRow })}
+  {@const pct = Number(row.changePct)}
+  <span class="signal" class:buy={pct > 1} class:sell={pct < -1}>
+    {pct > 1 ? 'BUY' : pct < -1 ? 'SELL' : 'HOLD'}
+  </span>
+{/snippet}
+
 <header class="bar">
   <div class="title">
     <span class="logo">bo-grid</span>
@@ -151,6 +159,7 @@
       persistKey="demo"
       height={640}
       onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}
+      {cell}
     />
   </div>
 </main>
@@ -212,6 +221,23 @@
   .seg button.on {
     color: #0a0a0a;
     background: var(--up);
+  }
+  .signal {
+    padding: 1px 7px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 999px;
+    color: #cfcfcf;
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .signal.buy {
+    color: #052e1a;
+    background: #34d399;
+  }
+  .signal.sell {
+    color: #2e0505;
+    background: #f87171;
   }
   .filter {
     width: 160px;

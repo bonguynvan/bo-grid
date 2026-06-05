@@ -64,9 +64,12 @@ if (rowCount === 0) fail('no rows rendered (blank grid)');
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const click = (el) => el.dispatchEvent(new window.MouseEvent('click', { button: 0, bubbles: true }));
 
-// Inline editing (Phase 5): double-click the editable Target cell (col 5), type
-// a value, press Enter, and assert it commits.
-const TARGET_COL = 5;
+// Custom cell renderer (snippet): the Signal column renders a pill.
+if (!document.querySelector('.signal')) fail('custom cell snippet did not render');
+
+// Inline editing (Phase 5): double-click the editable Target cell, type a value,
+// press Enter, and assert it commits.
+const TARGET_COL = 6;
 const firstRow = document.querySelectorAll('.row')[0];
 firstRow
   .querySelectorAll('.c')
@@ -99,8 +102,8 @@ const gridEl = document.querySelector('.bo-grid.grid');
 if (gridEl.getAttribute('aria-rowcount') !== '1001') {
   fail(`aria-rowcount should be 1001 (got ${gridEl.getAttribute('aria-rowcount')})`);
 }
-if (gridEl.getAttribute('aria-colcount') !== '8') {
-  fail(`aria-colcount should be 8 (got ${gridEl.getAttribute('aria-colcount')})`);
+if (gridEl.getAttribute('aria-colcount') !== '9') {
+  fail(`aria-colcount should be 9 (got ${gridEl.getAttribute('aria-colcount')})`);
 }
 const ariaRow = document.querySelector('.row[aria-rowindex]');
 if (!ariaRow || !ariaRow.querySelector('.c[aria-colindex]')) {

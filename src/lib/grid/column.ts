@@ -44,7 +44,9 @@ export type ColumnDef =
   | (ColBase & { type: 'number'; decimals?: number })
   | (ColBase & { type: 'date'; dateStyle?: DateStyle })
   | (ColBase & { type: 'heatmap'; min: number; max: number; decimals?: number })
-  | (ColBase & { type: 'sparkline'; sparkKey: string });
+  | (ColBase & { type: 'sparkline'; sparkKey: string })
+  // Rendered by the consumer's `cell` snippet on <Grid>.
+  | (ColBase & { type: 'custom' });
 
 export type SortDir = 'asc' | 'desc';
 
@@ -86,7 +88,7 @@ export function isSortable(col: ColumnDef): boolean {
 }
 
 export function isEditable(col: ColumnDef): boolean {
-  return !!col.editable && col.type !== 'sparkline' && col.type !== 'date';
+  return !!col.editable && col.type !== 'sparkline' && col.type !== 'date' && col.type !== 'custom';
 }
 
 function rawCompare(a: unknown, b: unknown): number {
@@ -110,7 +112,7 @@ export function colWidth(col: ColumnDef): number {
 }
 
 export function isNumeric(col: ColumnDef): boolean {
-  return col.type !== 'text' && col.type !== 'sparkline';
+  return col.type !== 'text' && col.type !== 'sparkline' && col.type !== 'custom';
 }
 
 export function candlesOf(row: GridRow, key: string): Candle[] {
