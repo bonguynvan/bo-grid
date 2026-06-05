@@ -1,7 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import type { ColumnDef, GridRow, SortState } from './column';
-  import { colStyle, isNumeric, isSortable, compareRows, formatCell } from './column';
+  import type { ColumnDef, GridRow, SortState, CellEditEvent } from './column';
+  import { colStyle, isNumeric, isSortable, isEditable, compareRows, formatCell } from './column';
   import { arrangePinned } from './pin';
   import { Selection } from './selection.svelte';
   import { aggregate, type AggKind, type AggResult } from './aggregate';
@@ -22,6 +22,7 @@
     aggregations = ['sum', 'avg', 'count', 'min', 'max'],
     persistKey,
     source,
+    onCellEdit,
   }: {
     rows: GridRow[];
     columns: ColumnDef[];
@@ -34,6 +35,8 @@
         In source mode, sort + filter are delegated to the source; grouping is
         not applied. */
     source?: RowSource;
+    /** Called when an editable cell is committed. Update your row data in here. */
+    onCellEdit?: (e: CellEditEvent) => void;
   } = $props();
 
   const ROW_H = 36;
@@ -47,6 +50,25 @@
 
   const sel = new Selection();
   let dragging = $state(false);
+  let editing = $state<{ r: number; c: number } | null>(null);
+
+  function startEdit(r: number, c: number) {
+    if (!isEditable(cols[c]) || !dataAt(r)) return;
+    editing = { r, c };
+  }
+  function commitEdit(r: number, c: number, raw: string) {
+    const col = cols[c];
+    const row = dataAt(r);
+    editing = null;
+    if (!row) return;
+    let value: string | number = raw;
+    if (isNumeric(col)) {
+      const n = Number(raw);
+      if (!Number.isFinite(n)) return; // reject invalid number, keep old value
+      value = n;
+    }
+    onCellEdit?.({ row, column: col, value });
+  }
 
   const collapsed = new Set<string>();
   let collapsedVersion = $state(0);
@@ -110,6 +132,7 @@
     if (next === order) return;
     order = next;
     sel.clear();
+    editing = null;
     const key = orderStorageKey();
     if (key && typeof localStorage !== 'undefined') {
       try {
@@ -286,6 +309,14 @@
 
   function onKeydown(e: KeyboardEvent) {
     const mod = e.ctrlKey || e.metaKey;
+    if (e.key === 'Enter' && sel.focus && !editing) {
+      const f = sel.focus;
+      if (isEditable(cols[f.c])) {
+        e.preventDefault();
+        startEdit(f.r, f.c);
+        return;
+      }
+    }
     if (mod && e.key.toLowerCase() === 'a') {
       e.preventDefault();
       sel.selectAll(rowCount, cols.length);
@@ -326,7 +357,10 @@
     sortState;
     collapsedVersion;
     source;
-    untrack(() => sel.clear());
+    untrack(() => {
+      sel.clear();
+      editing = null;
+    });
   });
 </script>
 
@@ -420,8 +454,12 @@
                 pinLeft={layout.info[ci].left}
                 width={pinned ? layout.info[ci].width : undefined}
                 alt={item.vr % 2 === 1}
+                editing={editing?.r === item.vr && editing?.c === ci}
                 {onCellDown}
                 {onCellEnter}
+                onCellDblClick={startEdit}
+                onEditCommit={(raw) => commitEdit(item.vr, ci, raw)}
+                onEditCancel={() => (editing = null)}
               />
             {/each}
           </div>

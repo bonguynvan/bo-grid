@@ -20,6 +20,7 @@ export class TickerRow {
   price = $state(0);
   changePct = $state(0);
   volume = $state(0);
+  target = $state(0); // user-editable target price (inline editing demo)
   candles = $state<Candle[]>([]);
 
   // Flash trigger: dir + a monotonically increasing seq the cell keys on to
@@ -37,6 +38,7 @@ export class TickerRow {
     this.listedAt = seed.listedAt;
     this.price = seed.price;
     this.volume = seed.candles[seed.candles.length - 1].volume;
+    this.target = Math.round(seed.price * 1.05 * 100) / 100; // a default target
     this.candles = seed.candles;
     this.recompute();
   }

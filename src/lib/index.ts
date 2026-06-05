@@ -10,7 +10,7 @@ export { default as Grid } from './grid/Grid.svelte';
 export { default as Sparkline } from './sparkline/Sparkline.svelte';
 
 // Column + grid configuration types
-export type { ColumnDef, Align, GridRow, SortDir, SortState } from './grid/column';
+export type { ColumnDef, Align, GridRow, SortDir, SortState, CellEditEvent } from './grid/column';
 export type { AggKind, AggResult } from './grid/aggregate';
 
 // Value formatters (handy when building custom cell content)

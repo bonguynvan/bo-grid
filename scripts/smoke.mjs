@@ -61,6 +61,25 @@ const canvases = document.querySelectorAll('canvas').length;
 if (!hasHeader) fail('grid header did not render');
 if (rowCount === 0) fail('no rows rendered (blank grid)');
 
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const click = (el) => el.dispatchEvent(new window.MouseEvent('click', { button: 0, bubbles: true }));
+
+// Inline editing (Phase 5): double-click the editable Target cell (col 5), type
+// a value, press Enter, and assert it commits.
+const TARGET_COL = 5;
+const firstRow = document.querySelectorAll('.row')[0];
+firstRow
+  .querySelectorAll('.c')
+  [TARGET_COL].dispatchEvent(new window.MouseEvent('dblclick', { bubbles: true }));
+await wait(40);
+const editInput = firstRow.querySelector('input.bo-edit');
+if (!editInput) fail('inline-edit input did not appear on double-click');
+editInput.value = '999.99';
+editInput.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+await wait(40);
+const editedText = document.querySelectorAll('.row')[0].querySelectorAll('.c')[TARGET_COL].textContent.trim();
+if (editedText !== '999.99') fail(`inline edit did not commit (cell shows "${editedText}")`);
+
 // Simulate a drag-selection down the Price column and assert the highlight +
 // live aggregation bar appear (Phase 2). Catches selection wiring regressions.
 const rowEls = document.querySelectorAll('.row');
@@ -80,9 +99,6 @@ if (!hasAgg) fail('aggregation bar did not appear for a multi-cell selection');
 
 // Grouping (Phase 3): switch the demo to group-by-sector, assert group-header
 // rows render, then collapse one group and assert the scroll height shrinks.
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const click = (el) => el.dispatchEvent(new window.MouseEvent('click', { button: 0, bubbles: true }));
-
 const sectorBtn = [...document.querySelectorAll('.seg button')].find(
   (b) => b.textContent.trim() === 'Sector',
 );
@@ -132,7 +148,7 @@ if (stickyHeaders === 0) fail('pinning did not produce sticky columns');
 console.log(
   `✓ smoke: grid mounted — ${rowCount} rows, ${canvases} sparklines; ` +
     `selection ${selCount} cells + agg bar; grouping ${groupHeaders} headers, ` +
-    `collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
-    `${stickyHeaders} pinned columns`,
+    `edit committed; collapse ${heightBefore}→${heightAfter}px; ` +
+    `server loaded ${dataRows} rows; ${stickyHeaders} pinned columns`,
 );
 process.exit(0);

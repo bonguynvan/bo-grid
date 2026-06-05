@@ -15,8 +15,12 @@
     pinLeft = 0,
     width,
     alt = false,
+    editing = false,
     onCellDown,
     onCellEnter,
+    onCellDblClick,
+    onEditCommit,
+    onEditCancel,
   }: {
     col: ColumnDef;
     row: GridRow;
@@ -29,9 +33,36 @@
     /** Fixed pixel width (pinned/horizontal-scroll mode). */
     width?: number;
     alt?: boolean;
+    editing?: boolean;
     onCellDown?: (r: number, c: number, e: PointerEvent) => void;
     onCellEnter?: (r: number, c: number, e: PointerEvent) => void;
+    onCellDblClick?: (r: number, c: number) => void;
+    onEditCommit?: (raw: string) => void;
+    onEditCancel?: () => void;
   } = $props();
+
+  let cancelled = false;
+  function focusSelect(node: HTMLInputElement) {
+    node.focus();
+    node.select();
+  }
+  function onEditKey(e: KeyboardEvent) {
+    e.stopPropagation(); // keep arrows/Enter in the input, not the grid
+    if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur();
+    else if (e.key === 'Escape') {
+      cancelled = true;
+      (e.currentTarget as HTMLInputElement).blur();
+    }
+  }
+  function onEditBlur(e: FocusEvent) {
+    const v = (e.currentTarget as HTMLInputElement).value;
+    if (cancelled) {
+      cancelled = false;
+      onEditCancel?.();
+    } else {
+      onEditCommit?.(v);
+    }
+  }
 
   // Dynamic field read. row is a runes class instance, so row[col.key] still
   // goes through the $state getter — fine-grained reactivity is preserved even
@@ -65,8 +96,19 @@
   aria-selected={selected}
   onpointerdown={(e) => onCellDown?.(r, c, e)}
   onpointerenter={(e) => onCellEnter?.(r, c, e)}
+  ondblclick={() => onCellDblClick?.(r, c)}
 >
-  {#if col.type === 'sparkline'}
+  {#if editing}
+    <input
+      class="bo-edit"
+      value={String(value ?? '')}
+      use:focusSelect
+      onkeydown={onEditKey}
+      onblur={onEditBlur}
+      onpointerdown={(e) => e.stopPropagation()}
+      ondblclick={(e) => e.stopPropagation()}
+    />
+  {:else if col.type === 'sparkline'}
     <Sparkline candles={candlesOf(row, col.sparkKey)} />
   {:else if col.type === 'text'}
     <strong>{formatCell(col, value)}</strong>{#if col.sub}<em>{row[col.sub]}</em>{/if}
@@ -111,6 +153,19 @@
   }
   .spark {
     overflow: visible;
+  }
+  .bo-edit {
+    width: 100%;
+    height: 100%;
+    padding: 0 7px;
+    font: inherit;
+    font-family: var(--bo-mono);
+    font-size: 13px;
+    text-align: inherit;
+    color: var(--bo-text);
+    background: var(--bo-bg);
+    border: 1px solid var(--bo-sel-border);
+    outline: none;
   }
   .dim {
     color: var(--bo-text-dim);

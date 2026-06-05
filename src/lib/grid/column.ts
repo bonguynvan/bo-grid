@@ -21,6 +21,15 @@ interface ColBase {
   groupAgg?: AggKind;
   /** Pin this column to the left; it stays visible during horizontal scroll. */
   pinned?: boolean;
+  /** Allow inline editing (double-click or Enter on the focused cell). */
+  editable?: boolean;
+}
+
+export interface CellEditEvent {
+  row: GridRow;
+  column: ColumnDef;
+  /** Parsed value: a number for numeric columns, otherwise the raw string. */
+  value: string | number;
 }
 
 /**
@@ -74,6 +83,10 @@ export function formatCell(col: ColumnDef, value: unknown): string {
 
 export function isSortable(col: ColumnDef): boolean {
   return col.type !== 'sparkline' && col.sortable !== false;
+}
+
+export function isEditable(col: ColumnDef): boolean {
+  return !!col.editable && col.type !== 'sparkline' && col.type !== 'date';
 }
 
 function rawCompare(a: unknown, b: unknown): number {

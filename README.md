@@ -11,9 +11,10 @@ A free alternative to the heavyweight grids that paywall these features.
 > client sort + filter, multi-cell selection + live range aggregation, row
 > grouping (nested, collapsible, sticky headers, live subtotals), a server-side
 > `RowSource` for huge datasets, CSV/Excel export, drag-to-reorder columns,
-> pinned columns, sparklines, realtime flash, heatmaps. Unit tests (Vitest),
-> type-check, a headless mount smoke-test, and a bundle-size budget all run in CI.
-> Variable row height and inline editing are not built yet — see the roadmap.
+> pinned columns, inline cell editing, sparklines, realtime flash, heatmaps. Unit
+> tests (Vitest), type-check, a headless mount smoke-test, and library + demo
+> bundle-size budgets all run in CI. Variable row height and pivot tables are not
+> built yet — see the roadmap.
 
 ## Why
 
@@ -175,6 +176,25 @@ user's order across reloads (saved to `localStorage`):
 <Grid {rows} {columns} persistKey="watchlist" height={640} />
 ```
 
+## Inline editing
+
+Mark a column `editable: true`. Double-click a cell (or press <kbd>Enter</kbd> on
+the focused cell) to edit; <kbd>Enter</kbd>/blur commits, <kbd>Esc</kbd> cancels.
+The grid is controlled, so it reports the change via `onCellEdit` — update your
+own row data there:
+
+```svelte
+<Grid
+  {rows}
+  {columns}
+  height={640}
+  onCellEdit={(e) => (e.row[e.column.key] = e.value)}
+/>
+```
+
+`e.value` is parsed to a number for numeric columns (invalid input is rejected),
+otherwise the raw string. Make the edited field `$state` so the cell updates.
+
 ## Pinned columns
 
 Set `pinned: true` on a column to keep it visible while the rest scroll
@@ -233,8 +253,8 @@ pnpm package   # build the publishable library into dist/
 
 ## Roadmap
 
-Inline cell editing → CSV import recipe → pivot tables → theming engine → WCAG
-2.1 AA audit. Contributions welcome.
+Variable row height → pivot tables → theming presets → WCAG 2.1 AA audit.
+Contributions welcome.
 
 ## License
 

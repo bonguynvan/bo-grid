@@ -57,6 +57,7 @@
     "prepublishOnly": "pnpm run package",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "size": "vite build && node scripts/size-check.mjs",
+    "size:lib": "vite build --config vite.lib.config.ts && node scripts/size-lib.mjs",
     "smoke": "vite build --base=./ --outDir demo-dist && node scripts/smoke.mjs",
     "test": "vitest run"
   },
