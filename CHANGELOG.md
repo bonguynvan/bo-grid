@@ -43,6 +43,9 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   `aria-multiselectable`, and `aria-hidden` virtualization duplicates.
 - **Custom cells**: `type: 'custom'` columns rendered by a `cell` snippet
   receiving `{ row, column, value }`.
+- **Pivot tables**: `pivot(rows, config)` transforms flat rows into pivot
+  rows + dynamic columns (row fields × a column field, aggregated measure, with
+  totals) — feed the result straight to `<Grid>`.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 - **Theming**: dark-first, self-contained CSS variables (`--bo-grid-*`), no CSS

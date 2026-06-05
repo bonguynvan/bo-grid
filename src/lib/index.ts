@@ -20,6 +20,8 @@ export type { DateStyle } from './format/format';
 // Standalone helpers
 export { aggregate } from './grid/aggregate';
 export { heatColor } from './grid/heatmap';
+export { pivot } from './grid/pivot';
+export type { PivotConfig, PivotResult } from './grid/pivot';
 
 // Theming
 export { themeVars, darkTheme, lightTheme } from './grid/theme';

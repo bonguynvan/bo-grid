@@ -192,11 +192,22 @@ const stickyHeaders = [...document.querySelectorAll('.h')].filter((h) =>
 ).length;
 if (stickyHeaders === 0) fail('pinning did not produce sticky columns');
 
+// Pivot (Phase 5): toggle pivot and assert the columns become the pivot output.
+const pivotBtn = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Pivot');
+if (!pivotBtn) fail('pivot control not found in demo');
+click(pivotBtn);
+await wait(60);
+const pivotHeaders = [...document.querySelectorAll('.h .label')].map((n) => n.textContent.trim());
+if (!pivotHeaders.includes('Total') || !pivotHeaders.includes('sector')) {
+  fail(`pivot did not produce expected columns (got ${pivotHeaders.join(',')})`);
+}
+
 console.log(
   `✓ smoke: grid mounted — ${rowCount} rows, ${canvases} sparklines; ` +
     `selection ${selCount} cells + agg bar; grouping ${groupHeaders} headers, ` +
     `edit committed; variable heights ${rowHeights.join('/')}; ` +
     `collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
-    `${stickyHeaders} pinned columns; a11y rowcount/activedescendant ok`,
+    `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
+    `a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

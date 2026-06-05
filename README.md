@@ -13,8 +13,8 @@ A free alternative to the heavyweight grids that paywall these features.
 > `RowSource` for huge datasets, CSV/Excel export, drag-to-reorder columns,
 > pinned columns, inline cell editing, sparklines, realtime flash, heatmaps. Unit
 > tests (Vitest), type-check, a headless mount smoke-test, and library + demo
-> bundle-size budgets all run in CI. Pivot tables and a formal a11y audit are not
-> built yet — see the roadmap.
+> bundle-size budgets all run in CI. Feature-complete for v0; a formal WCAG audit
+> is the main thing left — see the roadmap.
 
 ## Why
 
@@ -274,6 +274,29 @@ Ctrl/⌘+C still copies the current selection as TSV.
 canvas) · `fmtPrice` / `fmtPercent` / `fmtVolume` / `fmtDate` · `heatColor` ·
 `Selection` · `aggregate` · `toCSV` / `exportCSV` / `exportXLSX` / `rowsToMatrix`.
 
+## Pivot tables
+
+`pivot()` transforms flat rows into a pivot table (rows + dynamic columns) you
+hand straight to `<Grid>` — group by row fields, spread a field's values into
+columns, and aggregate a measure into each cell:
+
+```svelte
+<script lang="ts">
+  import { Grid, pivot } from 'bo-grid';
+
+  const { rows: pivotRows, columns: pivotColumns } = pivot(data, {
+    rowFields: ['sector'],     // → leading text columns
+    columnField: 'exchange',   // distinct values → columns (+ a Total)
+    measure: 'volume',
+    agg: 'sum',
+  });
+</script>
+
+<Grid rows={pivotRows} columns={pivotColumns} height={640} />
+```
+
+It's a pure function, so call it as a snapshot or reactively as you prefer.
+
 ## Accessibility
 
 The grid follows the ARIA grid pattern. Because rows are virtualized, it exposes
@@ -306,7 +329,8 @@ pnpm package   # build the publishable library into dist/
 
 ## Roadmap
 
-Formal WCAG 2.1 AA audit → pivot tables → more themes. Contributions welcome.
+Formal WCAG 2.1 AA audit → multi-measure pivots → more themes. Contributions
+welcome.
 
 ## License
 

@@ -1,5 +1,15 @@
 <script lang="ts">
-  import { Grid, exportCSV, exportXLSX, createArraySource, type ColumnDef, type GridRow } from '../lib';
+  import { untrack } from 'svelte';
+  import {
+    Grid,
+    exportCSV,
+    exportXLSX,
+    createArraySource,
+    pivot,
+    type ColumnDef,
+    type GridRow,
+    type PivotConfig,
+  } from '../lib';
   import { generateTickers } from './data/generate';
   import { buildRows, type TickerRow } from './data/rows.svelte';
   import { Feed } from './data/feed.svelte';
@@ -47,19 +57,6 @@
 
   let gridTheme = $state<'dark' | 'light'>('dark');
   let pinMode = $state(false);
-  // Pinning Symbol + Price; the grid is width-constrained below so the other
-  // columns overflow and you can see the pinned columns stay put while scrolling.
-  const displayColumns = $derived(
-    pinMode
-      ? columns.map((c) => (c.key === 'symbol' || c.key === 'price' ? { ...c, pinned: true } : c))
-      : columns,
-  );
-
-  function toggleLive() {
-    live = !live;
-    if (live) feed.start();
-    else feed.stop();
-  }
 
   let dataMode = $state<'client' | 'server'>('client');
   const gridRows = $derived(rows as unknown as GridRow[]);
@@ -71,6 +68,34 @@
       ? createArraySource(gridRows, { latency: 220, filterKeys: ['symbol', 'sector', 'name'] })
       : undefined,
   );
+
+  // Pivot: sector × exchange, summing volume. Computed as an untracked snapshot
+  // (pivoting 1,000 live rows every tick would be wasteful).
+  let pivotMode = $state(false);
+  const pivotConfig: PivotConfig = {
+    rowFields: ['sector'],
+    columnField: 'exchange',
+    measure: 'volume',
+    agg: 'sum',
+  };
+  const pv = $derived(pivotMode ? untrack(() => pivot(gridRows, pivotConfig)) : null);
+
+  // Pinning Symbol + Price; the grid is width-constrained below so the other
+  // columns overflow and you can see the pinned columns stay put while scrolling.
+  const displayColumns = $derived(
+    pinMode
+      ? columns.map((c) => (c.key === 'symbol' || c.key === 'price' ? { ...c, pinned: true } : c))
+      : columns,
+  );
+
+  const effRows = $derived(pivotMode && pv ? pv.rows : dataMode === 'server' ? [] : gridRows);
+  const effColumns = $derived(pivotMode && pv ? pv.columns : displayColumns);
+
+  function toggleLive() {
+    live = !live;
+    if (live) feed.start();
+    else feed.stop();
+  }
 
   function downloadCsv() {
     exportCSV('tickers.csv', gridRows, columns);
@@ -135,6 +160,7 @@
     <span class="metric">{COUNT.toLocaleString()} rows</span>
     <span class="metric">{feed.applied.toLocaleString()} ticks applied</span>
     <span class="metric">{feed.pendingDepth} queued</span>
+    <button class="live" class:on={pivotMode} onclick={() => (pivotMode = !pivotMode)}>Pivot</button>
     <button class="live" class:on={pinMode} onclick={() => (pinMode = !pinMode)}>Pin L</button>
     <div class="seg">
       <button onclick={downloadCsv}>CSV</button>
@@ -149,14 +175,14 @@
 <main style:background={gridTheme === 'light' ? '#e9ebef' : null}>
   <div class="gridwrap" style:max-width={pinMode ? '680px' : null}>
     <Grid
-      rows={dataMode === 'server' ? [] : gridRows}
-      columns={displayColumns}
+      rows={effRows}
+      columns={effColumns}
       filter={filterText}
-      groupBy={dataMode === 'server' ? [] : groupBy}
-      {source}
+      groupBy={pivotMode ? [] : dataMode === 'server' ? [] : groupBy}
+      source={pivotMode ? undefined : source}
       {rowHeight}
       theme={gridTheme}
-      persistKey="demo"
+      persistKey={pivotMode ? undefined : 'demo'}
       height={640}
       onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}
       {cell}
