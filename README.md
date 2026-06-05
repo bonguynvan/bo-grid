@@ -4,8 +4,8 @@ Tiny, fast **Svelte 5** data grid for fintech UIs — canvas sparklines, batched
 realtime cell updates, and virtual scrolling in a package that gzips to a few KB.
 A free alternative to the heavyweight grids that paywall these features.
 
-**[Live demo](https://your-username.github.io/bo-grid/)** ·
-**[API reference](https://your-username.github.io/bo-grid/api.html)**
+**[Live demo](https://bonguynvan.github.io/bo-grid/)** ·
+**[API reference](https://bonguynvan.github.io/bo-grid/api.html)**
 
 > **Status: v0.1 (early).** Working: config-driven columns, virtual scroll,
 > client sort + filter, multi-cell selection + live range aggregation, row

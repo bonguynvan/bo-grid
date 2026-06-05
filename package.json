@@ -4,13 +4,13 @@
   "type": "module",
   "license": "MIT",
   "description": "Tiny, fast Svelte 5 data grid: canvas sparklines, batched realtime cell updates, and virtual scrolling. A free, fintech-focused alternative to heavyweight grids.",
-  "homepage": "https://your-username.github.io/bo-grid/",
+  "homepage": "https://bonguynvan.github.io/bo-grid/",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/bo-grid.git"
+    "url": "git+https://github.com/bonguynvan/bo-grid.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/bo-grid/issues"
+    "url": "https://github.com/bonguynvan/bo-grid/issues"
   },
   "keywords": [
     "svelte",

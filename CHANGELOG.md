@@ -37,4 +37,4 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Theming**: dark-first, self-contained CSS variables (`--bo-grid-*`), no CSS
   import required.
 
-[0.1.0]: https://github.com/your-username/bo-grid/releases/tag/v0.1.0
+[0.1.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.1.0
