@@ -83,7 +83,8 @@
 <header class="bar">
   <div class="title">
     <span class="logo">bo-grid</span>
-    <span class="tag">risk spike · sparklines + realtime over virtual scroll</span>
+    <span class="tag">sparklines + realtime over virtual scroll</span>
+    <a class="apilink" href="./api.html">API docs ↗</a>
   </div>
 
   <div class="metrics">
@@ -157,6 +158,14 @@
   .tag {
     font-size: 12px;
     color: var(--text-dim);
+  }
+  .apilink {
+    font-size: 12px;
+    color: var(--up);
+    text-decoration: none;
+  }
+  .apilink:hover {
+    text-decoration: underline;
   }
   .metrics {
     display: flex;

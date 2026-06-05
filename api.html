@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bo-grid · API reference</title>
+    <meta name="description" content="API reference for bo-grid — a tiny, fast Svelte 5 fintech data grid." />
+    <style>
+      :root {
+        --bg: #1a1a1a;
+        --panel: #0f0f0f;
+        --row: #131313;
+        --text: #e5e5e5;
+        --dim: #8a8a8a;
+        --border: rgba(255, 255, 255, 0.08);
+        --up: #34d399;
+        --down: #f87171;
+        --accent: #818cf8;
+        --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+        --sans: Inter, "Segoe UI", system-ui, sans-serif;
+        color-scheme: dark;
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; scroll-padding-top: 70px; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: var(--accent); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+
+      header.bar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 22px;
+        background: rgba(15, 15, 15, 0.9);
+        backdrop-filter: blur(8px);
+        border-bottom: 0.5px solid var(--border);
+      }
+      .logo { font-family: var(--mono); font-weight: 700; font-size: 15px; }
+      .logo .v { color: var(--dim); font-weight: 500; font-size: 12px; margin-left: 6px; }
+      nav.top a { color: var(--dim); font-size: 13px; margin-left: 18px; }
+      nav.top a:hover { color: var(--text); }
+
+      .wrap { max-width: 940px; margin: 0 auto; padding: 0 22px 120px; }
+      h1 { font-size: clamp(2rem, 1.2rem + 3vw, 3rem); margin: 48px 0 8px; letter-spacing: -0.02em; }
+      .lede { color: var(--dim); font-size: 18px; max-width: 60ch; margin: 0 0 8px; }
+      h2 {
+        margin: 56px 0 14px;
+        padding-bottom: 8px;
+        font-size: 24px;
+        letter-spacing: -0.01em;
+        border-bottom: 0.5px solid var(--border);
+      }
+      h3 { margin: 30px 0 8px; font-size: 17px; font-family: var(--mono); }
+      h3 .tag {
+        font-family: var(--sans);
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--dim);
+        border: 0.5px solid var(--border);
+        border-radius: 999px;
+        padding: 2px 8px;
+        margin-left: 8px;
+        vertical-align: middle;
+      }
+      p { margin: 10px 0; }
+      code {
+        font-family: var(--mono);
+        font-size: 0.86em;
+        background: var(--panel);
+        border: 0.5px solid var(--border);
+        border-radius: 4px;
+        padding: 1px 5px;
+      }
+      pre {
+        background: var(--panel);
+        border: 0.5px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      pre code { background: none; border: 0; padding: 0; }
+      .tok-key { color: var(--accent); }
+      .tok-str { color: var(--up); }
+      .tok-com { color: var(--dim); }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 14px 0;
+        font-size: 14px;
+      }
+      th, td {
+        text-align: left;
+        padding: 9px 12px;
+        border-bottom: 0.5px solid var(--border);
+        vertical-align: top;
+      }
+      th { color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+      td:first-child { font-family: var(--mono); white-space: nowrap; color: var(--text); }
+      td .type { font-family: var(--mono); color: var(--accent); font-size: 12.5px; }
+      td .req { color: var(--down); font-size: 11px; margin-left: 6px; }
+
+      .grid2 { display: grid; gap: 8px 24px; grid-template-columns: 1fr; }
+      @media (min-width: 640px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+      .pill {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 12px;
+        background: var(--row);
+        border: 0.5px solid var(--border);
+        border-radius: 6px;
+        padding: 3px 8px;
+        margin: 3px 4px 3px 0;
+      }
+      kbd {
+        font-family: var(--mono);
+        font-size: 12px;
+        background: var(--row);
+        border: 0.5px solid var(--border);
+        border-bottom-width: 2px;
+        border-radius: 5px;
+        padding: 2px 6px;
+      }
+      .note {
+        border-left: 2px solid var(--accent);
+        background: rgba(129, 140, 248, 0.06);
+        padding: 10px 14px;
+        border-radius: 0 6px 6px 0;
+        margin: 14px 0;
+        color: var(--dim);
+        font-size: 14px;
+      }
+      footer { color: var(--dim); font-size: 13px; border-top: 0.5px solid var(--border); padding-top: 20px; margin-top: 60px; }
+    </style>
+  </head>
+  <body>
+    <header class="bar">
+      <span class="logo">bo-grid<span class="v">API v0.1</span></span>
+      <nav class="top">
+        <a href="./">Demo</a>
+        <a href="#grid">Grid</a>
+        <a href="#columns">Columns</a>
+        <a href="#source">Source</a>
+        <a href="#theming">Theming</a>
+        <a href="https://github.com/your-username/bo-grid">GitHub</a>
+      </nav>
+    </header>
+
+    <div class="wrap">
+      <h1>API reference</h1>
+      <p class="lede">
+        A tiny, fast Svelte 5 data grid for fintech UIs — virtual scroll, canvas sparklines,
+        batched realtime updates, sort/filter, selection, grouping, a server-side data source,
+        export, and column pinning.
+      </p>
+
+      <h2 id="install">Install</h2>
+      <pre><code>npm i bo-grid          <span class="tok-com"># peer: svelte@^5</span>
+npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</span></code></pre>
+      <pre><code><span class="tok-key">import</span> { Grid, <span class="tok-key">type</span> ColumnDef, <span class="tok-key">type</span> GridRow } <span class="tok-key">from</span> <span class="tok-str">'bo-grid'</span>;</code></pre>
+
+      <!-- ============ GRID ============ -->
+      <h2 id="grid">&lt;Grid&gt;</h2>
+      <p>The grid component. Renders rows from an in-memory array <em>or</em> a <a href="#source">RowSource</a>.</p>
+      <table>
+        <thead><tr><th>Prop</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>rows<span class="req">*</span></td><td><span class="type">GridRow[]</span></td><td>Row data (in-memory mode). Pass <code>[]</code> when using <code>source</code>.</td></tr>
+          <tr><td>columns<span class="req">*</span></td><td><span class="type">ColumnDef[]</span></td><td>Column configuration. See <a href="#columns">Columns</a>.</td></tr>
+          <tr><td>height<span class="req">*</span></td><td><span class="type">number</span></td><td>Viewport height in px.</td></tr>
+          <tr><td>filter</td><td><span class="type">string</span></td><td>Quick-filter; matches across column values. Default <code>''</code>.</td></tr>
+          <tr><td>groupBy</td><td><span class="type">string[]</span></td><td>Column keys to group by (nested). In-memory mode only. Default <code>[]</code>.</td></tr>
+          <tr><td>aggregations</td><td><span class="type">AggKind[]</span></td><td>Stats shown in the selection footer. Default all five.</td></tr>
+          <tr><td>persistKey</td><td><span class="type">string</span></td><td>Persist the user's column order to <code>localStorage</code> under this key.</td></tr>
+          <tr><td>source</td><td><span class="type">RowSource</span></td><td>Windowed/server data source. See <a href="#source">Server-side</a>.</td></tr>
+        </tbody>
+      </table>
+      <pre><code>&lt;Grid {rows} {columns} filter={q} groupBy={['sector']} height={640} /&gt;</code></pre>
+
+      <h3>GridRow <span class="tag">interface</span></h3>
+      <p>The minimal contract every row must satisfy; add your own data fields alongside.</p>
+      <pre><code><span class="tok-key">interface</span> GridRow {
+  id: number;            <span class="tok-com">// stable identity (used as the render key)</span>
+  flashSeq: number;      <span class="tok-com">// increment to trigger a cell flash</span>
+  flashDir: <span class="tok-str">'up'</span> | <span class="tok-str">'down'</span>;
+  [field: string]: unknown;
+}</code></pre>
+      <div class="note">
+        Make hot fields (price, volume…) reactive <code>$state</code> so updates flash and re-render
+        only the changed cell — not the whole table. Bump <code>flashSeq</code> on each tick to flash a
+        <code>flash: true</code> column.
+      </div>
+
+      <!-- ============ COLUMNS ============ -->
+      <h2 id="columns">Columns</h2>
+      <p><code>ColumnDef</code> is a discriminated union on <code>type</code>. All variants share these base options:</p>
+      <table>
+        <thead><tr><th>Option</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>key<span class="req">*</span></td><td><span class="type">string</span></td><td>Row field to read.</td></tr>
+          <tr><td>header<span class="req">*</span></td><td><span class="type">string</span></td><td>Header label.</td></tr>
+          <tr><td>width</td><td><span class="type">number</span></td><td>Fixed width (px).</td></tr>
+          <tr><td>flex</td><td><span class="type">number</span></td><td>flex-grow weight; column fills remaining space.</td></tr>
+          <tr><td>align</td><td><span class="type">'left' | 'right'</span></td><td>Header/text alignment.</td></tr>
+          <tr><td>flash</td><td><span class="type">boolean</span></td><td>Amber flash on value change (drives off <code>flashSeq</code>).</td></tr>
+          <tr><td>sortable</td><td><span class="type">boolean</span></td><td>Set <code>false</code> to disable header-click sorting.</td></tr>
+          <tr><td>groupAgg</td><td><span class="type">AggKind</span></td><td>Show this aggregate on group headers.</td></tr>
+          <tr><td>pinned</td><td><span class="type">boolean</span></td><td>Pin left; stays visible during horizontal scroll.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Column types</h3>
+      <table>
+        <thead><tr><th>type</th><th>Extra options</th><th>Renders</th></tr></thead>
+        <tbody>
+          <tr><td>'text'</td><td><span class="type">sub?: string</span></td><td>Bold value + optional dim sub-line (second field).</td></tr>
+          <tr><td>'price'</td><td>—</td><td>2-decimal number, monospace.</td></tr>
+          <tr><td>'percent'</td><td>—</td><td>Signed %, green/red.</td></tr>
+          <tr><td>'volume'</td><td>—</td><td>K/M/B suffix.</td></tr>
+          <tr><td>'number'</td><td><span class="type">decimals?: number</span></td><td>Fixed-decimal number.</td></tr>
+          <tr><td>'date'</td><td><span class="type">dateStyle?: 'short'|'medium'</span></td><td>Formatted date (value is epoch ms).</td></tr>
+          <tr><td>'heatmap'</td><td><span class="type">min: number; max: number</span></td><td>Diverging red→green background ramp.</td></tr>
+          <tr><td>'sparkline'</td><td><span class="type">sparkKey: string</span></td><td>Canvas candlesticks from a <code>Candle[]</code> field.</td></tr>
+        </tbody>
+      </table>
+      <pre><code><span class="tok-key">const</span> columns: ColumnDef[] = [
+  { type: <span class="tok-str">'text'</span>,      key: <span class="tok-str">'symbol'</span>, sub: <span class="tok-str">'sector'</span>, header: <span class="tok-str">'Symbol'</span>, pinned: <span class="tok-key">true</span> },
+  { type: <span class="tok-str">'price'</span>,     key: <span class="tok-str">'price'</span>,  header: <span class="tok-str">'Price'</span>, flash: <span class="tok-key">true</span>, groupAgg: <span class="tok-str">'avg'</span> },
+  { type: <span class="tok-str">'percent'</span>,   key: <span class="tok-str">'changePct'</span>, header: <span class="tok-str">'Chg %'</span> },
+  { type: <span class="tok-str">'heatmap'</span>,   key: <span class="tok-str">'changePct'</span>, header: <span class="tok-str">'Heat'</span>, min: -5, max: 5 },
+  { type: <span class="tok-str">'volume'</span>,    key: <span class="tok-str">'volume'</span>, header: <span class="tok-str">'Volume'</span>, groupAgg: <span class="tok-str">'sum'</span> },
+  { type: <span class="tok-str">'sparkline'</span>, key: <span class="tok-str">'candles'</span>, sparkKey: <span class="tok-str">'candles'</span>, header: <span class="tok-str">'Trend'</span>, flex: 1 },
+];</code></pre>
+
+      <!-- ============ SELECTION ============ -->
+      <h2 id="selection">Selection &amp; keyboard</h2>
+      <p>Click a cell, then drag or <kbd>Shift</kbd>+click to extend a rectangular selection. When more than one cell is selected a footer shows live Sum / Avg / Count / Min / Max over the numeric cells in the range.</p>
+      <table>
+        <thead><tr><th>Keys</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td><td>Move the focus cell.</td></tr>
+          <tr><td><kbd>Shift</kbd> + arrows</td><td>Extend the selection.</td></tr>
+          <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>A</kbd></td><td>Select all.</td></tr>
+          <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>C</kbd></td><td>Copy selection as TSV (Excel-pasteable).</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Clear the selection.</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ============ GROUPING ============ -->
+      <h2 id="grouping">Grouping</h2>
+      <p>Pass <code>groupBy</code> (column keys) for single or nested grouping. Groups are collapsible, headers stick to the top while scrolling, and any column with a <code>groupAgg</code> shows a live subtotal. Group headers are the same height as rows, so virtual scrolling stays smooth.</p>
+      <pre><code>&lt;Grid {rows} {columns} groupBy={['sector', 'exchange']} height={640} /&gt;</code></pre>
+
+      <!-- ============ SOURCE ============ -->
+      <h2 id="source">Server-side data</h2>
+      <p>Back the grid with a <code>RowSource</code> to load only the visible window — the dataset can be far larger than memory. Sort and filter are delegated to the source; unloaded rows render as skeletons. (Grouping is client-only.)</p>
+      <h3>RowSource <span class="tag">interface</span></h3>
+      <pre><code><span class="tok-key">interface</span> RowSource {
+  getRows(p: {
+    range: { start: number; end: number };  <span class="tok-com">// half-open window</span>
+    sort: SortState | <span class="tok-key">null</span>;
+    filter: string;
+  }): RowSourceResult | Promise&lt;RowSourceResult&gt;;
+}
+<span class="tok-key">interface</span> RowSourceResult { rows: GridRow[]; total: number; }</code></pre>
+      <pre><code><span class="tok-key">const</span> source: RowSource = {
+  <span class="tok-key">async</span> getRows({ range, sort, filter }) {
+    <span class="tok-key">const</span> r = <span class="tok-key">await</span> fetch(<span class="tok-str">`/api/rows?offset=${range.start}&limit=${range.end - range.start}`</span>);
+    <span class="tok-key">return</span> r.json(); <span class="tok-com">// { rows, total }</span>
+  },
+};
+&lt;Grid {columns} {source} height={640} /&gt;</code></pre>
+      <h3>createArraySource() <span class="tag">function</span></h3>
+      <p>Adapts an in-memory array to <code>RowSource</code> — handy for client-side data or testing the path.</p>
+      <pre><code>createArraySource(rows, { latency?: number, filterKeys?: string[] }): RowSource</code></pre>
+
+      <!-- ============ EXPORT ============ -->
+      <h2 id="export">Export</h2>
+      <table>
+        <thead><tr><th>Function</th><th>Signature</th></tr></thead>
+        <tbody>
+          <tr><td>toCSV</td><td><span class="type">(rows, columns, opts?) =&gt; string</span></td></tr>
+          <tr><td>exportCSV</td><td><span class="type">(filename, rows, columns, opts?) =&gt; void</span></td></tr>
+          <tr><td>exportXLSX</td><td><span class="type">(filename, rows, columns, opts?) =&gt; Promise&lt;void&gt;</span></td></tr>
+        </tbody>
+      </table>
+      <p><code>ExportOptions</code>: <code>{ formatted?: boolean; header?: boolean }</code>. Numeric columns export as raw numbers unless <code>formatted</code> is set; sparkline columns are skipped. <code>exportXLSX</code> dynamic-imports the optional <code>xlsx</code> peer (separate lazy chunk).</p>
+
+      <!-- ============ EXPORTS ============ -->
+      <h2 id="exports">Package exports</h2>
+      <div class="grid2">
+        <div>
+          <h3 style="font-size:14px">Components</h3>
+          <span class="pill">Grid</span><span class="pill">Sparkline</span>
+          <h3 style="font-size:14px">Formatters</h3>
+          <span class="pill">fmtPrice</span><span class="pill">fmtPercent</span>
+          <span class="pill">fmtVolume</span><span class="pill">fmtDate</span>
+          <h3 style="font-size:14px">Helpers</h3>
+          <span class="pill">aggregate</span><span class="pill">heatColor</span>
+          <span class="pill">drawCandles</span><span class="pill">setupHiDpiCanvas</span>
+        </div>
+        <div>
+          <h3 style="font-size:14px">Export</h3>
+          <span class="pill">toCSV</span><span class="pill">exportCSV</span><span class="pill">exportXLSX</span>
+          <h3 style="font-size:14px">Data source</h3>
+          <span class="pill">createArraySource</span>
+          <h3 style="font-size:14px">Types</h3>
+          <span class="pill">ColumnDef</span><span class="pill">GridRow</span><span class="pill">SortState</span>
+          <span class="pill">AggKind</span><span class="pill">Candle</span><span class="pill">RowSource</span>
+        </div>
+      </div>
+
+      <!-- ============ THEMING ============ -->
+      <h2 id="theming">Theming</h2>
+      <p>Dark-first and self-contained — no CSS import required. Override any token by setting the matching <code>--bo-grid-*</code> custom property on an ancestor.</p>
+      <table>
+        <thead><tr><th>Token</th><th>Default</th><th>Token</th><th>Default</th></tr></thead>
+        <tbody>
+          <tr><td>--bo-grid-bg</td><td>#1a1a1a</td><td>--bo-grid-up</td><td>#34d399</td></tr>
+          <tr><td>--bo-grid-header-bg</td><td>#0f0f0f</td><td>--bo-grid-down</td><td>#f87171</td></tr>
+          <tr><td>--bo-grid-row-a</td><td>#131313</td><td>--bo-grid-amber</td><td>#f59e0b</td></tr>
+          <tr><td>--bo-grid-row-b</td><td>#0f0f0f</td><td>--bo-grid-sel-fill</td><td>indigo 16%</td></tr>
+          <tr><td>--bo-grid-row-hover</td><td>#1f1f24</td><td>--bo-grid-sel-border</td><td>#6366f1</td></tr>
+          <tr><td>--bo-grid-text</td><td>#e5e5e5</td><td>--bo-grid-header-h</td><td>28px</td></tr>
+          <tr><td>--bo-grid-text-dim</td><td>#8a8a8a</td><td>--bo-grid-mono</td><td>SF Mono…</td></tr>
+          <tr><td>--bo-grid-border</td><td>white 6%</td><td>--bo-grid-sans</td><td>Inter…</td></tr>
+        </tbody>
+      </table>
+      <pre><code>.light-grid {
+  <span class="tok-key">--bo-grid-bg</span>: #fff;
+  <span class="tok-key">--bo-grid-text</span>: #1a1a1a;
+  <span class="tok-key">--bo-grid-up</span>: #16a34a;
+  <span class="tok-key">--bo-grid-down</span>: #dc2626;
+}</code></pre>
+
+      <footer>
+        bo-grid · MIT · <a href="./">Live demo</a> ·
+        <a href="https://github.com/your-username/bo-grid">GitHub</a>
+      </footer>
+    </div>
+  </body>
+</html>

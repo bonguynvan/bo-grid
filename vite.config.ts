@@ -7,5 +7,10 @@ export default defineConfig({
   // Demo/playground build only. The publishable library is built separately by
   // `pnpm package` (svelte-package) into dist/ — keep the two outputs apart so
   // the demo build never clobbers the package.
-  build: { outDir: 'demo-dist', emptyOutDir: true },
+  build: {
+    outDir: 'demo-dist',
+    emptyOutDir: true,
+    // Multi-page: the demo (index.html) + the static API reference (api.html).
+    rollupOptions: { input: { index: 'index.html', api: 'api.html' } },
+  },
 });
