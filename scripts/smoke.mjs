@@ -93,6 +93,17 @@ if (new Set(rowHeights).size < 2) fail(`variable row heights did not apply (${ro
 click([...document.querySelectorAll('.seg button')].find((b) => b.textContent.trim() === 'Compact'));
 await wait(40);
 
+// Theming (Phase 5): switch to the light preset and assert the grid root carries
+// the --bo-grid-bg override, then restore dark.
+click([...document.querySelectorAll('.seg button')].find((b) => b.textContent.trim() === 'Light'));
+await wait(40);
+const gridStyle = document.querySelector('.bo-grid.grid')?.getAttribute('style') || '';
+if (!/--bo-grid-bg:\s*#fff/i.test(gridStyle)) {
+  fail(`light theme did not apply --bo-grid-bg (style="${gridStyle.slice(0, 60)}…")`);
+}
+click([...document.querySelectorAll('.seg button')].find((b) => b.textContent.trim() === 'Dark'));
+await wait(40);
+
 // Simulate a drag-selection down the Price column and assert the highlight +
 // live aggregation bar appear (Phase 2). Catches selection wiring regressions.
 const rowEls = document.querySelectorAll('.row');

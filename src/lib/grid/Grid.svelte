@@ -4,6 +4,7 @@
   import { colStyle, isNumeric, isSortable, isEditable, compareRows, formatCell } from './column';
   import { arrangePinned } from './pin';
   import { uniformHeights, variableHeights } from './rowheight';
+  import { themeVars, lightTheme, type GridTheme } from './theme';
   import { Selection } from './selection.svelte';
   import { aggregate, type AggKind, type AggResult } from './aggregate';
   import { buildFlatRows, activeGroupsAt, type VisualRow, type GroupNode } from './grouping';
@@ -25,6 +26,7 @@
     source,
     onCellEdit,
     rowHeight,
+    theme,
   }: {
     rows: GridRow[];
     columns: ColumnDef[];
@@ -32,6 +34,8 @@
     /** Row height in px (uniform), or a function for variable heights
         (in-memory mode only). Default 36. */
     rowHeight?: number | ((row: GridRow, index: number) => number);
+    /** Built-in theme name or a custom token map. Default 'dark'. */
+    theme?: 'dark' | 'light' | GridTheme;
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -89,6 +93,11 @@
   const layout = $derived(arrangePinned(ordered));
   const cols = $derived(layout.columns);
   const pinned = $derived(layout.anyPinned);
+
+  // Theme → inline `--bo-grid-*` overrides. 'dark' uses the built-in defaults.
+  const themeStyle = $derived(
+    !theme || theme === 'dark' ? '' : themeVars(theme === 'light' ? lightTheme : theme),
+  );
 
   function headStyle(ci: number): string {
     if (!pinned) return colStyle(cols[ci]);
@@ -388,7 +397,7 @@
 </script>
 
 <!-- `bo-grid` is an unscoped public class: a stable hook for consumer overrides. -->
-<div class="bo-grid grid" role="grid" tabindex="0" bind:this={gridEl} onkeydown={onKeydown}>
+<div class="bo-grid grid" role="grid" tabindex="0" style={themeStyle} bind:this={gridEl} onkeydown={onKeydown}>
   <div class="head" role="row" bind:this={headEl} style={pinned ? 'overflow:hidden;' : ''}>
     {#each cols as col, ci (ci)}
       <button

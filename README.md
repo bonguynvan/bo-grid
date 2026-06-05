@@ -13,7 +13,7 @@ A free alternative to the heavyweight grids that paywall these features.
 > `RowSource` for huge datasets, CSV/Excel export, drag-to-reorder columns,
 > pinned columns, inline cell editing, sparklines, realtime flash, heatmaps. Unit
 > tests (Vitest), type-check, a headless mount smoke-test, and library + demo
-> bundle-size budgets all run in CI. Pivot tables and theming presets are not
+> bundle-size budgets all run in CI. Pivot tables and a formal a11y audit are not
 > built yet — see the roadmap.
 
 ## Why
@@ -140,8 +140,17 @@ current group's header stays pinned to the top as you scroll within it.
 
 ## Theming
 
-The grid ships dark-first and self-contained — no CSS import required. Override
-any token by setting a `--bo-grid-*` custom property on an ancestor:
+Dark-first and self-contained — no CSS import required. Use the `theme` prop with
+a built-in preset or a custom token map:
+
+```svelte
+<Grid {rows} {columns} theme="light" height={640} />
+<Grid {rows} {columns} theme={{ bg: '#0b1020', up: '#22d3ee' }} height={640} />
+```
+
+Built-in `darkTheme` / `lightTheme` are exported (`GridTheme`). Or set any
+`--bo-grid-*` custom property on an ancestor — the prop is just a convenience over
+these:
 
 ```css
 .my-app {
@@ -266,8 +275,7 @@ pnpm package   # build the publishable library into dist/
 
 ## Roadmap
 
-Theming presets (named light/dark themes) → pivot tables → WCAG 2.1 AA audit.
-Contributions welcome.
+Pivot tables → WCAG 2.1 AA audit → more themes. Contributions welcome.
 
 ## License
 

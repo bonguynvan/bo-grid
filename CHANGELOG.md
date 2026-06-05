@@ -36,6 +36,8 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   report committed values via `onCellEdit`.
 - **Row height**: `rowHeight` as a number (density) or a function (variable
   per-row heights, virtualized with prefix sums + binary search).
+- **Theming**: `theme` prop accepts `'dark'`/`'light'` presets or a custom token
+  map; `darkTheme`/`lightTheme`/`GridTheme` exported.
 - **Theming**: dark-first, self-contained CSS variables (`--bo-grid-*`), no CSS
   import required.
 

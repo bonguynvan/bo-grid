@@ -21,6 +21,10 @@ export type { DateStyle } from './format/format';
 export { aggregate } from './grid/aggregate';
 export { heatColor } from './grid/heatmap';
 
+// Theming
+export { themeVars, darkTheme, lightTheme } from './grid/theme';
+export type { GridTheme } from './grid/theme';
+
 // Sparkline canvas primitives (draw candlesticks on your own canvas)
 export { drawCandles, setupHiDpiCanvas } from './sparkline/sparkline-render';
 

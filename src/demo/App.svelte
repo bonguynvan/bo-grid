@@ -44,6 +44,7 @@
     rowMode === 'vary' ? (_row: GridRow, i: number) => 40 + (i % 4) * 12 : undefined,
   );
 
+  let gridTheme = $state<'dark' | 'light'>('dark');
   let pinMode = $state(false);
   // Pinning Symbol + Price; the grid is width-constrained below so the other
   // columns overflow and you can see the pinned columns stay put while scrolling.
@@ -100,6 +101,10 @@
       <button class:on={dataMode === 'client'} onclick={() => (dataMode = 'client')}>Client</button>
       <button class:on={dataMode === 'server'} onclick={() => (dataMode = 'server')}>Server</button>
     </div>
+    <div class="seg" role="group" aria-label="Theme">
+      <button class:on={gridTheme === 'dark'} onclick={() => (gridTheme = 'dark')}>Dark</button>
+      <button class:on={gridTheme === 'light'} onclick={() => (gridTheme = 'light')}>Light</button>
+    </div>
     <div class="seg" role="group" aria-label="Row height">
       <button class:on={rowMode === 'compact'} onclick={() => (rowMode = 'compact')}>Compact</button>
       <button class:on={rowMode === 'vary'} onclick={() => (rowMode = 'vary')}>Vary</button>
@@ -133,7 +138,7 @@
   </div>
 </header>
 
-<main>
+<main style:background={gridTheme === 'light' ? '#e9ebef' : null}>
   <div class="gridwrap" style:max-width={pinMode ? '680px' : null}>
     <Grid
       rows={dataMode === 'server' ? [] : gridRows}
@@ -142,6 +147,7 @@
       groupBy={dataMode === 'server' ? [] : groupBy}
       {source}
       {rowHeight}
+      theme={gridTheme}
       persistKey="demo"
       height={640}
       onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}
