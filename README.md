@@ -1,0 +1,238 @@
+# bo-grid
+
+Tiny, fast **Svelte 5** data grid for fintech UIs — canvas sparklines, batched
+realtime cell updates, and virtual scrolling in a package that gzips to a few KB.
+A free alternative to the heavyweight grids that paywall these features.
+
+> **Status: v0.1 (early).** Working: config-driven columns, virtual scroll,
+> client sort + filter, multi-cell selection + live range aggregation, row
+> grouping (nested, collapsible, sticky headers, live subtotals), a server-side
+> `RowSource` for huge datasets, CSV/Excel export, drag-to-reorder columns,
+> pinned columns, sparklines, realtime flash, heatmaps. Unit tests (Vitest),
+> type-check, a headless mount smoke-test, and a bundle-size budget all run in CI.
+> Variable row height and inline editing are not built yet — see the roadmap.
+
+## Why
+
+| | Heavy enterprise grids | bo-grid |
+| --- | --- | --- |
+| Price | $$$ / dev / year | Free (MIT) |
+| Sparklines | paid tier | built in |
+| Realtime cell updates | DIY / complex | built-in primitive |
+| Bundle | ~500 KB | a few KB gzip |
+| Svelte | wrapper | native Svelte 5 |
+
+## Install
+
+```sh
+npm i bo-grid
+# peer dependency: svelte@^5
+```
+
+## Usage
+
+```svelte
+<script lang="ts">
+  import { Grid, type ColumnDef, type GridRow } from 'bo-grid';
+
+  const columns: ColumnDef[] = [
+    { type: 'text',      key: 'symbol', sub: 'sector', header: 'Symbol', width: 132 },
+    { type: 'price',     key: 'price',  header: 'Price', width: 88, flash: true },
+    { type: 'percent',   key: 'changePct', header: 'Chg %', width: 84 },
+    { type: 'heatmap',   key: 'changePct', header: 'Heat', min: -5, max: 5, width: 76 },
+    { type: 'volume',    key: 'volume', header: 'Volume', width: 90 },
+    { type: 'date',      key: 'listedAt', header: 'Listed', dateStyle: 'short', width: 92 },
+    { type: 'sparkline', key: 'candles', sparkKey: 'candles', header: 'Trend', flex: 1 },
+  ];
+
+  // Rows must expose `id`, `flashSeq`, `flashDir` plus your data fields.
+  // Make the hot fields `$state` so updates flash without re-rendering the table.
+  let rows: GridRow[] = $state(/* ... */);
+  let filter = $state(''); // bind to your own search input
+</script>
+
+<Grid {rows} {columns} {filter} height={640} />
+```
+
+### Realtime updates
+
+A cell with `flash: true` plays a brief amber flash whenever the row's
+`flashSeq` increments. Drive it from your data source (e.g. a WebSocket):
+
+```ts
+row.flashDir = next >= row.price ? 'up' : 'down';
+row.price = next;
+row.flashSeq++; // triggers the flash on the price cell
+```
+
+Only on-screen rows render DOM, so off-screen updates cost nothing until they
+scroll into view. Batch bursty feeds into a `requestAnimationFrame` flush to
+keep frames smooth.
+
+## Column types
+
+`text` · `price` · `percent` · `volume` · `number` · `date` · `heatmap` · `sparkline`
+
+Sizing: `width` (px) or `flex` (grow weight). See `ColumnDef` for per-type options.
+
+## Sort & filter
+
+Click a column header to sort (asc → desc → off). Sparkline columns aren't
+sortable; set `sortable: false` on any column to opt out. Sorting is a snapshot —
+rows hold position while their values update in place (trading-grid behaviour),
+so a realtime feed never reshuffles the view.
+
+Pass a `filter` string to quick-filter rows (matches across column values). Drive
+it from your own search input — the grid stays presentation-only.
+
+## Selection & aggregation
+
+Click a cell, then drag or **Shift-click** to extend a rectangular selection.
+Keyboard: **arrows** move, **Shift+arrows** extend, **Ctrl/⌘+A** select all,
+**Ctrl/⌘+C** copy the selection as TSV (Excel-pasteable), **Esc** clear.
+
+When more than one cell is selected, a footer bar shows live **Sum / Avg / Count /
+Min / Max** over the numeric cells in the range — and it keeps updating as a
+realtime feed ticks. Choose which stats to show:
+
+```svelte
+<Grid {rows} {columns} aggregations={['sum', 'avg', 'count']} height={640} />
+```
+
+## Grouping
+
+Pass `groupBy` (column keys) to group rows — single or nested. Groups are
+collapsible (click the header) and show **live subtotals** under any column with
+a `groupAgg` set:
+
+```svelte
+<script>
+  const columns = [
+    { type: 'price',  key: 'price',  header: 'Price',  groupAgg: 'avg' },
+    { type: 'volume', key: 'volume', header: 'Volume', groupAgg: 'sum' },
+    // …
+  ];
+</script>
+
+<Grid {rows} {columns} groupBy={['sector', 'exchange']} height={640} />
+```
+
+Group headers are the same height as data rows, so virtual scrolling stays smooth
+over very large grouped sets. Subtotals recompute live as the feed ticks, and the
+current group's header stays pinned to the top as you scroll within it.
+
+## Theming
+
+The grid ships dark-first and self-contained — no CSS import required. Override
+any token by setting a `--bo-grid-*` custom property on an ancestor:
+
+```css
+.my-app {
+  --bo-grid-bg: #fff;
+  --bo-grid-text: #1a1a1a;
+  --bo-grid-up: #16a34a;
+  --bo-grid-down: #dc2626;
+}
+```
+
+## Server-side / large datasets
+
+Instead of an in-memory `rows` array, back the grid with a **`RowSource`** — the
+grid requests only the visible window (plus overscan), so the dataset can be far
+larger than memory. Sort and filter are delegated to the source; unloaded rows
+render as skeletons.
+
+```svelte
+<script lang="ts">
+  import { Grid, createArraySource, type RowSource } from 'bo-grid';
+
+  // Your own source: fetch a window from the server.
+  const source: RowSource = {
+    async getRows({ range, sort, filter }) {
+      const res = await fetch(`/api/rows?offset=${range.start}&limit=${range.end - range.start}` +
+        `&sort=${sort?.key ?? ''}&dir=${sort?.dir ?? ''}&q=${filter}`);
+      return res.json(); // { rows, total }
+    },
+  };
+</script>
+
+<Grid {columns} {source} height={640} />
+```
+
+`createArraySource(rows, { latency, filterKeys })` adapts an in-memory array to
+the same interface (handy for testing the path or client-side data). Grouping is
+client-only, so it's not applied in source mode.
+
+## Column reorder
+
+Drag any column header to reorder columns. Pass `persistKey` to remember the
+user's order across reloads (saved to `localStorage`):
+
+```svelte
+<Grid {rows} {columns} persistKey="watchlist" height={640} />
+```
+
+## Pinned columns
+
+Set `pinned: true` on a column to keep it visible while the rest scroll
+horizontally. This is opt-in: with no pinned columns the grid stays fit-to-width
+(no horizontal scroll). Pinned columns move to the left edge and stick there.
+
+```ts
+const columns = [
+  { type: 'text',  key: 'symbol', header: 'Symbol', width: 132, pinned: true },
+  { type: 'price', key: 'price',  header: 'Price',  width: 88,  pinned: true },
+  // …wider columns scroll under the pinned ones
+];
+```
+
+## Export
+
+CSV export is dependency-free:
+
+```ts
+import { exportCSV, toCSV } from 'bo-grid';
+
+exportCSV('tickers.csv', rows, columns);          // triggers a download
+const text = toCSV(rows, columns, { formatted: true }); // or get the string
+```
+
+Excel export loads SheetJS via **dynamic import**, so it lands in its own lazy
+chunk and never bloats your core bundle. `xlsx` is an **optional peer dependency**
+— install it only if you use this:
+
+```ts
+import { exportXLSX } from 'bo-grid';
+await exportXLSX('tickers.xlsx', rows, columns); // npm i xlsx
+```
+
+Sparkline columns are skipped; numeric columns export as raw numbers so
+spreadsheets can compute on them (pass `{ formatted: true }` for display strings).
+Ctrl/⌘+C still copies the current selection as TSV.
+
+## Also exported
+
+`Sparkline` component · `drawCandles` / `setupHiDpiCanvas` (draw on your own
+canvas) · `fmtPrice` / `fmtPercent` / `fmtVolume` / `fmtDate` · `heatColor` ·
+`Selection` · `aggregate` · `toCSV` / `exportCSV` / `exportXLSX` / `rowsToMatrix`.
+
+## Develop
+
+```sh
+pnpm install
+pnpm dev       # demo/playground at http://localhost:5180
+pnpm test      # unit tests (Vitest)
+pnpm check     # type-check
+pnpm smoke     # headless mount + interaction smoke test
+pnpm size      # bundle-size budget
+pnpm package   # build the publishable library into dist/
+```
+
+## Roadmap
+
+Inline cell editing → CSV import recipe → pivot tables → theming engine → WCAG
+2.1 AA audit. Contributions welcome.
+
+## License
+
+MIT

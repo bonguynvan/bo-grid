@@ -1,0 +1,79 @@
+{
+  "name": "bo-grid",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "Tiny, fast Svelte 5 data grid: canvas sparklines, batched realtime cell updates, and virtual scrolling. A free, fintech-focused alternative to heavyweight grids.",
+  "homepage": "https://your-username.github.io/bo-grid/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/bo-grid.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/bo-grid/issues"
+  },
+  "keywords": [
+    "svelte",
+    "svelte5",
+    "datagrid",
+    "grid",
+    "table",
+    "sparkline",
+    "candlestick",
+    "virtual-scroll",
+    "realtime",
+    "fintech",
+    "trading"
+  ],
+  "svelte": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "peerDependencies": {
+    "svelte": "^5.0.0",
+    "xlsx": "*"
+  },
+  "peerDependenciesMeta": {
+    "xlsx": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "demo:build": "vite build",
+    "pages:build": "vite build --base=/bo-grid/ --outDir demo-dist",
+    "preview": "vite preview",
+    "package": "svelte-package -i src/lib -o dist && node scripts/clean-dist.mjs",
+    "prepublishOnly": "pnpm run package",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "size": "vite build && node scripts/size-check.mjs",
+    "smoke": "vite build --base=./ --outDir demo-dist && node scripts/smoke.mjs",
+    "test": "vitest run"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "devDependencies": {
+    "@sveltejs/package": "^2.5.8",
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "jsdom": "^29.1.1",
+    "svelte": "^5.19.0",
+    "svelte-check": "^4.1.4",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8",
+    "xlsx": "0.18.5"
+  }
+}
