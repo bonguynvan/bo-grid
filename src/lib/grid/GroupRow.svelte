@@ -8,10 +8,12 @@
     group,
     columns,
     onToggle,
+    rowIndex,
   }: {
     group: GroupNode;
     columns: ColumnDef[];
     onToggle: (path: string) => void;
+    rowIndex?: number;
   } = $props();
 
   // Aggregate over the group's leaf rows. Reads row $state values, so group
@@ -30,7 +32,7 @@
   }
 </script>
 
-<div class="group" role="row">
+<div class="group" role="row" aria-rowindex={rowIndex}>
   <button
     class="toggle"
     type="button"

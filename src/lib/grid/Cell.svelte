@@ -16,6 +16,8 @@
     width,
     alt = false,
     editing = false,
+    colIndex,
+    cellId,
     onCellDown,
     onCellEnter,
     onCellDblClick,
@@ -34,6 +36,8 @@
     width?: number;
     alt?: boolean;
     editing?: boolean;
+    colIndex?: number;
+    cellId?: string;
     onCellDown?: (r: number, c: number, e: PointerEvent) => void;
     onCellEnter?: (r: number, c: number, e: PointerEvent) => void;
     onCellDblClick?: (r: number, c: number) => void;
@@ -93,6 +97,8 @@
   style={cellStyle()}
   role="gridcell"
   tabindex="-1"
+  id={cellId}
+  aria-colindex={colIndex}
   aria-selected={selected}
   onpointerdown={(e) => onCellDown?.(r, c, e)}
   onpointerenter={(e) => onCellEnter?.(r, c, e)}

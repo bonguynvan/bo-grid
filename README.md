@@ -261,6 +261,24 @@ Ctrl/⌘+C still copies the current selection as TSV.
 canvas) · `fmtPrice` / `fmtPercent` / `fmtVolume` / `fmtDate` · `heatColor` ·
 `Selection` · `aggregate` · `toCSV` / `exportCSV` / `exportXLSX` / `rowsToMatrix`.
 
+## Accessibility
+
+The grid follows the ARIA grid pattern. Because rows are virtualized, it exposes
+the real dimensions and positions so assistive tech isn't misled:
+
+- `role="grid"` with `aria-rowcount` / `aria-colcount` (full size, not the
+  rendered window) and `aria-multiselectable`.
+- `role="row"` + `aria-rowindex` on rows, `role="gridcell"` + `aria-colindex` +
+  `aria-selected` on cells, `role="columnheader"` + `aria-sort` on headers.
+- `aria-activedescendant` tracks the focused cell for screen readers.
+- Sparkline cells carry a text `aria-label`; sticky/skeleton duplicates are
+  `aria-hidden`; the aggregation bar is an `aria-live` status region.
+- Fully keyboard-operable (see [Selection & keyboard](#selection--keyboard) and
+  inline editing) and respects `prefers-reduced-motion`.
+
+A formal WCAG 2.1 AA audit is on the roadmap; the above is a deliberate pass, not
+a certification.
+
 ## Develop
 
 ```sh
@@ -275,7 +293,7 @@ pnpm package   # build the publishable library into dist/
 
 ## Roadmap
 
-Pivot tables → WCAG 2.1 AA audit → more themes. Contributions welcome.
+Formal WCAG 2.1 AA audit → pivot tables → more themes. Contributions welcome.
 
 ## License
 

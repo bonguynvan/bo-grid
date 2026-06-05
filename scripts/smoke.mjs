@@ -93,6 +93,20 @@ if (new Set(rowHeights).size < 2) fail(`variable row heights did not apply (${ro
 click([...document.querySelectorAll('.seg button')].find((b) => b.textContent.trim() === 'Compact'));
 await wait(40);
 
+// Accessibility: grid exposes true dimensions despite virtualization, and
+// rows/cells carry 1-based aria indices.
+const gridEl = document.querySelector('.bo-grid.grid');
+if (gridEl.getAttribute('aria-rowcount') !== '1001') {
+  fail(`aria-rowcount should be 1001 (got ${gridEl.getAttribute('aria-rowcount')})`);
+}
+if (gridEl.getAttribute('aria-colcount') !== '8') {
+  fail(`aria-colcount should be 8 (got ${gridEl.getAttribute('aria-colcount')})`);
+}
+const ariaRow = document.querySelector('.row[aria-rowindex]');
+if (!ariaRow || !ariaRow.querySelector('.c[aria-colindex]')) {
+  fail('rows/cells missing aria-rowindex/aria-colindex');
+}
+
 // Theming (Phase 5): switch to the light preset and assert the grid root carries
 // the --bo-grid-bg override, then restore dark.
 click([...document.querySelectorAll('.seg button')].find((b) => b.textContent.trim() === 'Light'));
@@ -120,6 +134,12 @@ const selCount = document.querySelectorAll('.c.sel').length;
 const hasAgg = !!document.querySelector('.agg');
 if (selCount < 2) fail(`drag-selection produced ${selCount} highlighted cells (expected ≥2)`);
 if (!hasAgg) fail('aggregation bar did not appear for a multi-cell selection');
+
+// a11y: the focus cell is exposed to AT via aria-activedescendant.
+const adesc = document.querySelector('.bo-grid.grid').getAttribute('aria-activedescendant');
+if (!adesc || !document.getElementById(adesc)) {
+  fail(`aria-activedescendant not set to a live focus cell (${adesc})`);
+}
 
 // Grouping (Phase 3): switch the demo to group-by-sector, assert group-header
 // rows render, then collapse one group and assert the scroll height shrinks.
@@ -174,6 +194,6 @@ console.log(
     `selection ${selCount} cells + agg bar; grouping ${groupHeaders} headers, ` +
     `edit committed; variable heights ${rowHeights.join('/')}; ` +
     `collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
-    `${stickyHeaders} pinned columns`,
+    `${stickyHeaders} pinned columns; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

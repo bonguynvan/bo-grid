@@ -1,3 +1,8 @@
+<script module lang="ts">
+  // Per-instance id counter, for stable ARIA ids (active-descendant).
+  let uid = 0;
+</script>
+
 <script lang="ts">
   import { untrack } from 'svelte';
   import type { ColumnDef, GridRow, SortState, CellEditEvent } from './column';
@@ -50,6 +55,7 @@
 
   const ROW_H = 36;
   const OVERSCAN = 6;
+  const gid = `bo-grid-${uid++}`;
 
   let scrollTop = $state(0);
   let sortState = $state<SortState | null>(null);
@@ -98,6 +104,10 @@
   const themeStyle = $derived(
     !theme || theme === 'dark' ? '' : themeVars(theme === 'light' ? lightTheme : theme),
   );
+
+  // Screen readers track the active cell via aria-activedescendant (the focus
+  // cell is always scrolled into view, so its element exists in the DOM).
+  const activeId = $derived(sel.focus ? `${gid}-r${sel.focus.r}-c${sel.focus.c}` : undefined);
 
   function headStyle(ci: number): string {
     if (!pinned) return colStyle(cols[ci]);
@@ -397,8 +407,20 @@
 </script>
 
 <!-- `bo-grid` is an unscoped public class: a stable hook for consumer overrides. -->
-<div class="bo-grid grid" role="grid" tabindex="0" style={themeStyle} bind:this={gridEl} onkeydown={onKeydown}>
-  <div class="head" role="row" bind:this={headEl} style={pinned ? 'overflow:hidden;' : ''}>
+<div
+  class="bo-grid grid"
+  role="grid"
+  tabindex="0"
+  id={gid}
+  aria-rowcount={rowCount + 1}
+  aria-colcount={cols.length}
+  aria-multiselectable="true"
+  aria-activedescendant={activeId}
+  style={themeStyle}
+  bind:this={gridEl}
+  onkeydown={onKeydown}
+>
+  <div class="head" role="row" aria-rowindex={1} bind:this={headEl} style={pinned ? 'overflow:hidden;' : ''}>
     {#each cols as col, ci (ci)}
       <button
         class="h"
@@ -409,6 +431,7 @@
         style={headStyle(ci)}
         type="button"
         role="columnheader"
+        aria-colindex={ci + 1}
         draggable="true"
         aria-sort={sortState?.key === col.key ? (sortState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
         onclick={() => toggleSort(col)}
@@ -454,7 +477,7 @@
     {#if stickyGroups.length > 0}
       <div class="sticky">
         {#each stickyGroups as g (g.depth)}
-          <div class="sticky-row" style="height:{baseH}px">
+          <div class="sticky-row" aria-hidden="true" style="height:{baseH}px">
             <GroupRow group={g} columns={cols} onToggle={toggleGroup} />
           </div>
         {/each}
@@ -464,22 +487,24 @@
       {#each renderItems as item (item.vr)}
         {#if item.kind === 'group'}
           <div class="grouprow" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
-            <GroupRow group={item.group} columns={cols} onToggle={toggleGroup} />
+            <GroupRow group={item.group} columns={cols} onToggle={toggleGroup} rowIndex={item.vr + 2} />
           </div>
         {:else if item.kind === 'skeleton'}
-          <div class="row skeleton" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
+          <div class="row skeleton" role="row" aria-rowindex={item.vr + 2} aria-hidden="true" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
             {#each cols as col, ci (ci)}
               <span class="c" style={cellWidthStyle(ci)}><span class="skelbar"></span></span>
             {/each}
           </div>
         {:else}
-          <div class="row" class:alt={item.vr % 2 === 1} role="row" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
+          <div class="row" class:alt={item.vr % 2 === 1} role="row" aria-rowindex={item.vr + 2} style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
             {#each cols as col, ci (ci)}
               <Cell
                 {col}
                 row={item.row}
                 r={item.vr}
                 c={ci}
+                colIndex={ci + 1}
+                cellId={`${gid}-r${item.vr}-c${ci}`}
                 selected={sel.contains(item.vr, ci)}
                 focused={sel.isFocus(item.vr, ci)}
                 pinned={pinned && layout.info[ci].pinned}

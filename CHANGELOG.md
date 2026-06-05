@@ -38,6 +38,9 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   per-row heights, virtualized with prefix sums + binary search).
 - **Theming**: `theme` prop accepts `'dark'`/`'light'` presets or a custom token
   map; `darkTheme`/`lightTheme`/`GridTheme` exported.
+- **Accessibility**: full ARIA grid semantics — `aria-rowcount`/`aria-colcount`,
+  per-row/cell `aria-rowindex`/`aria-colindex`, `aria-activedescendant`,
+  `aria-multiselectable`, and `aria-hidden` virtualization duplicates.
 - **Theming**: dark-first, self-contained CSS variables (`--bo-grid-*`), no CSS
   import required.
 
