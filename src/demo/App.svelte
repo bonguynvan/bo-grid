@@ -37,6 +37,13 @@
   };
   const groupBy = $derived(GROUPS[groupMode]);
 
+  let rowMode = $state<'compact' | 'vary'>('compact');
+  // 'vary' returns a per-row height (varies by index) to exercise variable-height
+  // virtualization; 'compact' uses the uniform 36px default.
+  const rowHeight = $derived<number | ((row: GridRow, i: number) => number) | undefined>(
+    rowMode === 'vary' ? (_row: GridRow, i: number) => 40 + (i % 4) * 12 : undefined,
+  );
+
   let pinMode = $state(false);
   // Pinning Symbol + Price; the grid is width-constrained below so the other
   // columns overflow and you can see the pinned columns stay put while scrolling.
@@ -93,6 +100,10 @@
       <button class:on={dataMode === 'client'} onclick={() => (dataMode = 'client')}>Client</button>
       <button class:on={dataMode === 'server'} onclick={() => (dataMode = 'server')}>Server</button>
     </div>
+    <div class="seg" role="group" aria-label="Row height">
+      <button class:on={rowMode === 'compact'} onclick={() => (rowMode = 'compact')}>Compact</button>
+      <button class:on={rowMode === 'vary'} onclick={() => (rowMode = 'vary')}>Vary</button>
+    </div>
     <div class="seg" role="group" aria-label="Group rows by">
       <button class:on={groupMode === 'none'} onclick={() => (groupMode = 'none')}>Flat</button>
       <button class:on={groupMode === 'sector'} onclick={() => (groupMode = 'sector')}>Sector</button>
@@ -130,6 +141,7 @@
       filter={filterText}
       groupBy={dataMode === 'server' ? [] : groupBy}
       {source}
+      {rowHeight}
       persistKey="demo"
       height={640}
       onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}

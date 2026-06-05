@@ -80,6 +80,19 @@ await wait(40);
 const editedText = document.querySelectorAll('.row')[0].querySelectorAll('.c')[TARGET_COL].textContent.trim();
 if (editedText !== '999.99') fail(`inline edit did not commit (cell shows "${editedText}")`);
 
+// Variable row height (Phase 5): switch to 'Vary' and assert rendered rows have
+// differing heights, then restore 'Compact' for the remaining assertions.
+const varyBtn = [...document.querySelectorAll('.seg button')].find((b) => b.textContent.trim() === 'Vary');
+if (!varyBtn) fail('row-height control not found in demo');
+click(varyBtn);
+await wait(40);
+const rowHeights = [...document.querySelectorAll('.row')].slice(0, 6).map((r) =>
+  parseInt(r.style.height, 10),
+);
+if (new Set(rowHeights).size < 2) fail(`variable row heights did not apply (${rowHeights.join(',')})`);
+click([...document.querySelectorAll('.seg button')].find((b) => b.textContent.trim() === 'Compact'));
+await wait(40);
+
 // Simulate a drag-selection down the Price column and assert the highlight +
 // live aggregation bar appear (Phase 2). Catches selection wiring regressions.
 const rowEls = document.querySelectorAll('.row');
@@ -148,7 +161,8 @@ if (stickyHeaders === 0) fail('pinning did not produce sticky columns');
 console.log(
   `✓ smoke: grid mounted — ${rowCount} rows, ${canvases} sparklines; ` +
     `selection ${selCount} cells + agg bar; grouping ${groupHeaders} headers, ` +
-    `edit committed; collapse ${heightBefore}→${heightAfter}px; ` +
-    `server loaded ${dataRows} rows; ${stickyHeaders} pinned columns`,
+    `edit committed; variable heights ${rowHeights.join('/')}; ` +
+    `collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
+    `${stickyHeaders} pinned columns`,
 );
 process.exit(0);

@@ -3,6 +3,7 @@
   import type { ColumnDef, GridRow, SortState, CellEditEvent } from './column';
   import { colStyle, isNumeric, isSortable, isEditable, compareRows, formatCell } from './column';
   import { arrangePinned } from './pin';
+  import { uniformHeights, variableHeights } from './rowheight';
   import { Selection } from './selection.svelte';
   import { aggregate, type AggKind, type AggResult } from './aggregate';
   import { buildFlatRows, activeGroupsAt, type VisualRow, type GroupNode } from './grouping';
@@ -23,10 +24,14 @@
     persistKey,
     source,
     onCellEdit,
+    rowHeight,
   }: {
     rows: GridRow[];
     columns: ColumnDef[];
     height: number;
+    /** Row height in px (uniform), or a function for variable heights
+        (in-memory mode only). Default 36. */
+    rowHeight?: number | ((row: GridRow, index: number) => number);
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -178,14 +183,31 @@
   const maxR = $derived(rowCount - 1);
   const maxC = $derived(cols.length - 1);
 
-  const total = $derived(rowCount * ROW_H);
+  // Row-height model. Uniform (O(1)) by default; a function rowHeight switches to
+  // a prefix-sum model (in-memory only — source mode can't know unloaded heights).
+  const baseH = $derived(typeof rowHeight === 'number' && rowHeight > 0 ? rowHeight : ROW_H);
+  const variable = $derived(typeof rowHeight === 'function' && !source);
+  const heights = $derived.by<number[] | null>(() => {
+    if (!variable) return null;
+    const fn = rowHeight as (row: GridRow, index: number) => number;
+    const arr = new Array<number>(flat.length);
+    let di = 0;
+    for (let i = 0; i < flat.length; i++) {
+      const it = flat[i];
+      arr[i] = it.kind === 'data' ? Math.max(1, fn(it.row, di++)) : baseH;
+    }
+    return arr;
+  });
+  const hm = $derived(variable && heights ? variableHeights(heights) : uniformHeights(rowCount, baseH));
+
+  const total = $derived(hm.total);
   const rowWidthStyle = $derived(pinned ? `width:${layout.totalWidth}px;right:auto;` : '');
-  const start = $derived(Math.max(0, Math.floor(scrollTop / ROW_H) - OVERSCAN));
-  const visibleCount = $derived(Math.ceil(height / ROW_H) + OVERSCAN * 2);
+  const visibleCount = $derived(Math.ceil(height / baseH) + OVERSCAN * 2);
+  const start = $derived(Math.max(0, hm.indexAt(scrollTop) - OVERSCAN));
   const renderEnd = $derived(
     source
       ? (controller && controller.total > 0 ? Math.min(start + visibleCount, controller.total) : start + visibleCount)
-      : Math.min(flat.length, start + visibleCount),
+      : Math.min(flat.length, hm.indexAt(scrollTop + height) + OVERSCAN + 1),
   );
 
   type RenderItem =
@@ -213,7 +235,7 @@
   });
 
   const stickyGroups = $derived(
-    !source && groupBy.length > 0 ? activeGroupsAt(flat, Math.floor(scrollTop / ROW_H)) : [],
+    !source && groupBy.length > 0 ? activeGroupsAt(flat, hm.indexAt(scrollTop)) : [],
   );
 
   // Fetch the visible window whenever it, the sort, or the filter changes.
@@ -279,9 +301,10 @@
   function scrollFocusIntoView() {
     const f = sel.focus;
     if (!f || !viewportEl) return;
-    const top = f.r * ROW_H;
+    const top = hm.offsetOf(f.r);
+    const h = hm.heightOf(f.r);
     if (top < viewportEl.scrollTop) viewportEl.scrollTop = top;
-    else if (top + ROW_H > viewportEl.scrollTop + height) viewportEl.scrollTop = top + ROW_H - height;
+    else if (top + h > viewportEl.scrollTop + height) viewportEl.scrollTop = top + h - height;
   }
 
   async function copySelection() {
@@ -422,7 +445,7 @@
     {#if stickyGroups.length > 0}
       <div class="sticky">
         {#each stickyGroups as g (g.depth)}
-          <div class="sticky-row" style="height:{ROW_H}px">
+          <div class="sticky-row" style="height:{baseH}px">
             <GroupRow group={g} columns={cols} onToggle={toggleGroup} />
           </div>
         {/each}
@@ -431,17 +454,17 @@
     <div class="spacer" style="height:{total}px;{pinned ? `width:${layout.totalWidth}px;` : ''}">
       {#each renderItems as item (item.vr)}
         {#if item.kind === 'group'}
-          <div class="grouprow" style="top:{item.vr * ROW_H}px;height:{ROW_H}px;{rowWidthStyle}">
+          <div class="grouprow" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
             <GroupRow group={item.group} columns={cols} onToggle={toggleGroup} />
           </div>
         {:else if item.kind === 'skeleton'}
-          <div class="row skeleton" style="top:{item.vr * ROW_H}px;height:{ROW_H}px;{rowWidthStyle}">
+          <div class="row skeleton" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
             {#each cols as col, ci (ci)}
               <span class="c" style={cellWidthStyle(ci)}><span class="skelbar"></span></span>
             {/each}
           </div>
         {:else}
-          <div class="row" class:alt={item.vr % 2 === 1} role="row" style="top:{item.vr * ROW_H}px;height:{ROW_H}px;{rowWidthStyle}">
+          <div class="row" class:alt={item.vr % 2 === 1} role="row" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
             {#each cols as col, ci (ci)}
               <Cell
                 {col}

@@ -13,7 +13,7 @@ A free alternative to the heavyweight grids that paywall these features.
 > `RowSource` for huge datasets, CSV/Excel export, drag-to-reorder columns,
 > pinned columns, inline cell editing, sparklines, realtime flash, heatmaps. Unit
 > tests (Vitest), type-check, a headless mount smoke-test, and library + demo
-> bundle-size budgets all run in CI. Variable row height and pivot tables are not
+> bundle-size budgets all run in CI. Pivot tables and theming presets are not
 > built yet — see the roadmap.
 
 ## Why
@@ -78,6 +78,19 @@ keep frames smooth.
 `text` · `price` · `percent` · `volume` · `number` · `date` · `heatmap` · `sparkline`
 
 Sizing: `width` (px) or `flex` (grow weight). See `ColumnDef` for per-type options.
+
+## Row height
+
+Uniform 36px by default. Pass `rowHeight` as a number for a different density, or
+a function for variable per-row heights (in-memory mode):
+
+```svelte
+<Grid {rows} {columns} rowHeight={48} height={640} />
+<Grid {rows} {columns} rowHeight={(row, i) => (row.expanded ? 96 : 36)} height={640} />
+```
+
+Variable heights use a prefix-sum + binary-search virtualizer, so scrolling stays
+O(log n). Source mode is uniform-only (unloaded row heights aren't known).
 
 ## Sort & filter
 
@@ -253,7 +266,7 @@ pnpm package   # build the publishable library into dist/
 
 ## Roadmap
 
-Variable row height → pivot tables → theming presets → WCAG 2.1 AA audit.
+Theming presets (named light/dark themes) → pivot tables → WCAG 2.1 AA audit.
 Contributions welcome.
 
 ## License

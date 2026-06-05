@@ -34,6 +34,8 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   scroll (opt-in; the grid is fit-to-width otherwise).
 - **Inline editing**: `editable: true` columns edit on double-click / Enter and
   report committed values via `onCellEdit`.
+- **Row height**: `rowHeight` as a number (density) or a function (variable
+  per-row heights, virtualized with prefix sums + binary search).
 - **Theming**: dark-first, self-contained CSS variables (`--bo-grid-*`), no CSS
   import required.
 
