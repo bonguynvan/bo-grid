@@ -47,11 +47,12 @@ describe('isNumeric', () => {
 });
 
 describe('isEditable', () => {
-  it('requires editable and excludes sparkline/date/custom', () => {
+  it('requires editable and excludes sparkline/custom (date is editable since 0.5)', () => {
     expect(isEditable({ type: 'number', key: 'n', header: 'N', editable: true })).toBe(true);
     expect(isEditable({ type: 'number', key: 'n', header: 'N' })).toBe(false); // not flagged
-    expect(isEditable({ type: 'date', key: 'd', header: 'D', editable: true })).toBe(false);
+    expect(isEditable({ type: 'date', key: 'd', header: 'D', editable: true })).toBe(true);
     expect(isEditable({ type: 'custom', key: 'x', header: 'X', editable: true })).toBe(false);
+    expect(isEditable({ type: 'sparkline', key: 's', header: 'S', sparkKey: 'k', editable: true })).toBe(false);
   });
 });
 
