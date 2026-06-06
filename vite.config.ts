@@ -10,6 +10,13 @@ export default defineConfig({
   build: {
     outDir: 'demo-dist',
     emptyOutDir: true,
+    // The gallery code-splits its examples into lazy chunks. Two settings keep
+    // that working under the jsdom smoke (which loads the bundle from a file://
+    // origin where Vite's preload helper can't fetch): merge all CSS into one
+    // entry stylesheet (no per-chunk CSS to load), and disable module-preload so
+    // dynamic imports are plain import() calls with no preload/fetch helper.
+    cssCodeSplit: false,
+    modulePreload: false,
     // Multi-page: the demo (index.html) + the static API reference (api.html).
     rollupOptions: { input: { index: 'index.html', api: 'api.html' } },
   },

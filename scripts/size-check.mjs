@@ -24,9 +24,10 @@ function gzipKb(path) {
 let js = 0;
 let css = 0;
 for (const f of readdirSync(DIR)) {
-  if (!f.startsWith('index-')) continue; // entry chunk only; skip lazy chunks
-  if (f.endsWith('.js')) js += gzipKb(`${DIR}/${f}`);
-  else if (f.endsWith('.css')) css += gzipKb(`${DIR}/${f}`);
+  // Entry JS is `index-*`; lazy example chunks are excluded (loaded on demand).
+  if (f.startsWith('index-') && f.endsWith('.js')) js += gzipKb(`${DIR}/${f}`);
+  // CSS is merged into one `style-*` file (cssCodeSplit: false); count it.
+  else if ((f.startsWith('style-') || f.startsWith('index-')) && f.endsWith('.css')) css += gzipKb(`${DIR}/${f}`);
 }
 
 const rows = [

@@ -1,19 +1,21 @@
 import type { Component } from 'svelte';
 import TradingDesk from './TradingDesk.svelte';
-import Portfolio from './Portfolio.svelte';
-import Sheet from './Sheet.svelte';
-import OrderBook from './OrderBook.svelte';
-import Correlation from './Correlation.svelte';
-import BigData from './BigData.svelte';
 
 export interface Example {
   id: string;
   title: string;
   /** Shown next to the logo when the example is active. */
   blurb: string;
-  component: Component;
+  /** Eagerly bundled component (the default tab). */
+  component?: Component;
+  /** Lazy chunk, imported on first activation — keeps the entry bundle lean so
+      the gallery can grow without inflating the core demo download. */
+  load?: () => Promise<{ default: Component }>;
 }
 
+// Only the default example ships in the entry chunk; the rest are code-split and
+// fetched on demand. CSS is merged into one file (build.cssCodeSplit: false) so
+// the lazy JS chunks have no stylesheet to preload.
 export const EXAMPLES: Example[] = [
   {
     id: 'trading',
@@ -25,30 +27,30 @@ export const EXAMPLES: Example[] = [
     id: 'portfolio',
     title: 'Portfolio',
     blurb: 'Positions grouped by sector with live subtotals, P&L heatmap & pivot.',
-    component: Portfolio,
+    load: () => import('./Portfolio.svelte'),
   },
   {
     id: 'sheet',
     title: 'Spreadsheet',
     blurb: 'A general-purpose editable grid — inline edit, copy/paste, resize.',
-    component: Sheet,
+    load: () => import('./Sheet.svelte'),
   },
   {
     id: 'orderbook',
     title: 'Order book',
     blurb: 'A live depth ladder — per-row colour, depth bars, realtime size flashes.',
-    component: OrderBook,
+    load: () => import('./OrderBook.svelte'),
   },
   {
     id: 'correlation',
     title: 'Correlation',
     blurb: 'An N×N heatmap matrix with a pinned label column and dynamic columns.',
-    component: Correlation,
+    load: () => import('./Correlation.svelte'),
   },
   {
     id: 'bigdata',
     title: '1M rows',
     blurb: 'A million-row trade tape, windowed from a synthetic source on demand.',
-    component: BigData,
+    load: () => import('./BigData.svelte'),
   },
 ];

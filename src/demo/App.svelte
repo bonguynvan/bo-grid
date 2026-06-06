@@ -3,7 +3,7 @@
 
   let activeId = $state(EXAMPLES[0].id);
   const active = $derived(EXAMPLES.find((e) => e.id === activeId) ?? EXAMPLES[0]);
-  const ActiveComponent = $derived(active.component);
+  const Eager = $derived(active.component);
 </script>
 
 <header class="bar">
@@ -30,7 +30,16 @@
 
 <main>
   {#key activeId}
-    <ActiveComponent />
+    {#if Eager}
+      <Eager />
+    {:else if active.load}
+      {#await active.load()}
+        <p class="loading">Loading example…</p>
+      {:then mod}
+        {@const Lazy = mod.default}
+        <Lazy />
+      {/await}
+    {/if}
   {/key}
 </main>
 
@@ -105,5 +114,11 @@
     flex: 1;
     padding: 18px;
     overflow: auto;
+  }
+  .loading {
+    margin: 40px 4px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-dim);
   }
 </style>
