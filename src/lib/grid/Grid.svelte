@@ -185,9 +185,13 @@
   const sel = new Selection();
   let dragging = $state(false);
   let editing = $state<{ r: number; c: number } | null>(null);
+  // When editing was opened by typing a character (type-to-edit), the editor
+  // seeds its input with it; null means edit the existing value (dblclick/Enter).
+  let editSeed = $state<string | null>(null);
 
-  function startEdit(r: number, c: number) {
+  function startEdit(r: number, c: number, seed: string | null = null) {
     if (!isEditable(cols[c]) || !dataAt(r)) return;
+    editSeed = seed;
     editing = { r, c };
   }
   // Coerce + validate a raw string for cell (r,c) and emit onCellEdit.
@@ -211,6 +215,7 @@
 
   function commitEdit(r: number, c: number, raw: string) {
     editing = null;
+    editSeed = null;
     writeCell(r, c, raw);
   }
 
@@ -896,6 +901,18 @@
         return;
       }
     }
+    // Type-to-edit (Excel-style): a printable key on a focused editable text/number
+    // cell opens the editor seeded with that character. Select-column editors keep
+    // their Enter-to-open behavior.
+    if (!mod && !e.altKey && e.key.length === 1 && e.key !== ' ' && sel.focus && !editing) {
+      const f = sel.focus;
+      const col = cols[f.c];
+      if (isEditable(col) && !(col.options && col.options.length) && dataAt(f.r)) {
+        e.preventDefault();
+        startEdit(f.r, f.c, e.key);
+        return;
+      }
+    }
     if (mod && e.key.toLowerCase() === 'a') {
       e.preventDefault();
       sel.selectAll(rowCount, cols.length);
@@ -1231,6 +1248,7 @@
                 width={pinned ? layout.info[ci].width : undefined}
                 alt={item.vr % 2 === 1}
                 editing={editing?.r === item.vr && editing?.c === ci}
+                seed={editing?.r === item.vr && editing?.c === ci ? editSeed : null}
                 tree={treeData && ci === 0
                   ? {
                       depth: item.depth ?? 0,
@@ -1247,7 +1265,10 @@
                 onCellClick={onCellClick ? onCellClicked : undefined}
                 onCellDblClick={startEdit}
                 onEditCommit={(raw) => commitEdit(item.vr, ci, raw)}
-                onEditCancel={() => (editing = null)}
+                onEditCancel={() => {
+                  editing = null;
+                  editSeed = null;
+                }}
               />
             {/each}
           </div>

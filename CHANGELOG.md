@@ -37,7 +37,8 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   during horizontal scroll, pinned to either edge (opt-in; fit-to-width
   otherwise).
 - **Inline editing**: `editable: true` columns edit on double-click / Enter and
-  report committed values via `onCellEdit`.
+  report committed values via `onCellEdit`. Type-to-edit (Excel-style): pressing a
+  printable key on a focused editable cell opens the editor seeded with it.
 - **Clipboard paste**: **Ctrl/⌘+V** pastes a TSV block into editable cells from
   the selection's top-left (single value fills the selection; blocks clamp to
   bounds); values run through the same validation as inline editing.

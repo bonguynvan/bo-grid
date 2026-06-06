@@ -392,8 +392,10 @@ is keyboard-accessible: the <kbd>ContextMenu</kbd> key (or
 
 Mark a column `editable: true`. Double-click a cell (or press <kbd>Enter</kbd> on
 the focused cell) to edit; <kbd>Enter</kbd>/blur commits, <kbd>Esc</kbd> cancels.
-The grid is controlled, so it reports the change via `onCellEdit` — update your
-own row data there:
+Or just start typing — a printable key on a focused editable cell opens the
+editor seeded with that character (Excel-style type-to-edit). The grid is
+controlled, so it reports the change via `onCellEdit` — update your own row data
+there:
 
 ```svelte
 <Grid

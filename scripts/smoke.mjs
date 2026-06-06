@@ -147,6 +147,26 @@ await wait(60);
 const pastedText = document.querySelectorAll('.row')[1].querySelectorAll('.c')[TARGET_COL].textContent.trim();
 if (pastedText !== '123.45') fail(`clipboard paste did not commit (cell shows "${pastedText}")`);
 
+// Type-to-edit (Excel-style): focus an editable cell, press a printable key, and
+// the editor opens seeded with that character — no double-click needed.
+document.querySelectorAll('.row')[3].querySelectorAll('.c')[TARGET_COL].dispatchEvent(
+  new window.MouseEvent('pointerdown', { button: 0, bubbles: true }),
+);
+window.dispatchEvent(new window.Event('pointerup'));
+await wait(20);
+document.querySelector('.bo-grid.grid').dispatchEvent(
+  new window.KeyboardEvent('keydown', { key: '8', bubbles: true }),
+);
+await wait(40);
+const t2eInput = document.querySelector('input.bo-edit');
+if (!t2eInput) fail('type-to-edit did not open an editor on a printable key');
+if (t2eInput.value !== '8') fail(`type-to-edit did not seed the editor (got "${t2eInput.value}")`);
+t2eInput.value = '42.50';
+t2eInput.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+await wait(40);
+const t2eText = document.querySelectorAll('.row')[3].querySelectorAll('.c')[TARGET_COL].textContent.trim();
+if (t2eText !== '42.50') fail(`type-to-edit did not commit (cell shows "${t2eText}")`);
+
 // Column resize (Phase 5): drag the Price header's grip and assert the header
 // switches to an explicit pixel width. jsdom reports a 0px rect, so the dragged
 // delta becomes the new width directly.

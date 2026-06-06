@@ -18,6 +18,7 @@
     width,
     alt = false,
     editing = false,
+    seed = null,
     colIndex,
     cellId,
     cellSnippet,
@@ -43,6 +44,9 @@
     width?: number;
     alt?: boolean;
     editing?: boolean;
+    /** Type-to-edit seed: when set, the editor opens pre-filled with this string
+        (the character that triggered the edit) instead of the current value. */
+    seed?: string | null;
     colIndex?: number;
     cellId?: string;
     cellSnippet?: Snippet<[{ row: GridRow; column: ColumnDef; value: unknown }]>;
@@ -61,7 +65,10 @@
   let cancelled = false;
   function focusSelect(node: HTMLInputElement) {
     node.focus();
-    node.select();
+    // Type-to-edit: keep the seeded character and put the caret after it;
+    // otherwise select the whole value so the next keystroke replaces it.
+    if (seed != null) node.setSelectionRange(node.value.length, node.value.length);
+    else node.select();
   }
   function focusEl(node: HTMLElement) {
     node.focus();
@@ -184,7 +191,7 @@
   {:else if editing}
     <input
       class="bo-edit"
-      value={String(value ?? '')}
+      value={seed ?? String(value ?? '')}
       use:focusSelect
       onkeydown={onEditKey}
       onblur={onEditBlur}
