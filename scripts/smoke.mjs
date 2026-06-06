@@ -551,6 +551,18 @@ treeToggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 await wait(30);
 const treeAfter = document.querySelectorAll('.bo-grid .row').length;
 if (!(treeAfter > treeRootsCount)) fail(`expanding a tree node did not reveal children (${treeRootsCount} → ${treeAfter})`);
+// Treegrid a11y: the expanded node carries aria-expanded; ArrowLeft collapses it.
+if (document.querySelector('.bo-grid .row[aria-expanded="true"]') == null) fail('expanded tree row missing aria-expanded');
+const treeGridK = document.querySelector('.bo-grid.grid');
+document.querySelectorAll('.bo-grid .row')[0].querySelector('.c').dispatchEvent(
+  new window.MouseEvent('pointerdown', { button: 0, bubbles: true }),
+);
+window.dispatchEvent(new window.Event('pointerup'));
+treeGridK.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+await wait(30);
+if (document.querySelectorAll('.bo-grid .row').length !== treeRootsCount) {
+  fail('ArrowLeft did not collapse the focused tree node');
+}
 
 // Row reorder: drag the first row's handle and drop it onto a later row.
 const tasksTab = tab('Tasks');
@@ -595,7 +607,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, tree ${treeRootsCount}→${treeAfter} on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

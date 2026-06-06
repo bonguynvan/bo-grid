@@ -905,6 +905,25 @@
       sel.clear();
       return;
     }
+    // Tree nav: ArrowRight expands a collapsed node, ArrowLeft collapses an
+    // expanded one (treegrid pattern); otherwise arrows move normally.
+    if (treeData && sel.focus && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+      const item = flat[sel.focus.r];
+      if (item?.kind === 'data' && item.hasChildren) {
+        const id = getRowId(item.row);
+        const open = expandedRows.has(id);
+        if (e.key === 'ArrowRight' && !open) {
+          e.preventDefault();
+          toggleExpand(id);
+          return;
+        }
+        if (e.key === 'ArrowLeft' && open) {
+          e.preventDefault();
+          toggleExpand(id);
+          return;
+        }
+      }
+    }
     // Home/End (row, or whole grid with Ctrl/⌘); PageUp/PageDown by a viewport page.
     const f = sel.focus;
     if (f && (e.key === 'Home' || e.key === 'End' || e.key === 'PageUp' || e.key === 'PageDown')) {
@@ -1143,7 +1162,7 @@
         {:else}
           <!-- Row activation is keyboard-accessible at the grid level: Enter on the focused cell fires onRowClick (focus is via aria-activedescendant). -->
           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:clickable={!!onRowClick} class:droptarget={reorderable && dropRowVr === item.vr && dragRowVr !== item.vr} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{expandable ? baseH : hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)} oncontextmenu={(e) => openRowMenu(item.row, e)} ondragover={reorderable ? (e) => { if (dragRowVr < 0) return; e.preventDefault(); dropRowVr = item.vr; } : undefined} ondrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(); } : undefined}>
+          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:clickable={!!onRowClick} class:droptarget={reorderable && dropRowVr === item.vr && dragRowVr !== item.vr} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : undefined} aria-level={treeData ? (item.depth ?? 0) + 1 : undefined} aria-expanded={treeData && item.hasChildren ? isExpanded(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{expandable ? baseH : hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)} oncontextmenu={(e) => openRowMenu(item.row, e)} ondragover={reorderable ? (e) => { if (dragRowVr < 0) return; e.preventDefault(); dropRowVr = item.vr; } : undefined} ondrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(); } : undefined}>
             {#if expandable}
               <span class="expandcell" style={expandCellStyle(false)}>
                 <button

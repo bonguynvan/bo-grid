@@ -94,7 +94,8 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Master-detail**: a `detail` snippet renders an expandable panel under each
   row (leading expand toggle, `detailHeight`); virtualized with the height model.
 - **Tree data**: `getChildren` renders hierarchical rows — `rows` become roots,
-  with an indented first column and per-node expand chevrons.
+  with an indented first column and per-node expand chevrons. Keyboard-accessible
+  (→ expand, ← collapse) with `aria-level` / `aria-expanded` treegrid semantics.
 - **Row reorder**: `onRowReorder(from, to)` enables drag-to-reorder via a
   first-column handle (flat, unsorted, in-memory lists).
 - **Per-column class hooks**: `cellClass` (static or `(value, row)` conditional)

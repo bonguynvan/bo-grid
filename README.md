@@ -335,7 +335,8 @@ node gets an indented first column with an expand chevron when it has children:
 ```
 
 In tree mode the grid renders the tree directly (filter/sort/group/paginate are
-not applied to it).
+not applied to it). Nodes are keyboard-accessible: **→** expands a collapsed node,
+**←** collapses an expanded one, and rows expose `aria-level` / `aria-expanded`.
 
 ## Master-detail
 
