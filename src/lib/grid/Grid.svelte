@@ -40,6 +40,7 @@
     onRowSelectionChange,
     hiddenColumns = [],
     rowClass,
+    getRowId = (r: GridRow) => r.id,
     onRowClick,
     sort,
     onSortChange,
@@ -62,13 +63,16 @@
         stable across sort/filter). Default false. */
     rowSelection?: boolean;
     /** Called with the selected row ids whenever the row-selection set changes. */
-    onRowSelectionChange?: (selectedIds: number[]) => void;
+    onRowSelectionChange?: (selectedIds: Array<string | number>) => void;
     /** Column keys to hide (controlled). Build your own column-picker UI and
         drive this prop — the grid stays presentation-only. */
     hiddenColumns?: string[];
     /** Return extra CSS class(es) for a data row (e.g. to colour by value).
         Style them via `:global(.your-class)` since rows live inside the grid. */
     rowClass?: (row: GridRow) => string | undefined;
+    /** Identity key for row selection. Defaults to `row.id`; override for
+        string/UUID/composite keys. */
+    getRowId?: (row: GridRow) => string | number;
     /** Called when a data row is activated by click or Enter (open a detail
         view, navigate, …). Edit-input and checkbox clicks are excluded. */
     onRowClick?: (row: GridRow, event: MouseEvent | KeyboardEvent) => void;
@@ -163,15 +167,15 @@
   // Whole-row selection (opt-in), keyed by row id so it survives sort/filter.
   // Plain Set + a version counter for reactivity (same pattern as `collapsed`).
   const SEL_W = 40; // checkbox column width (px)
-  const selectedRows = new Set<number>();
+  const selectedRows = new Set<string | number>();
   let selRowsVersion = $state(0);
   const selOffset = $derived(rowSelection ? 1 : 0);
 
-  function isRowSelected(id: number): boolean {
+  function isRowSelected(id: string | number): boolean {
     selRowsVersion; // track
     return selectedRows.has(id);
   }
-  function toggleRow(id: number): void {
+  function toggleRow(id: string | number): void {
     if (selectedRows.has(id)) selectedRows.delete(id);
     else selectedRows.add(id);
     selRowsVersion++;
@@ -400,7 +404,7 @@
     if (source) return { checked: false, indeterminate: false };
     const v = view;
     let n = 0;
-    for (const r of v) if (selectedRows.has(r.id)) n++;
+    for (const r of v) if (selectedRows.has(getRowId(r))) n++;
     return { checked: n > 0 && n === v.length, indeterminate: n > 0 && n < v.length };
   });
 
@@ -408,8 +412,8 @@
     if (source) return;
     const clearing = selectAll.checked;
     for (const r of view) {
-      if (clearing) selectedRows.delete(r.id);
-      else selectedRows.add(r.id);
+      if (clearing) selectedRows.delete(getRowId(r));
+      else selectedRows.add(getRowId(r));
     }
     selRowsVersion++;
     onRowSelectionChange?.([...selectedRows]);
@@ -836,17 +840,17 @@
         {:else}
           <!-- Row activation is keyboard-accessible at the grid level: Enter on the focused cell fires onRowClick (focus is via aria-activedescendant). -->
           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(item.row.id)} class:clickable={!!onRowClick} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(item.row.id) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)}>
+          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:clickable={!!onRowClick} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)}>
             {#if rowSelection}
               <span class="selcell" style={selCellStyle(false)}>
                 <input
                   type="checkbox"
                   class="rowcheck"
-                  checked={isRowSelected(item.row.id)}
+                  checked={isRowSelected(getRowId(item.row))}
                   aria-label="Select row"
                   onpointerdown={(e) => e.stopPropagation()}
                   onclick={(e) => e.stopPropagation()}
-                  onchange={() => toggleRow(item.row.id)}
+                  onchange={() => toggleRow(getRowId(item.row))}
                 />
               </span>
             {/if}

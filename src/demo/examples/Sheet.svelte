@@ -134,6 +134,7 @@
     persistKey="demo-sheet"
     height={620}
     rowSelection
+    getRowId={(r) => `emp-${r.id}`}
     onRowSelectionChange={(ids) => (selectedCount = ids.length)}
     onCellClick={({ column, value }) => (lastCell = `${column.header} = ${value}`)}
     onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}

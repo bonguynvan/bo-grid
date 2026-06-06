@@ -180,6 +180,9 @@ selection above). The header checkbox selects/clears all matching rows.
 In server (`source`) mode the per-row checkboxes work on loaded rows; the
 select-all header checkbox is disabled (unloaded ids can't be enumerated).
 
+Selection keys off `row.id` by default; pass `getRowId` for string/UUID/composite
+keys (`getRowId={(r) => r.uuid}`).
+
 ## Grouping
 
 Pass `groupBy` (column keys) to group rows — single or nested. Groups are
