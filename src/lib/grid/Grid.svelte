@@ -55,6 +55,7 @@
     detail,
     detailHeight = 160,
     getChildren,
+    onRowReorder,
     pageSize = 0,
     page,
     onPageChange,
@@ -128,6 +129,10 @@
         `rows` are the roots; the grid renders an indented, expandable tree.
         In-memory mode; filter/sort/group/paginate are not applied to the tree. */
     getChildren?: (row: GridRow) => GridRow[] | undefined;
+    /** Enable drag-to-reorder rows via a handle in the first column. Called with
+        the from/to indices (into the visible rows) on drop — reorder your own
+        `rows` in here. Flat, unsorted, in-memory lists only. */
+    onRowReorder?: (fromIndex: number, toIndex: number) => void;
     /** Rows per page. When > 0 (in-memory mode), shows a pager instead of one
         long scroll; rows still virtualize within a page. Default 0 (off). */
     pageSize?: number;
@@ -529,6 +534,21 @@
   );
 
   const treeData = $derived(!!getChildren && !source);
+
+  // Drag-to-reorder rows (flat, unsorted, in-memory only). The handle lives in
+  // the first cell; the dragged/drop indices are tracked in component state.
+  const reorderable = $derived(
+    !!onRowReorder && !source && !treeData && groupBy.length === 0 && pageSize <= 0,
+  );
+  let dragRowVr = $state(-1);
+  let dropRowVr = $state(-1);
+  function onRowDrop() {
+    if (dragRowVr >= 0 && dropRowVr >= 0 && dragRowVr !== dropRowVr) {
+      onRowReorder?.(dragRowVr, dropRowVr);
+    }
+    dragRowVr = -1;
+    dropRowVr = -1;
+  }
 
   const flat = $derived.by<VisualRow[]>(() => {
     if (treeData && getChildren) {
@@ -1117,7 +1137,7 @@
         {:else}
           <!-- Row activation is keyboard-accessible at the grid level: Enter on the focused cell fires onRowClick (focus is via aria-activedescendant). -->
           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:clickable={!!onRowClick} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{expandable ? baseH : hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)} oncontextmenu={(e) => openRowMenu(item.row, e)}>
+          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:clickable={!!onRowClick} class:droptarget={reorderable && dropRowVr === item.vr && dragRowVr !== item.vr} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{expandable ? baseH : hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)} oncontextmenu={(e) => openRowMenu(item.row, e)} ondragover={reorderable ? (e) => { if (dragRowVr < 0) return; e.preventDefault(); dropRowVr = item.vr; } : undefined} ondrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(); } : undefined}>
             {#if expandable}
               <span class="expandcell" style={expandCellStyle(false)}>
                 <button
@@ -1172,6 +1192,9 @@
                       expanded: isExpanded(getRowId(item.row)),
                       onToggle: () => toggleExpand(getRowId(item.row)),
                     }
+                  : undefined}
+                dragHandle={reorderable && ci === 0
+                  ? { onStart: () => (dragRowVr = item.vr), onEnd: () => (dragRowVr = -1) }
                   : undefined}
                 {onCellDown}
                 {onCellEnter}
@@ -1505,6 +1528,9 @@
   }
   .row.clickable {
     cursor: pointer;
+  }
+  .row.droptarget {
+    box-shadow: inset 0 2px 0 var(--bo-sel-border);
   }
 
   /* Pinned top rows: stick to the top of the viewport above the scroll. */

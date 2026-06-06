@@ -549,6 +549,22 @@ await wait(30);
 const treeAfter = document.querySelectorAll('.bo-grid .row').length;
 if (!(treeAfter > treeRootsCount)) fail(`expanding a tree node did not reveal children (${treeRootsCount} → ${treeAfter})`);
 
+// Row reorder: drag the first row's handle and drop it onto a later row.
+const tasksTab = tab('Tasks');
+if (!tasksTab) fail('Tasks example tab not found');
+click(tasksTab);
+await wait(50);
+await waitFor('.bo-grid .row .drag-handle', 'Tasks drag handle did not render');
+const taskFirstBefore = document.querySelector('.bo-grid .row .c').textContent.trim();
+const taskRows = document.querySelectorAll('.bo-grid .row');
+taskRows[0].querySelector('.drag-handle').dispatchEvent(new window.Event('dragstart', { bubbles: true }));
+await wait(10);
+taskRows[2].dispatchEvent(new window.Event('dragover', { bubbles: true, cancelable: true }));
+taskRows[2].dispatchEvent(new window.Event('drop', { bubbles: true }));
+await wait(30);
+const taskFirstAfter = document.querySelector('.bo-grid .row .c').textContent.trim();
+if (taskFirstAfter === taskFirstBefore) fail(`row reorder did not change the order (still "${taskFirstAfter}")`);
+
 // Big data: a 1,000,000-row windowed source. Assert real (non-skeleton) rows
 // load after the simulated latency and the scrollbar reflects the full total.
 const bigTab = tab('1M rows');
@@ -576,7 +592,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, tree ${treeRootsCount}→${treeAfter} on expand, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, tree ${treeRootsCount}→${treeAfter} on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

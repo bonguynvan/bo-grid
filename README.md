@@ -7,12 +7,12 @@ A free alternative to the heavyweight grids that paywall these features.
 **[Live demo](https://bonguynvan.github.io/bo-grid/)** ·
 **[API reference](https://bonguynvan.github.io/bo-grid/api.html)**
 
-The demo is a small gallery of eight grid types — a realtime **Trading desk**, a
+The demo is a small gallery of nine grid types — a realtime **Trading desk**, a
 grouped **Portfolio** with subtotals and pivot, a general-purpose editable
 **Spreadsheet**, a live **Order book** depth ladder, a **Correlation** heatmap
 matrix, a **Leaderboard** with rank medals and score bars, a **Tree** file
-explorer, and a **1M-row** trade tape windowed from a synthetic source — switch
-between them with the tabs.
+explorer, a drag-to-reorder **Tasks** list, and a **1M-row** trade tape windowed
+from a synthetic source — switch between them with the tabs.
 
 > **Status: v0.1 (early).** Working: config-driven columns, virtual scroll,
 > client sort + filter, multi-cell selection + live range aggregation, row
@@ -279,8 +279,10 @@ client-only, so it's not applied in source mode.
 
 ## Column reorder
 
-Drag any column header to reorder columns. Pass `persistKey` to remember the
-user's order across reloads (saved to `localStorage`):
+Pass `onRowReorder(from, to)` to enable **drag-to-reorder rows** via a handle in
+the first column — reorder your own `rows` array in the callback (flat, unsorted,
+in-memory lists). Drag any column header to reorder columns; pass `persistKey` to
+remember the user's order across reloads (saved to `localStorage`):
 
 ```svelte
 <Grid {rows} {columns} persistKey="watchlist" height={640} />

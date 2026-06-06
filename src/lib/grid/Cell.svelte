@@ -22,6 +22,7 @@
     cellId,
     cellSnippet,
     tree,
+    dragHandle,
     onCellDown,
     onCellEnter,
     onCellClick,
@@ -47,6 +48,8 @@
     cellSnippet?: Snippet<[{ row: GridRow; column: ColumnDef; value: unknown }]>;
     /** Tree-data gutter for the first column: indent + expand chevron. */
     tree?: { depth: number; hasChildren: boolean; expanded: boolean; onToggle: () => void };
+    /** Drag-to-reorder handle for the first column (HTML5 draggable grip). */
+    dragHandle?: { onStart: () => void; onEnd: () => void };
     onCellDown?: (r: number, c: number, e: PointerEvent) => void;
     onCellEnter?: (r: number, c: number, e: PointerEvent) => void;
     onCellClick?: (r: number, c: number, e: MouseEvent) => void;
@@ -131,6 +134,18 @@
   onclick={(e) => onCellClick?.(r, c, e)}
   ondblclick={() => onCellDblClick?.(r, c)}
 >
+  {#if dragHandle}
+    <span
+      class="drag-handle"
+      role="button"
+      tabindex="-1"
+      aria-label="Drag to reorder row"
+      draggable="true"
+      onpointerdown={(e) => e.stopPropagation()}
+      ondragstart={() => dragHandle.onStart()}
+      ondragend={() => dragHandle.onEnd()}
+    >⠿</span>
+  {/if}
   {#if tree}
     <span class="tree-gutter" style="padding-left:{tree.depth * 16}px">
       {#if tree.hasChildren}
@@ -250,6 +265,18 @@
   .tree-leaf {
     display: inline-block;
     width: 18px;
+  }
+  .drag-handle {
+    flex: none;
+    margin-right: 4px;
+    font-size: 12px;
+    line-height: 1;
+    color: var(--bo-text-dim);
+    cursor: grab;
+    user-select: none;
+  }
+  .drag-handle:active {
+    cursor: grabbing;
   }
   .bo-edit {
     width: 100%;

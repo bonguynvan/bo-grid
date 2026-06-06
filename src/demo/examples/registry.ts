@@ -60,6 +60,12 @@ export const EXAMPLES: Example[] = [
     load: () => import('./Tree.svelte'),
   },
   {
+    id: 'tasks',
+    title: 'Tasks',
+    blurb: 'A drag-to-reorder task list (row reordering via a handle).',
+    load: () => import('./Tasks.svelte'),
+  },
+  {
     id: 'bigdata',
     title: '1M rows',
     blurb: 'A million-row trade tape, windowed from a synthetic source on demand.',
