@@ -1,6 +1,7 @@
 import type { Candle } from '../types';
 import { fmtPrice, fmtPercent, fmtVolume, fmtDate, type DateStyle } from '../format/format';
 import type { AggKind } from './aggregate';
+import type { FilterKind } from './filtering';
 
 export type Align = 'left' | 'right';
 
@@ -54,6 +55,10 @@ interface ColBase {
   /** Parent header label. Consecutive columns sharing a `group` render under a
       spanning header. Best with fixed-width columns. */
   group?: string;
+  /** Header filter-menu control for this column (requires `filterMenu` on
+      <Grid>). Defaults to the column's type; `'set'` shows a value checklist;
+      `false` disables filtering for this column. */
+  filter?: false | FilterKind;
 }
 
 export interface CellEditEvent {

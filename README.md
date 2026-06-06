@@ -150,6 +150,17 @@ it from your own search input — the grid stays presentation-only. Set `filterR
 to add a row of **per-column filter inputs** under the header (rows must match
 every non-empty column filter; in-memory mode).
 
+For richer filtering, set `filterMenu` to add a **funnel to each column header**.
+Clicking it opens a menu whose control matches the column type — text
+(contains / equals / starts / ends), number (`=, ≠, <, ≤, >, ≥, between`), or date
+(before / after / on / between). The menu is lazy-loaded on first open, so it
+costs nothing until used. Override or disable the control per column with
+`col.filter` (`'text' | 'number' | 'date' | 'set' | false`):
+
+```svelte
+<Grid {rows} {columns} height={640} filterMenu />
+```
+
 Sorting is uncontrolled by default. To own it (persist it, set an initial sort,
 or sync to the URL), pass a controlled `sort` array and handle `onSortChange`:
 

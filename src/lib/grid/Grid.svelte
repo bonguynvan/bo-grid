@@ -18,7 +18,13 @@
   import { moveIndex } from './reorder';
   import { parseClipboard, isSingleCell } from './clipboard';
   import { applyWidths, clampWidth, isResizable, type WidthMap } from './sizing';
-  import { passesFilters, type ColumnFilter } from './filtering';
+  import {
+    passesFilters,
+    isFilterActive,
+    defaultFilterKind,
+    type ColumnFilter,
+    type FilterKind,
+  } from './filtering';
   import type { RowSource } from './source';
   import { RowSourceController } from './source.svelte';
   import Cell from './Cell.svelte';
@@ -52,6 +58,7 @@
     onCellClick,
     pinnedRows = [],
     filterRow = false,
+    filterMenu = false,
     emptyMessage = 'No matching rows',
     loading = false,
     rowMenu,
@@ -116,6 +123,11 @@
     /** Show a per-column filter input row under the header. Rows must match every
         non-empty column filter (AND). In-memory mode only. Default false. */
     filterRow?: boolean;
+    /** Enable a per-column header filter menu (lazy-loaded on first open). Each
+        filterable column shows a funnel; the menu's control matches the column
+        type (text/number/date). Override or disable per column with `col.filter`.
+        In-memory mode only. Default false. */
+    filterMenu?: boolean;
     /** Message shown when there are no rows. Default 'No matching rows'. */
     emptyMessage?: string;
     /** Show a loading overlay over the grid (for consumer-driven async work in
@@ -790,6 +802,42 @@
     };
   });
 
+  // Header filter menu (v0.3), lazy-loaded on first open to keep the core lean.
+  let FilterMenuComp = $state<typeof import('./FilterMenu.svelte').default | null>(null);
+  let filterUi = $state<{ key: string; kind: FilterKind; header: string; x: number; y: number } | null>(
+    null,
+  );
+  function filterKindFor(col: ColumnDef): FilterKind {
+    return typeof col.filter === 'string' ? col.filter : defaultFilterKind(col);
+  }
+  async function openFilterMenu(col: ColumnDef, e: Event) {
+    e.stopPropagation();
+    // Read the anchor rect now — after the await, the event's currentTarget is null.
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    if (!FilterMenuComp) FilterMenuComp = (await import('./FilterMenu.svelte')).default;
+    filterUi = { key: col.key, kind: filterKindFor(col), header: col.header, x: rect.left, y: rect.bottom + 2 };
+  }
+  function applyColumnFilter(key: string, f: ColumnFilter | null): void {
+    const next = { ...columnFilters };
+    if (f) next[key] = f;
+    else delete next[key];
+    columnFilters = next;
+    filterUi = null;
+  }
+  $effect(() => {
+    if (!filterUi) return;
+    const close = () => (filterUi = null);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && (filterUi = null);
+    window.addEventListener('pointerdown', close);
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('blur', close);
+    return () => {
+      window.removeEventListener('pointerdown', close);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('blur', close);
+    };
+  });
+
   function onCellClicked(r: number, c: number, e: MouseEvent) {
     if (!onCellClick) return;
     const row = dataAt(r);
@@ -1104,6 +1152,26 @@
             {si?.dir === 'asc' ? '▲' : '▼'}{#if sorts.length > 1}<span class="ord">{si?.pos}</span>{/if}
           </span>
         {/if}
+        {#if filterMenu && col.type !== 'sparkline' && col.filter !== false}
+          <span
+            class="funnel"
+            class:on={isFilterActive(columnFilters[col.key])}
+            role="button"
+            tabindex="-1"
+            aria-label="Filter {col.header}"
+            title="Filter {col.header}"
+            onclick={(e) => openFilterMenu(col, e)}
+            onkeydown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') openFilterMenu(col, e);
+            }}
+            ondragstart={(e) => e.preventDefault()}
+            draggable="false"
+          >
+            <svg viewBox="0 0 10 10" width="9" height="9" aria-hidden="true">
+              <path d="M0 1h10L6 6v3L4 8V6z" fill="currentColor" />
+            </svg>
+          </span>
+        {/if}
         {#if isResizable(col, resizable)}
           <span
             class="grip"
@@ -1311,6 +1379,20 @@
   {#if menu}
     <RowMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => (menu = null)} />
   {/if}
+
+  {#if filterUi && FilterMenuComp}
+    {@const Menu = FilterMenuComp}
+    {@const key = filterUi.key}
+    <Menu
+      kind={filterUi.kind}
+      header={filterUi.header}
+      filter={columnFilters[key] ?? null}
+      x={filterUi.x}
+      y={filterUi.y}
+      onApply={(f) => applyColumnFilter(key, f)}
+      onClose={() => (filterUi = null)}
+    />
+  {/if}
 </div>
 
 <style>
@@ -1458,6 +1540,24 @@
     line-height: 1;
     color: var(--bo-text-dim);
     font-variant-numeric: tabular-nums;
+  }
+  /* Header filter funnel: a click target that opens the (lazy) filter menu. */
+  .h .funnel {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+    color: var(--bo-text-dim);
+    opacity: 0.55;
+    cursor: pointer;
+    transition: opacity 120ms, color 120ms;
+  }
+  .h .funnel:hover {
+    opacity: 1;
+    color: var(--bo-text);
+  }
+  .h .funnel.on {
+    opacity: 1;
+    color: var(--bo-up);
   }
 
   /* Per-column filter input row, under the header. */

@@ -420,6 +420,33 @@ document.querySelector('.bo-grid.grid').dispatchEvent(
 );
 await wait(20);
 if (document.querySelector('.rowmenu')) fail('Esc did not close the keyboard-opened row menu');
+// Header filter menu (v0.3, lazy-loaded): open a numeric column's funnel, apply
+// an impossible filter (→ no rows), then reopen and clear it (→ rows restored).
+const sharesFunnel = () =>
+  [...document.querySelectorAll('.bo-grid .head .h')]
+    .find((h) => h.querySelector('.label')?.textContent?.trim() === 'Shares')
+    ?.querySelector('.funnel');
+const beforeFilter = document.querySelectorAll('.bo-grid .row').length;
+if (!sharesFunnel()) fail('filter menu: funnel did not render on the Shares header');
+sharesFunnel().dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await waitFor('.bo-filtermenu', 'header filter menu did not open (lazy chunk)');
+const fmInput = document.querySelector('.bo-filtermenu .bo-fm-in');
+fmInput.value = '999999999999';
+fmInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+document
+  .querySelector('.bo-filtermenu .bo-fm-apply')
+  .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(40);
+if (document.querySelectorAll('.bo-grid .row').length !== 0)
+  fail('filter menu: applying an impossible filter did not exclude all rows');
+sharesFunnel().dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await waitFor('.bo-filtermenu', 'header filter menu did not reopen');
+[...document.querySelectorAll('.bo-filtermenu .bo-fm-btn')]
+  .find((b) => b.textContent.trim() === 'Clear')
+  .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(40);
+if (document.querySelectorAll('.bo-grid .row').length !== beforeFilter)
+  fail('filter menu: clearing the filter did not restore the rows');
 
 const sheetTab = tab('Spreadsheet');
 if (!sheetTab) fail('Spreadsheet example tab not found');

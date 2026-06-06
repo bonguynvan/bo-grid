@@ -7,12 +7,21 @@ All notable changes to this project are documented here. Format follows
 
 Theme: **filtering & discoverability** (in progress — see [ROADMAP.md](./ROADMAP.md)).
 
+### Added
+
+- **Header filter menu**: `filterMenu` adds a funnel to each filterable column;
+  clicking it opens a menu whose control matches the column type — text
+  (contains / equals / starts / ends), number (`=, ≠, <, ≤, >, ≥, between`), or
+  date (before / after / on / between). Override or disable per column with
+  `col.filter` (`'text'|'number'|'date'|'set'|false`). The menu UI is
+  **lazy-loaded** on first open, so the core bundle is unaffected until used.
+
 ### Internal
 
 - Structured per-column filter model (`filtering.ts`): typed `ColumnFilter`
   (text/number/date operators + a set filter) with pure, unit-tested matching.
-  The grid's filtering now runs through it; the existing `filterRow` is migrated
-  onto it with no behavior change. Foundation for the upcoming header filter menu.
+  The grid's filtering runs through it; the existing `filterRow` is migrated onto
+  it with no behavior change.
 
 ## [0.2.0] — 2026-06-06
 
