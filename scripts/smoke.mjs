@@ -419,6 +419,17 @@ roleFilter.dispatchEvent(new window.Event('input', { bubbles: true }));
 await wait(30);
 const frAfter = document.querySelectorAll('.bo-grid .row').length;
 if (!(frAfter < frBefore)) fail(`column filter did not narrow rows (${frBefore} → ${frAfter})`);
+// emptyMessage: filter to nothing and assert the custom empty state shows.
+roleFilter.value = 'zzzzzz';
+roleFilter.dispatchEvent(new window.Event('input', { bubbles: true }));
+await wait(30);
+const emptyEl = document.querySelector('.bo-grid .empty');
+if (!emptyEl || !/no people match/i.test(emptyEl.textContent || '')) {
+  fail(`custom emptyMessage did not show (got "${emptyEl?.textContent}")`);
+}
+roleFilter.value = ''; // clear so later state is clean
+roleFilter.dispatchEvent(new window.Event('input', { bubbles: true }));
+await wait(20);
 
 // Order book: per-row colour classes (ask/bid) via rowClass + custom depth cell.
 const obTab = tab('Order book');
@@ -486,7 +497,7 @@ console.log(
     `edit committed + validate; variable heights ${rowHeights.join('/')}; ` +
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
-    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter, ` +
+    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg, ` +
     `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; a11y rowcount/activedescendant ok`,
 );

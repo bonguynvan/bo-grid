@@ -131,6 +131,7 @@
     filter={filterText}
     hiddenColumns={hidden}
     filterRow
+    emptyMessage="No people match your filters"
     theme="light"
     persistKey="demo-sheet"
     height={620}

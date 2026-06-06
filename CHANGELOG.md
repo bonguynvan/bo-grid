@@ -78,6 +78,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   (inline edit or paste), keeping the old value.
 - **Select editor**: a column `options` makes an editable column edit via a
   `<select>` dropdown (enum/status columns).
+- **Custom empty state**: `emptyMessage` sets the text shown when no rows match.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 - **Theming**: dark-first, self-contained CSS variables (`--bo-grid-*`), no CSS

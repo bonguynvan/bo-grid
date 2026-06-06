@@ -48,6 +48,7 @@
     onCellClick,
     pinnedRows = [],
     filterRow = false,
+    emptyMessage = 'No matching rows',
     cell,
   }: {
     rows: GridRow[];
@@ -99,6 +100,8 @@
     /** Show a per-column filter input row under the header. Rows must match every
         non-empty column filter (AND). In-memory mode only. Default false. */
     filterRow?: boolean;
+    /** Message shown when there are no rows. Default 'No matching rows'. */
+    emptyMessage?: string;
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -921,7 +924,7 @@
       </div>
     {/if}
     {#if rowCount === 0 && !controller?.loading}
-      <div class="empty">No matching rows</div>
+      <div class="empty">{emptyMessage}</div>
     {/if}
     {#if stickyGroups.length > 0}
       <div class="sticky">
