@@ -49,6 +49,7 @@
     pinnedRows = [],
     filterRow = false,
     emptyMessage = 'No matching rows',
+    loading = false,
     cell,
   }: {
     rows: GridRow[];
@@ -102,6 +103,9 @@
     filterRow?: boolean;
     /** Message shown when there are no rows. Default 'No matching rows'. */
     emptyMessage?: string;
+    /** Show a loading overlay over the grid (for consumer-driven async work in
+        in-memory mode; source mode shows skeleton rows automatically). */
+    loading?: boolean;
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -926,6 +930,12 @@
     {#if rowCount === 0 && !controller?.loading}
       <div class="empty">{emptyMessage}</div>
     {/if}
+    {#if loading}
+      <div class="loading-overlay" aria-busy="true" aria-live="polite">
+        <span class="spinner" aria-hidden="true"></span>
+        <span class="loading-label">Loading…</span>
+      </div>
+    {/if}
     {#if stickyGroups.length > 0}
       <div class="sticky">
         {#each stickyGroups as g (g.depth)}
@@ -1201,6 +1211,40 @@
     justify-content: center;
     color: var(--bo-text-dim);
     font-size: 13px;
+  }
+  .loading-overlay {
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 100%;
+    margin-bottom: -100%; /* overlay without consuming scroll height */
+    color: var(--bo-text-dim);
+    font-size: 13px;
+    background: color-mix(in srgb, var(--bo-bg) 70%, transparent);
+    backdrop-filter: blur(1px);
+  }
+  .spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--bo-border);
+    border-top-color: var(--bo-sel-border);
+    border-radius: 50%;
+    animation: bo-spin 0.7s linear infinite;
+  }
+  @keyframes bo-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spinner {
+      animation: none;
+    }
   }
   .spacer {
     position: relative;

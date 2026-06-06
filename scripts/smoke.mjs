@@ -253,6 +253,14 @@ if (gridK.getAttribute('aria-activedescendant') !== `${gridK.id}-r0-c0`) {
   fail(`Ctrl+Home should jump to the first cell (got ${gridK.getAttribute('aria-activedescendant')})`);
 }
 
+// Loading overlay: the Reload button flips `loading` for ~800ms.
+const reloadBtn = [...document.querySelectorAll('button')].find((b) => /Reload/.test(b.textContent || ''));
+if (!reloadBtn) fail('reload control not found in demo');
+click(reloadBtn);
+await wait(20);
+if (!document.querySelector('.bo-grid .loading-overlay')) fail('loading overlay did not show');
+await wait(850); // let it clear before the remaining interactions
+
 // Grouping (Phase 3): switch the demo to group-by-sector, assert group-header
 // rows render, then collapse one group and assert the scroll height shrinks.
 const sectorBtn = [...document.querySelectorAll('.seg button')].find(
@@ -499,6 +507,6 @@ console.log(
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg, ` +
     `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
-    `keyboard Home/End/Ctrl+Home ok; a11y rowcount/activedescendant ok`,
+    `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

@@ -97,6 +97,13 @@
     else feed.stop();
   }
 
+  // Simulated reload to show the loading overlay.
+  let loadingState = $state(false);
+  function reload() {
+    loadingState = true;
+    setTimeout(() => (loadingState = false), 800);
+  }
+
   function downloadCsv() {
     exportCSV('tickers.csv', gridRows, columns);
   }
@@ -151,6 +158,7 @@
   />
   <span class="metric {fpsClass}" title="frames per second">{meter.fps} fps</span>
   <span class="metric">{feed.applied.toLocaleString()} ticks</span>
+  <button class="live" onclick={reload}>⟳ Reload</button>
   <button class="live" class:on={pivotMode} onclick={() => (pivotMode = !pivotMode)}>Pivot</button>
   <button class="live" class:on={pinMode} onclick={() => (pinMode = !pinMode)}>Pin L</button>
   <div class="seg">
@@ -173,6 +181,7 @@
     theme={gridTheme}
     persistKey={pivotMode ? undefined : 'demo'}
     height={620}
+    loading={loadingState}
     onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}
     {cell}
   />
