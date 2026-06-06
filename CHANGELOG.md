@@ -16,6 +16,12 @@ Theme: **design tokens & polish** (see [ROADMAP.md](./ROADMAP.md)).
 - **Themed scrollbars**: thin, theme-coloured scrollbars in the grid viewport
   (Firefox `scrollbar-*` + Chromium/Safari `::-webkit-scrollbar`).
 
+### Fixed
+
+- **Sparkline now follows the theme**: candle colours read the grid's up/down
+  tokens, and the hover tooltip uses the themed surface (was a hardcoded black
+  background — dark text on black, unreadable on light themes).
+
 ## [0.7.0] — Unreleased
 
 Theme: **column sizing & keyboard polish** (see [ROADMAP.md](./ROADMAP.md)).

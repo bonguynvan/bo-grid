@@ -179,9 +179,9 @@
     padding: 5px 12px;
     font-family: var(--mono);
     font-size: 12px;
-    color: #1a1a1a;
-    background: #fff;
-    border: 1px solid #d2d6dc;
+    color: var(--text);
+    background: var(--header-bg);
+    border: 1px solid var(--border);
     border-radius: 999px;
     outline: none;
   }
@@ -215,9 +215,9 @@
     padding: 4px 12px;
     font-family: var(--mono);
     font-size: 12px;
-    color: #1a1a1a;
-    background: #fff;
-    border: 1px solid #d2d6dc;
+    color: var(--text);
+    background: var(--header-bg);
+    border: 1px solid var(--border);
     border-radius: 999px;
     cursor: pointer;
   }
@@ -235,8 +235,8 @@
     z-index: 20;
     min-width: 160px;
     padding: 6px;
-    background: #fff;
-    border: 1px solid #d2d6dc;
+    background: var(--header-bg);
+    border: 1px solid var(--border);
     border-radius: 10px;
     box-shadow: 0 8px 28px rgba(20, 20, 40, 0.16);
   }
@@ -246,19 +246,19 @@
     gap: 8px;
     padding: 5px 8px;
     font-size: 12px;
-    color: #1a1a1a;
+    color: var(--text);
     border-radius: 6px;
     cursor: pointer;
   }
   .menu .item:hover {
-    background: #f1f2f6;
+    background: var(--row-hover);
   }
   .hint kbd {
     padding: 1px 5px;
     font-family: var(--mono);
     font-size: 10px;
     color: var(--text);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--row-hover);
     border: 0.5px solid var(--border);
     border-radius: 4px;
   }
@@ -268,7 +268,7 @@
   .detail {
     padding: 12px 16px;
     font-size: 13px;
-    color: #1a1a1a;
+    color: var(--text);
   }
   .detail-grid {
     display: flex;
@@ -279,7 +279,7 @@
     color: var(--text-dim);
   }
   .detail-grid b {
-    color: #1a1a1a;
+    color: var(--text);
   }
   /* Per-column class hooks (cellClass / headerClass). */
   :global(.bo-grid .h.team-head) {
@@ -290,6 +290,6 @@
   }
   :global(.bo-grid .c.rating-hot) {
     font-weight: 700;
-    color: #b45309;
+    color: var(--amber);
   }
 </style>

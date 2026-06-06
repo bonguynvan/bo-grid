@@ -102,16 +102,16 @@
     font-size: 10px;
     font-weight: 600;
     border-radius: 999px;
-    color: #cfcfcf;
-    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-dim);
+    background: var(--row-hover);
   }
   .side.buy {
     color: #052e1a;
-    background: #34d399;
+    background: var(--up);
   }
   .side.sell {
     color: #2e0505;
-    background: #f87171;
+    background: var(--down);
   }
   .gridwrap {
     max-width: 820px;

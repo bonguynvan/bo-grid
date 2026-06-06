@@ -49,10 +49,18 @@ function yOf(price: number, ext: Extent, h: number, pad: number): number {
  * Draw compact candlesticks. Body shows open→close, wick shows low→high.
  * Color by per-candle direction. Canvas (not SVG) so 100+ of these stay cheap.
  */
-export function drawCandles(ctx: CanvasRenderingContext2D, candles: Candle[], w: number, h: number): void {
+export function drawCandles(
+  ctx: CanvasRenderingContext2D,
+  candles: Candle[],
+  w: number,
+  h: number,
+  colors: { up?: string; down?: string } = {},
+): void {
   ctx.clearRect(0, 0, w, h);
   if (candles.length === 0) return;
 
+  const upColor = colors.up || UP;
+  const downColor = colors.down || DOWN;
   const ext = priceExtent(candles);
   const pad = 2;
   const n = candles.length;
@@ -63,8 +71,8 @@ export function drawCandles(ctx: CanvasRenderingContext2D, candles: Candle[], w:
     const c = candles[i];
     const cx = i * slot + slot / 2;
     const up = c.close >= c.open;
-    ctx.strokeStyle = up ? UP : DOWN;
-    ctx.fillStyle = up ? UP : DOWN;
+    ctx.strokeStyle = up ? upColor : downColor;
+    ctx.fillStyle = up ? upColor : downColor;
 
     // wick
     ctx.beginPath();

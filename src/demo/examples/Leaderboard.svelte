@@ -113,7 +113,7 @@
   .bar {
     width: 100%;
     height: 8px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--row-hover);
     border-radius: 4px;
     overflow: hidden;
   }
