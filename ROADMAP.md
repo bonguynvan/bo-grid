@@ -42,7 +42,7 @@ in-core action menu.
 Shipped API (all additive): `columnMenu`, `columnsPanel`,
 `onColumnVisibilityChange`.
 
-## In progress — 0.5 · Spreadsheet power
+## 0.5 · Spreadsheet power — done
 
 Excel-grade editing. Lib budget recalibrated 24 → 28 KB (still ~15–20× smaller
 than AG Grid; heavy UI stays lazy and excluded from the core count).
@@ -53,13 +53,18 @@ than AG Grid; heavy UI stays lazy and excluded from the core count).
   history (survives sort/filter); paste/fill undo as one step.
 - [x] **M3 — Typed inline editors**: numeric columns edit with a number input,
   `date` columns with a native date picker (date columns are now editable).
-- [ ] **M4 — Autosize column to content**: double-click the header border to fit.
-  Needs DOM width measurement — verify in a real browser, not the headless smoke.
+- [ ] **M4 — Autosize column to content** (deferred): double-click the header
+  border to fit. Needs DOM width measurement — verify in a real browser.
+
+## In progress — 0.6 · Controlled & server-side filtering
+
+- [x] **M1 — Controlled filtering**: `columnFilters` prop + `onFilterChange`
+  (mirrors controlled `sort`); `ColumnFilter`/`FilterKind` types exported.
+- [x] **M2 — Server-side filtering**: `RowSourceParams.columnFilters`; the filter
+  menu works in source mode (text/number/date delegate to the `RowSource`).
 
 ## Candidate themes for later versions
 
-- **Controlled/server filtering** — `onFilterChange` + a structured
-  `columnFilters` field on `RowSourceParams`.
 - **Scale & server** — full server-side row model (lazy group/tree level
   loading), horizontal column virtualization for 100+ column grids.
 - **Trust & polish** — a formal WCAG 2.1 AA audit, more theme presets + a

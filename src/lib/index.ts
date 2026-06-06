@@ -13,6 +13,9 @@ export { default as Sparkline } from './sparkline/Sparkline.svelte';
 export type { ColumnDef, Align, GridRow, SortDir, SortState, CellEditEvent } from './grid/column';
 export type { AggKind, AggResult } from './grid/aggregate';
 
+// Column filter model (for controlled filtering via `columnFilters`/`onFilterChange`)
+export type { ColumnFilter, FilterKind, TextOp, NumberOp, DateOp } from './grid/filtering';
+
 // Value formatters (handy when building custom cell content)
 export { fmtPrice, fmtPercent, fmtVolume, fmtDate } from './format/format';
 export type { DateStyle } from './format/format';

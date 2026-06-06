@@ -1,5 +1,6 @@
 import type { GridRow, SortState } from './column';
 import type { RowRange, RowSource } from './source';
+import type { ColumnFilter } from './filtering';
 
 /**
  * Drives a RowSource for the grid: fetches the visible window, caches rows by
@@ -25,12 +26,22 @@ export class RowSourceController {
     return this.cache.get(index) ?? null;
   }
 
-  private keyOf(sorts: readonly SortState[], filter: string): string {
-    return `${sorts.map((s) => `${s.key}:${s.dir}`).join(',')}|${filter}`;
+  private keyOf(
+    sorts: readonly SortState[],
+    filter: string,
+    columnFilters?: Record<string, ColumnFilter>,
+  ): string {
+    const cf = columnFilters ? JSON.stringify(columnFilters) : '';
+    return `${sorts.map((s) => `${s.key}:${s.dir}`).join(',')}|${filter}|${cf}`;
   }
 
-  async fetch(range: RowRange, sorts: SortState[], filter: string): Promise<void> {
-    const key = this.keyOf(sorts, filter);
+  async fetch(
+    range: RowRange,
+    sorts: SortState[],
+    filter: string,
+    columnFilters?: Record<string, ColumnFilter>,
+  ): Promise<void> {
+    const key = this.keyOf(sorts, filter, columnFilters);
     if (key !== this.key) {
       this.key = key;
       this.cache.clear();
@@ -49,7 +60,7 @@ export class RowSourceController {
 
     const id = ++this.reqId;
     this.loading = true;
-    const res = await this.source.getRows({ range, sort: sorts[0] ?? null, sorts, filter });
+    const res = await this.source.getRows({ range, sort: sorts[0] ?? null, sorts, filter, columnFilters });
     if (id !== this.reqId) return; // a newer request superseded this one
 
     this.total = res.total;

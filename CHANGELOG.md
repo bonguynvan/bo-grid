@@ -3,9 +3,22 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.6.0] — Unreleased
+
+Theme: **controlled & server-side filtering** (see [ROADMAP.md](./ROADMAP.md)).
+
+### Added
+
+- **Controlled filtering**: a `columnFilters` prop + `onFilterChange` callback let
+  you own the filter state (persist it, set initial filters, sync to the URL) —
+  mirrors controlled `sort`. `ColumnFilter` / `FilterKind` / op types are exported.
+- **Server-side filtering**: `RowSourceParams` gains `columnFilters`, so the header
+  filter menu works in source mode — text/number/date filters delegate to the
+  `RowSource` (set filters need in-memory data). `createArraySource` applies them.
+
 ## [0.5.0] — Unreleased
 
-Theme: **spreadsheet power** (in progress — see [ROADMAP.md](./ROADMAP.md)).
+Theme: **spreadsheet power** (see [ROADMAP.md](./ROADMAP.md)).
 
 ### Added
 
@@ -190,6 +203,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.6.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.6.0
 [0.5.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.5.0
 [0.4.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.4.0
 [0.3.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.3.0

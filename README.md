@@ -162,6 +162,12 @@ column with `col.filter: false`:
 <Grid {rows} {columns} height={640} filterMenu />
 ```
 
+Filtering is uncontrolled by default. To **own the filter state** (persist it, set
+initial filters, sync to the URL), pass a controlled `columnFilters` map and
+handle `onFilterChange` — mirrors controlled `sort`. In **server (`source`) mode**
+the filter menu still works: text/number/date filters are delegated to your
+`RowSource` via `params.columnFilters` (set filters need in-memory data).
+
 Sorting is uncontrolled by default. To own it (persist it, set an initial sort,
 or sync to the URL), pass a controlled `sort` array and handle `onSortChange`:
 

@@ -58,6 +58,8 @@
     onRowClick,
     sort,
     onSortChange,
+    columnFilters,
+    onFilterChange,
     footer = false,
     onCellClick,
     pinnedRows = [],
@@ -125,6 +127,12 @@
     sort?: SortState[];
     /** Called with the new sort order whenever a header is clicked. */
     onSortChange?: (sort: SortState[]) => void;
+    /** Controlled column filters (keyed by column key). When set, the grid
+        reflects these and reports changes via `onFilterChange` instead of holding
+        its own. Omit for uncontrolled filtering. */
+    columnFilters?: Record<string, ColumnFilter>;
+    /** Called with the full column-filter map whenever a header filter changes. */
+    onFilterChange?: (filters: Record<string, ColumnFilter>) => void;
     /** Show a pinned totals row: each column with a `groupAgg` shows that
         aggregate over all (filtered) rows. In-memory mode only. Default false. */
     footer?: boolean;
@@ -143,7 +151,8 @@
     /** Enable a per-column header filter menu (lazy-loaded on first open). Each
         filterable column shows a funnel; the menu's control matches the column
         type (text/number/date). Override or disable per column with `col.filter`.
-        In-memory mode only. Default false. */
+        Works in source mode too (filters are delegated to the `RowSource`); set
+        filters need in-memory data. Default false. */
     filterMenu?: boolean;
     /** Show a built-in quick-filter search box above the grid that matches across
         all column values (ANDed with the `filter` prop). In-memory mode only.
@@ -327,7 +336,13 @@
 
   // Structured per-column filters from the header filter menu (v0.3), keyed by
   // column key. Menu filters take precedence over the filterRow text inputs.
-  let columnFilters = $state<Record<string, ColumnFilter>>({});
+  // Controlled by the `columnFilters` prop when provided, else internal state.
+  let internalColumnFilters = $state<Record<string, ColumnFilter>>({});
+  const activeColumnFilters = $derived(columnFilters ?? internalColumnFilters);
+  function setColumnFilters(next: Record<string, ColumnFilter>): void {
+    if (columnFilters === undefined) internalColumnFilters = next; // uncontrolled: own it
+    onFilterChange?.(next); // always notify
+  }
 
   // Built-in quick-filter text (global, matches across all columns).
   let quickText = $state('');
@@ -719,7 +734,7 @@
     // Active per-column filters: menu-driven structured filters (columnFilters)
     // take precedence; filterRow text inputs (colFilters) fill in the rest as
     // case-insensitive "contains".
-    const active: Record<string, ColumnFilter> = { ...columnFilters };
+    const active: Record<string, ColumnFilter> = { ...activeColumnFilters };
     for (const [k, v] of Object.entries(colFilters)) {
       if (!active[k] && v.trim()) active[k] = { kind: 'text', op: 'contains', q: v };
     }
@@ -920,7 +935,8 @@
     const range = { start, end: start + visibleCount };
     const s = sorts;
     const f = filter;
-    void ctrl.fetch(range, s, f);
+    const cf = activeColumnFilters;
+    void ctrl.fetch(range, s, f, cf);
   });
 
   function dataAt(r: number): GridRow | null {
@@ -1066,17 +1082,19 @@
     e.stopPropagation();
     // Read the anchor rect now — after the await, the event's currentTarget is null.
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const kind = filterKindFor(col);
-    // A set filter needs the column's distinct values for its checklist.
-    const values = kind === 'set' ? distinctValues(rows, col.key) : [];
+    let kind = filterKindFor(col);
+    // A set filter needs distinct values; in source mode they can't be
+    // enumerated, so fall back to the column's typed filter.
+    if (source && kind === 'set') kind = defaultFilterKind(col);
+    const values = !source && kind === 'set' ? distinctValues(rows, col.key) : [];
     if (!FilterMenuComp) FilterMenuComp = (await import('./FilterMenu.svelte')).default;
     filterUi = { key: col.key, kind, header: col.header, values, x: rect.left, y: rect.bottom + 2 };
   }
   function applyColumnFilter(key: string, f: ColumnFilter | null): void {
-    const next = { ...columnFilters };
+    const next = { ...activeColumnFilters };
     if (f) next[key] = f;
     else delete next[key];
-    columnFilters = next;
+    setColumnFilters(next);
     filterUi = null;
   }
   $effect(() => {
@@ -1466,7 +1484,7 @@
         {#if filterMenu && col.type !== 'sparkline' && col.filter !== false}
           <span
             class="funnel"
-            class:on={isFilterActive(columnFilters[col.key])}
+            class:on={isFilterActive(activeColumnFilters[col.key])}
             role="button"
             tabindex="-1"
             aria-label="Filter {col.header}"
@@ -1714,7 +1732,7 @@
     <Menu
       kind={filterUi.kind}
       header={filterUi.header}
-      filter={columnFilters[key] ?? null}
+      filter={activeColumnFilters[key] ?? null}
       values={filterUi.values}
       x={filterUi.x}
       y={filterUi.y}

@@ -1,5 +1,6 @@
 import type { GridRow, SortState } from './column';
 import { compareBySorts } from './column';
+import { passesFilters, type ColumnFilter } from './filtering';
 
 export interface RowRange {
   /** First row index (inclusive). */
@@ -16,6 +17,8 @@ export interface RowSourceParams {
   /** Full sort order (primary first) for multi-column sort. May be empty. */
   sorts?: SortState[];
   filter: string;
+  /** Structured per-column filters (header filter menu), keyed by column key. */
+  columnFilters?: Record<string, ColumnFilter>;
 }
 
 export interface RowSourceResult {
@@ -55,6 +58,10 @@ export function createArraySource(all: readonly GridRow[], opts: ArraySourceOpti
     const f = params.filter.trim().toLowerCase();
     if (f && filterKeys && filterKeys.length > 0) {
       rows = rows.filter((r) => filterKeys.some((k) => String(r[k] ?? '').toLowerCase().includes(f)));
+    }
+    const cf = params.columnFilters;
+    if (cf && Object.keys(cf).length > 0) {
+      rows = rows.filter((r) => passesFilters(r, cf));
     }
     const sorts = params.sorts?.length ? params.sorts : params.sort ? [params.sort] : [];
     if (sorts.length > 0) {

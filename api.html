@@ -216,6 +216,8 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>onCellClick</td><td><span class="type">({ row, column, value }, event) =&gt; void</span></td><td>Fired when a cell is clicked (in addition to <code>onRowClick</code>).</td></tr>
           <tr><td>sort</td><td><span class="type">SortState[]</span></td><td>Controlled sort order (multi-key). Omit for uncontrolled sorting.</td></tr>
           <tr><td>onSortChange</td><td><span class="type">(sort: SortState[]) =&gt; void</span></td><td>Called with the new sort order on each header click.</td></tr>
+          <tr><td>columnFilters</td><td><span class="type">Record&lt;string, ColumnFilter&gt;</span></td><td>Controlled column filters (keyed by column key). Omit for uncontrolled filtering.</td></tr>
+          <tr><td>onFilterChange</td><td><span class="type">(filters) =&gt; void</span></td><td>Called with the full column-filter map whenever a header filter changes.</td></tr>
           <tr><td>footer</td><td><span class="type">boolean</span></td><td>Pinned totals row: each column with a <code>groupAgg</code> aggregates all rows. In-memory mode only.</td></tr>
           <tr><td>pinnedRows</td><td><span class="type">GridRow[]</span></td><td>Rows pinned to the top, always visible above the scroll (display-only).</td></tr>
           <tr><td>rowHeight</td><td><span class="type">number | (row, i) =&gt; number</span></td><td>Uniform row height in px, or a function for variable heights (in-memory only). Default <code>36</code>.</td></tr>

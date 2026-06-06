@@ -1,6 +1,14 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { Grid, pivot, type ColumnDef, type GridRow, type PivotConfig, type SortState } from '../../lib';
+  import {
+    Grid,
+    pivot,
+    type ColumnDef,
+    type GridRow,
+    type PivotConfig,
+    type SortState,
+    type ColumnFilter,
+  } from '../../lib';
   import { ui } from '../theme.svelte';
   import { generateTickers } from '../data/generate';
 
@@ -88,6 +96,9 @@
     if (pivotMode) picked = null;
   });
 
+  // Controlled filters: the example owns the column-filter map (mirrors sort).
+  let columnFilters = $state<Record<string, ColumnFilter>>({});
+
   // Controlled sort: the example owns the sort order, so it can show and clear it.
   let sortState = $state<SortState[]>([]);
   const sortLabel = $derived(
@@ -130,6 +141,8 @@
     filterMenu={!pivotMode}
     columnMenu={!pivotMode}
     columnsPanel={!pivotMode}
+    {columnFilters}
+    onFilterChange={(f) => (columnFilters = f)}
     theme={ui.theme}
     persistKey="demo-portfolio"
     height={620}

@@ -47,6 +47,25 @@ describe('createArraySource', () => {
       expect(res.rows.map((r) => r.name)).toEqual(['apple', 'apricot']);
     }
   });
+
+  it('applies structured columnFilters server-side and adjusts total', () => {
+    const rows = [
+      { id: 0, flashSeq: 0, flashDir: 'up', px: 5 },
+      { id: 1, flashSeq: 0, flashDir: 'up', px: 50 },
+      { id: 2, flashSeq: 0, flashDir: 'up', px: 200 },
+    ] as unknown as GridRow[];
+    const src = createArraySource(rows);
+    const res = src.getRows({
+      range: { start: 0, end: 10 },
+      sort: null,
+      filter: '',
+      columnFilters: { px: { kind: 'number', op: 'gt', a: 10 } },
+    });
+    if (!('then' in res)) {
+      expect(res.total).toBe(2);
+      expect(res.rows.map((r) => r.px)).toEqual([50, 200]);
+    }
+  });
 });
 
 describe('RowSourceController', () => {
@@ -65,5 +84,13 @@ describe('RowSourceController', () => {
     expect(ctrl.rowAt(0)?.n).toBe(50);
     await ctrl.fetch({ start: 0, end: 5 }, [{ key: 'n', dir: 'asc' }], '');
     expect(ctrl.rowAt(0)?.n).toBe(1); // re-fetched under the new sort
+  });
+
+  it('drops the cache and re-filters when columnFilters change', async () => {
+    const ctrl = new RowSourceController(createArraySource(makeRows(50)));
+    await ctrl.fetch({ start: 0, end: 5 }, [], '');
+    expect(ctrl.total).toBe(50);
+    await ctrl.fetch({ start: 0, end: 5 }, [], '', { n: { kind: 'number', op: 'lt', a: 10 } });
+    expect(ctrl.total).toBe(9); // n = 1..9 pass (makeRows: n = 50-i)
   });
 });
