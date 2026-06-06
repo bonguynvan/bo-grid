@@ -1804,6 +1804,11 @@
     --bo-mono: var(--bo-grid-mono, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace);
     --bo-sans: var(--bo-grid-sans, Inter, "Segoe UI", system-ui, sans-serif);
 
+    /* Theme native controls (checkboxes, date pickers, number spinners, search
+       clear buttons, scrollbars) and accent fills to match the grid theme. */
+    color-scheme: var(--bo-grid-scheme, dark);
+    accent-color: var(--bo-up);
+
     display: flex;
     flex-direction: column;
     color: var(--bo-text);

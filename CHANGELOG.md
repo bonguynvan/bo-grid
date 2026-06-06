@@ -14,6 +14,10 @@ Theme: **column sizing & keyboard polish** (see [ROADMAP.md](./ROADMAP.md)).
   `minWidth`/`maxWidth` and persists like a manual resize).
 - **Keyboard access to the column menu**: <kbd>Alt</kbd>+<kbd>↓</kbd> opens the
   column menu at the focused column (previously mouse-only via the ⋮ trigger).
+- **Themed form controls**: checkboxes, date pickers, number spinners, search
+  inputs and scrollbars now follow the grid theme (via `color-scheme` +
+  `accent-color`), so they no longer render with light browser defaults on a dark
+  grid. A custom theme can set `scheme: 'light' | 'dark'`.
 
 ## [0.6.0] — Unreleased
 

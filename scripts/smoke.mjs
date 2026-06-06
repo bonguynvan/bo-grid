@@ -236,6 +236,10 @@ const gridStyle = document.querySelector('.bo-grid.grid')?.getAttribute('style')
 if (!/--bo-grid-bg:\s*#fff/i.test(gridStyle)) {
   fail(`light theme did not reach the grid (style="${gridStyle.slice(0, 60)}…")`);
 }
+// Native controls follow the theme: the light preset sets color-scheme: light.
+if (!/--bo-grid-scheme:\s*light/i.test(gridStyle)) {
+  fail('light theme did not set color-scheme for native controls');
+}
 click(themeBtn);
 await wait(40);
 if (document.documentElement.classList.contains('light')) fail('theme toggle did not restore dark mode');

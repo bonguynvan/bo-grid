@@ -292,6 +292,11 @@ these:
 }
 ```
 
+Native form controls (checkboxes, date pickers, number spinners, search inputs,
+scrollbars) follow the theme automatically via `color-scheme` + `accent-color`.
+A custom theme defaults to dark; set `scheme: 'light'` (or `--bo-grid-scheme:
+light`) for a light one.
+
 ## Server-side / large datasets
 
 Instead of an in-memory `rows` array, back the grid with a **`RowSource`** — the

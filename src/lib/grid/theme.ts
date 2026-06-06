@@ -20,6 +20,9 @@ export interface GridTheme {
   headerH?: string;
   mono?: string;
   sans?: string;
+  /** Native-control color scheme: themes checkboxes, date pickers, number
+      spinners, search-clear buttons and scrollbars. Defaults to dark. */
+  scheme?: 'light' | 'dark';
 }
 
 const VARS: Record<keyof GridTheme, string> = {
@@ -39,6 +42,7 @@ const VARS: Record<keyof GridTheme, string> = {
   headerH: '--bo-grid-header-h',
   mono: '--bo-grid-mono',
   sans: '--bo-grid-sans',
+  scheme: '--bo-grid-scheme',
 };
 
 /** Serialize a theme to a CSS `--bo-grid-*: …;` declaration string. */
@@ -65,6 +69,7 @@ export const darkTheme: GridTheme = {
   amber: '#f59e0b',
   selFill: 'rgba(99,102,241,0.16)',
   selBorder: '#6366f1',
+  scheme: 'dark',
 };
 
 // A deliberate light palette (not an inverted dark one): near-white surfaces,
@@ -83,4 +88,5 @@ export const lightTheme: GridTheme = {
   amber: '#d97706',
   selFill: 'rgba(99,102,241,0.12)',
   selBorder: '#6366f1',
+  scheme: 'light',
 };
