@@ -49,13 +49,13 @@
   const gridRows = $derived(rows as unknown as GridRow[]);
 
   const columns: ColumnDef[] = [
-    { type: 'text', key: 'symbol', sub: 'sector', header: 'Symbol', width: 124, pinned: true },
-    { type: 'number', key: 'shares', header: 'Shares', width: 92, decimals: 0, groupAgg: 'sum' },
-    { type: 'price', key: 'avgCost', header: 'Avg Cost', width: 96 },
-    { type: 'price', key: 'last', header: 'Last', width: 92 },
-    { type: 'volume', key: 'marketValue', header: 'Mkt Value', width: 108, groupAgg: 'sum' },
-    { type: 'heatmap', key: 'pnlPct', header: 'P&L %', width: 84, min: -30, max: 30, groupAgg: 'avg' },
-    { type: 'number', key: 'pnl', header: 'P&L $', width: 116, decimals: 0, groupAgg: 'sum' },
+    { type: 'text', key: 'symbol', sub: 'sector', header: 'Symbol', width: 124, pinned: true, group: 'Holding' },
+    { type: 'number', key: 'shares', header: 'Shares', width: 92, decimals: 0, groupAgg: 'sum', group: 'Holding' },
+    { type: 'price', key: 'avgCost', header: 'Avg Cost', width: 96, group: 'Pricing' },
+    { type: 'price', key: 'last', header: 'Last', width: 92, group: 'Pricing' },
+    { type: 'volume', key: 'marketValue', header: 'Mkt Value', width: 108, groupAgg: 'sum', group: 'Valuation' },
+    { type: 'heatmap', key: 'pnlPct', header: 'P&L %', width: 84, min: -30, max: 30, groupAgg: 'avg', group: 'P&L' },
+    { type: 'number', key: 'pnl', header: 'P&L $', width: 116, decimals: 0, groupAgg: 'sum', group: 'P&L' },
   ];
 
   let grouped = $state(true);

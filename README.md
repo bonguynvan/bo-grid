@@ -299,6 +299,19 @@ your own column-picker UI and drive the prop; the grid stays presentation-only:
 <Grid {rows} {columns} hiddenColumns={['bonus', 'rating']} height={640} />
 ```
 
+## Header groups
+
+Give columns a `group` label to render a spanning parent header over consecutive
+columns that share it (works best with fixed-width columns):
+
+```ts
+const columns = [
+  { type: 'text',  key: 'symbol', header: 'Symbol', width: 120, group: 'Holding' },
+  { type: 'number', key: 'shares', header: 'Shares', width: 90,  group: 'Holding' },
+  { type: 'price', key: 'last',   header: 'Last',   width: 90,  group: 'Pricing' },
+];
+```
+
 ## Per-row styling
 
 Return a class from `rowClass` to style rows by their data (e.g. red/green book

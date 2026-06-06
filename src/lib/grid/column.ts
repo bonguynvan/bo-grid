@@ -25,6 +25,9 @@ interface ColBase {
   editable?: boolean;
   /** Set false to disable drag-to-resize on this column (default on). */
   resizable?: boolean;
+  /** Parent header label. Consecutive columns sharing a `group` render under a
+      spanning header. Best with fixed-width columns. */
+  group?: string;
 }
 
 export interface CellEditEvent {

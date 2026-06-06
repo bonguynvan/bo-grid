@@ -336,6 +336,11 @@ if (document.querySelector('.pill.clear')) fail('clearing controlled sort did no
 const footerEl = document.querySelector('.bo-grid .footer');
 if (!footerEl) fail('footer totals row did not render');
 if (!/\d/.test(footerEl.textContent || '')) fail('footer totals row showed no aggregated values');
+// Column header groups: a spanning row above the column headers.
+const hgroups = [...document.querySelectorAll('.bo-grid .head-groups .hg')].filter(
+  (h) => (h.textContent || '').trim().length > 0,
+);
+if (hgroups.length === 0) fail('column header groups did not render');
 
 const sheetTab = tab('Spreadsheet');
 if (!sheetTab) fail('Spreadsheet example tab not found');
@@ -456,7 +461,7 @@ console.log(
     `edit committed; variable heights ${rowHeights.join('/')}; ` +
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
-    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups, sheet ${sheetRows} rows (light) + row-select + col-hide + col-filter, ` +
+    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups, sheet ${sheetRows} rows (light) + row-select + col-hide + col-filter, ` +
     `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; a11y rowcount/activedescendant ok`,
 );

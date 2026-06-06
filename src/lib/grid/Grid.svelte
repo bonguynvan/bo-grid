@@ -130,6 +130,7 @@
   let viewportEl: HTMLDivElement;
   let headEl: HTMLDivElement;
   let filterRowEl = $state<HTMLDivElement>();
+  let groupHeadEl = $state<HTMLDivElement>();
 
   const sel = new Selection();
   let dragging = $state(false);
@@ -208,6 +209,21 @@
   const layout = $derived(arrangePinned(sized));
   const cols = $derived(layout.columns);
   const pinned = $derived(layout.anyPinned);
+
+  // Spanning header groups: consecutive columns sharing a `group` label merge
+  // into one parent header cell (width = sum of child widths). null when unused.
+  const headerGroups = $derived.by<{ label: string; width: number }[] | null>(() => {
+    if (!cols.some((c) => c.group)) return null;
+    const runs: { label: string; width: number }[] = [];
+    for (let i = 0; i < cols.length; i++) {
+      const label = cols[i].group ?? '';
+      const w = layout.info[i].width;
+      const last = runs[runs.length - 1];
+      if (last && label !== '' && last.label === label) last.width += w;
+      else runs.push({ label, width: w });
+    }
+    return runs;
+  });
 
   // Theme → inline `--bo-grid-*` overrides. 'dark' uses the built-in defaults.
   const themeStyle = $derived(
@@ -558,6 +574,7 @@
     scrollTop = el.scrollTop;
     if (pinned && headEl) headEl.scrollLeft = el.scrollLeft; // keep header in sync
     if (pinned && filterRowEl) filterRowEl.scrollLeft = el.scrollLeft; // and the filter row
+    if (pinned && groupHeadEl) groupHeadEl.scrollLeft = el.scrollLeft; // and group headers
   }
 
   function toggleGroup(path: string) {
@@ -767,6 +784,14 @@
   bind:this={gridEl}
   onkeydown={onKeydown}
 >
+  {#if headerGroups}
+    <div class="head-groups" aria-hidden="true" bind:this={groupHeadEl} style={pinned ? 'overflow:hidden;' : ''}>
+      {#if rowSelection}<span class="selcell" style={selCellStyle(true)}></span>{/if}
+      {#each headerGroups as g, gi (gi)}
+        <span class="hg" class:empty={!g.label} style="flex:0 0 {g.width}px;width:{g.width}px;">{g.label}</span>
+      {/each}
+    </div>
+  {/if}
   <div class="head" role="row" aria-rowindex={1} bind:this={headEl} style={pinned ? 'overflow:hidden;' : ''}>
     {#if rowSelection}
       <span class="selcell selhead" role="columnheader" aria-colindex={1} style={selCellStyle(true)}>
@@ -1011,6 +1036,34 @@
   }
   .grid:focus-visible {
     border-color: var(--bo-sel-border);
+  }
+
+  /* Spanning header groups (row above the column headers). */
+  .head-groups {
+    display: flex;
+    align-items: stretch;
+    height: var(--bo-header-h);
+    background: var(--bo-header-bg);
+    border-bottom: 0.5px solid var(--bo-border);
+  }
+  .head-groups .hg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    padding: 0 8px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--bo-text);
+    border-right: 0.5px solid var(--bo-border);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .head-groups .hg.empty {
+    border-right: 0;
+    background: transparent;
   }
 
   .head {

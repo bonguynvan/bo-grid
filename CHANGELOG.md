@@ -72,6 +72,8 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   with Ctrl/⌘) and <kbd>PageUp</kbd>/<kbd>PageDown</kbd>, with Shift to extend.
 - **Per-column filters**: `filterRow` adds a filter input under each column;
   rows must match every non-empty column filter (AND).
+- **Column header groups**: a column `group` label renders consecutive columns
+  under a spanning parent header (best with fixed-width columns).
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 - **Theming**: dark-first, self-contained CSS variables (`--bo-grid-*`), no CSS
