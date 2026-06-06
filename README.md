@@ -47,7 +47,8 @@ npm i bo-grid
 Works with **SvelteKit / SSR** out of the box — `<Grid>` server-renders to HTML
 without touching `window`/`document`/`localStorage` (a CI gate, `pnpm ssr`,
 proves it). The package is `sideEffects: false`, so unused exports tree-shake
-away.
+away. See the **[SvelteKit guide](./docs/sveltekit.md)** for `load`-function data,
+realtime feeds, and layout persistence.
 
 ## Usage
 
