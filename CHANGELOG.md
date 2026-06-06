@@ -11,9 +11,11 @@ Theme: **column management & discoverability** (in progress — see
 ### Added
 
 - **Column header menu**: `columnMenu` adds a ⋮ trigger to each header with
-  Sort ascending / descending / Clear, and **Hide column**. Runtime-hidden
-  columns compose (union) with the controlled `hiddenColumns`, persist via
-  `persistKey`, and report through `onColumnVisibilityChange`.
+  Sort ascending / descending / Clear, **Pin left / Pin right / Unpin**, and
+  **Hide column**. Runtime-hidden columns compose (union) with the controlled
+  `hiddenColumns`, persist via `persistKey`, and report through
+  `onColumnVisibilityChange`; runtime pins layer over static `col.pinned` and
+  also persist.
 
 ## [0.3.0] — Unreleased
 

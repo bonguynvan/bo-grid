@@ -186,7 +186,7 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>filterRow</td><td><span class="type">boolean</span></td><td>Per-column filter input row under the header (AND across columns). In-memory mode only.</td></tr>
           <tr><td>filterMenu</td><td><span class="type">boolean</span></td><td>Header filter menu (funnel per column) with type-aware controls (text/number/date) + set filter (<code>col.filter: 'set'</code>). Lazy-loaded on first open. In-memory mode only.</td></tr>
           <tr><td>quickFilter</td><td><span class="type">boolean</span></td><td>Built-in search box above the grid; matches across all columns (ANDed with <code>filter</code>). In-memory mode only.</td></tr>
-          <tr><td>columnMenu</td><td><span class="type">boolean</span></td><td>Per-column header menu (⋮): sort, hide (runtime), and filter actions.</td></tr>
+          <tr><td>columnMenu</td><td><span class="type">boolean</span></td><td>Per-column header menu (⋮): sort, pin left/right/unpin (runtime), and hide (runtime).</td></tr>
           <tr><td>onColumnVisibilityChange</td><td><span class="type">(hidden: string[]) =&gt; void</span></td><td>Called with all hidden column keys when the runtime set changes (column-menu hide/show).</td></tr>
           <tr><td>emptyMessage</td><td><span class="type">string</span></td><td>Text shown when there are no rows. Default <code>'No matching rows'</code>.</td></tr>
           <tr><td>loading</td><td><span class="type">boolean</span></td><td>Show a loading overlay (consumer-driven async in in-memory mode).</td></tr>

@@ -322,9 +322,16 @@
   // Apply any resize overrides (turns the dragged column fixed-width), then
   // pin-arrange. Both are no-ops by default, so the grid stays fit-to-width.
   const sized = $derived(applyWidths(visible, widths));
-  // Pin-arrangement: pinned columns move to the front and get sticky offsets.
+  // Runtime pin overrides (column menu) layered on top of static `col.pinned`.
+  let pinOverrides = $state<Record<string, 'left' | 'right' | false>>({});
+  const pinnedSized = $derived(
+    Object.keys(pinOverrides).length
+      ? sized.map((c) => (c.key in pinOverrides ? { ...c, pinned: pinOverrides[c.key] } : c))
+      : sized,
+  );
+  // Pin-arrangement: pinned columns move to the edges and get sticky offsets.
   // When nothing is pinned this is a no-op and the grid stays fit-to-width.
-  const layout = $derived(arrangePinned(sized));
+  const layout = $derived(arrangePinned(pinnedSized));
   const cols = $derived(layout.columns);
   const pinned = $derived(layout.anyPinned);
 
@@ -497,6 +504,40 @@
   }
   function showColumn(key: string): void {
     if (runtimeHidden.includes(key)) setRuntimeHidden(runtimeHidden.filter((k) => k !== key));
+  }
+
+  // ---- Runtime column pinning (column menu) ---------------------------------
+  function pinStorageKey(): string | null {
+    return persistKey ? `bo-grid:pin:${persistKey}` : null;
+  }
+  $effect(() => {
+    persistKey;
+    untrack(() => {
+      const key = pinStorageKey();
+      if (!key || typeof localStorage === 'undefined') return;
+      try {
+        const saved = JSON.parse(localStorage.getItem(key) ?? 'null');
+        if (saved && typeof saved === 'object') pinOverrides = saved as typeof pinOverrides;
+      } catch {
+        /* corrupt value — ignore */
+      }
+    });
+  });
+  function setPinOverride(key: string, side: 'left' | 'right' | false): void {
+    pinOverrides = { ...pinOverrides, [key]: side };
+    const sk = pinStorageKey();
+    if (sk && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(sk, JSON.stringify(pinOverrides));
+      } catch {
+        /* storage unavailable — still applies this session */
+      }
+    }
+  }
+  // Effective pin side for a column key: runtime override, else static config.
+  function pinSideOf(col: ColumnDef): 'left' | 'right' | false {
+    if (col.key in pinOverrides) return pinOverrides[col.key];
+    return col.pinned === true ? 'left' : col.pinned || false;
   }
 
   let resize: { key: string; startX: number; startW: number; min?: number; max?: number } | null = null;
@@ -921,6 +962,10 @@
         items.push({ label: 'Clear sort', onSelect: () => setSorts(sorts.filter((s) => s.key !== col.key)) });
       }
     }
+    const side = pinSideOf(col);
+    if (side !== 'left') items.push({ label: 'Pin left', onSelect: () => setPinOverride(col.key, 'left') });
+    if (side !== 'right') items.push({ label: 'Pin right', onSelect: () => setPinOverride(col.key, 'right') });
+    if (side) items.push({ label: 'Unpin', onSelect: () => setPinOverride(col.key, false) });
     items.push({ label: 'Hide column', onSelect: () => hideColumn(col.key) });
     menu = { x: rect.left, y: rect.bottom + 2, items };
   }

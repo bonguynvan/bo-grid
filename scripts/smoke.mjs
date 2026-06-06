@@ -493,6 +493,31 @@ if ([...document.querySelectorAll('.bo-grid .head .h')].some((h) => h.querySelec
   fail('column menu: Hide did not remove the Last column');
 if (document.querySelectorAll('.bo-grid .head .h').length !== headBefore - 1)
   fail('column menu: hiding a column did not reduce the header count by one');
+// Runtime pin (column menu): pin a column left → it moves toward the front;
+// unpin → it moves back (observable via header order, no real layout needed).
+const headLabels = () =>
+  [...document.querySelectorAll('.bo-grid .head .h')].map((h) => h.querySelector('.label')?.textContent?.trim());
+const pnlMenuBtn = () =>
+  [...document.querySelectorAll('.bo-grid .head .h')]
+    .find((h) => h.querySelector('.label')?.textContent?.trim() === 'P&L $')
+    ?.querySelector('.hmenu');
+const clickMenuItem = (label) =>
+  [...document.querySelectorAll('.rowmenu .rowmenu-item')]
+    .find((b) => b.textContent.trim() === label)
+    ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+const pnlBefore = headLabels().indexOf('P&L $');
+if (pnlBefore < 0) fail('pin: P&L $ column not found');
+pnlMenuBtn().dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(20);
+clickMenuItem('Pin left');
+await wait(20);
+const pnlPinned = headLabels().indexOf('P&L $');
+if (!(pnlPinned < pnlBefore)) fail(`pin: Pin left did not move the column forward (${pnlBefore}→${pnlPinned})`);
+pnlMenuBtn().dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(20);
+clickMenuItem('Unpin');
+await wait(20);
+if (!(headLabels().indexOf('P&L $') > pnlPinned)) fail('pin: Unpin did not move the column back');
 
 const sheetTab = tab('Spreadsheet');
 if (!sheetTab) fail('Spreadsheet example tab not found');
