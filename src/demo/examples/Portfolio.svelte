@@ -127,6 +127,7 @@
     columns={effColumns}
     {groupBy}
     filterMenu={!pivotMode}
+    columnMenu={!pivotMode}
     theme="dark"
     persistKey="demo-portfolio"
     height={620}

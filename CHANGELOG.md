@@ -3,9 +3,21 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.4.0] — Unreleased
+
+Theme: **column management & discoverability** (in progress — see
+[ROADMAP.md](./ROADMAP.md)).
+
+### Added
+
+- **Column header menu**: `columnMenu` adds a ⋮ trigger to each header with
+  Sort ascending / descending / Clear, and **Hide column**. Runtime-hidden
+  columns compose (union) with the controlled `hiddenColumns`, persist via
+  `persistKey`, and report through `onColumnVisibilityChange`.
+
 ## [0.3.0] — Unreleased
 
-Theme: **filtering & discoverability** (in progress — see [ROADMAP.md](./ROADMAP.md)).
+Theme: **filtering & discoverability** (see [ROADMAP.md](./ROADMAP.md)).
 
 ### Added
 
@@ -158,6 +170,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.4.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.4.0
 [0.3.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.3.0
 [0.2.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.2.0
 [0.1.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.1.0

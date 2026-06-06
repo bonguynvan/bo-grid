@@ -50,6 +50,8 @@
     rowSelection = false,
     onRowSelectionChange,
     hiddenColumns = [],
+    onColumnVisibilityChange,
+    columnMenu = false,
     rowClass,
     getRowId = (r: GridRow) => r.id,
     onRowClick,
@@ -93,8 +95,15 @@
     /** Called with the selected row ids whenever the row-selection set changes. */
     onRowSelectionChange?: (selectedIds: Array<string | number>) => void;
     /** Column keys to hide (controlled). Build your own column-picker UI and
-        drive this prop — the grid stays presentation-only. */
+        drive this prop — the grid stays presentation-only. Composed (union) with
+        columns the user hides at runtime via the column menu. */
     hiddenColumns?: string[];
+    /** Called with all currently-hidden column keys whenever the runtime set
+        changes (column menu hide/show). */
+    onColumnVisibilityChange?: (hidden: string[]) => void;
+    /** Enable a per-column header menu (a ⋮ trigger) with sort, hide and (with
+        `filterMenu`) filter actions. Default false. */
+    columnMenu?: boolean;
     /** Return extra CSS class(es) for a data row (e.g. to colour by value).
         Style them via `:global(.your-class)` since rows live inside the grid. */
     rowClass?: (row: GridRow) => string | undefined;
@@ -299,10 +308,16 @@
   }
 
   const ordered = $derived(order.length === columns.length ? order.map((i) => columns[i]) : columns);
-  // Drop hidden columns (controlled via `hiddenColumns`). Applied after ordering
-  // so `order` stays indexed over the full column set.
+  // Columns hidden at runtime via the column menu, unioned with the controlled
+  // `hiddenColumns` prop.
+  let runtimeHidden = $state<string[]>([]);
+  const effectiveHidden = $derived(
+    runtimeHidden.length ? [...new Set([...hiddenColumns, ...runtimeHidden])] : hiddenColumns,
+  );
+  // Drop hidden columns. Applied after ordering so `order` stays indexed over the
+  // full column set.
   const visible = $derived(
-    hiddenColumns.length ? ordered.filter((c) => !hiddenColumns.includes(c.key)) : ordered,
+    effectiveHidden.length ? ordered.filter((c) => !effectiveHidden.includes(c.key)) : ordered,
   );
   // Apply any resize overrides (turns the dragged column fixed-width), then
   // pin-arrange. Both are no-ops by default, so the grid stays fit-to-width.
@@ -447,6 +462,42 @@
       }
     });
   });
+
+  // ---- Runtime column visibility (column menu) ------------------------------
+  function hiddenStorageKey(): string | null {
+    return persistKey ? `bo-grid:hidden:${persistKey}` : null;
+  }
+  $effect(() => {
+    persistKey;
+    untrack(() => {
+      const key = hiddenStorageKey();
+      if (!key || typeof localStorage === 'undefined') return;
+      try {
+        const saved = JSON.parse(localStorage.getItem(key) ?? 'null');
+        if (Array.isArray(saved)) runtimeHidden = saved.filter((k) => typeof k === 'string');
+      } catch {
+        /* corrupt value — ignore */
+      }
+    });
+  });
+  function setRuntimeHidden(next: string[]): void {
+    runtimeHidden = next;
+    const key = hiddenStorageKey();
+    if (key && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(key, JSON.stringify(next));
+      } catch {
+        /* storage unavailable — still applies this session */
+      }
+    }
+    onColumnVisibilityChange?.(effectiveHidden);
+  }
+  function hideColumn(key: string): void {
+    if (!runtimeHidden.includes(key)) setRuntimeHidden([...runtimeHidden, key]);
+  }
+  function showColumn(key: string): void {
+    if (runtimeHidden.includes(key)) setRuntimeHidden(runtimeHidden.filter((k) => k !== key));
+  }
 
   let resize: { key: string; startX: number; startW: number; min?: number; max?: number } | null = null;
   let justResized = false;
@@ -857,6 +908,23 @@
     };
   });
 
+  // Column header menu (⋮): sort + hide actions. Reuses the floating RowMenu (a
+  // light action list — no lazy chunk needed, unlike the filter menu).
+  function openColumnMenu(col: ColumnDef, e: Event) {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const items: Array<{ label: string; onSelect: () => void }> = [];
+    if (isSortable(col)) {
+      items.push({ label: 'Sort ascending', onSelect: () => setSorts([{ key: col.key, dir: 'asc' }]) });
+      items.push({ label: 'Sort descending', onSelect: () => setSorts([{ key: col.key, dir: 'desc' }]) });
+      if (sortInfo(col.key)) {
+        items.push({ label: 'Clear sort', onSelect: () => setSorts(sorts.filter((s) => s.key !== col.key)) });
+      }
+    }
+    items.push({ label: 'Hide column', onSelect: () => hideColumn(col.key) });
+    menu = { x: rect.left, y: rect.bottom + 2, items };
+  }
+
   function onCellClicked(r: number, c: number, e: MouseEvent) {
     if (!onCellClick) return;
     const row = dataAt(r);
@@ -1201,6 +1269,20 @@
               <path d="M0 1h10L6 6v3L4 8V6z" fill="currentColor" />
             </svg>
           </span>
+        {/if}
+        {#if columnMenu}
+          <span
+            class="hmenu"
+            role="button"
+            tabindex="-1"
+            aria-label="{col.header} menu"
+            title="{col.header} menu"
+            onclick={(e) => openColumnMenu(col, e)}
+            onkeydown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') openColumnMenu(col, e);
+            }}
+            ondragstart={(e) => e.preventDefault()}
+            draggable="false">⋮</span>
         {/if}
         {#if isResizable(col, resizable)}
           <span
@@ -1610,6 +1692,22 @@
   .h .funnel.on {
     opacity: 1;
     color: var(--bo-up);
+  }
+  /* Header column-menu (⋮) trigger. */
+  .h .hmenu {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+    font-size: 14px;
+    line-height: 1;
+    color: var(--bo-text-dim);
+    opacity: 0.55;
+    cursor: pointer;
+    transition: opacity 120ms, color 120ms;
+  }
+  .h .hmenu:hover {
+    opacity: 1;
+    color: var(--bo-text);
   }
 
   /* Per-column filter input row, under the header. */

@@ -340,6 +340,15 @@ your own column-picker UI and drive the prop; the grid stays presentation-only:
 <Grid {rows} {columns} hiddenColumns={['bonus', 'rating']} height={640} />
 ```
 
+Or set `columnMenu` for a **per-column header menu** (a ⋮ trigger) with sort and
+**Hide column** actions. Runtime-hidden columns compose with `hiddenColumns`,
+persist via `persistKey`, and report through `onColumnVisibilityChange`:
+
+```svelte
+<Grid {rows} {columns} columnMenu height={640}
+  onColumnVisibilityChange={(hidden) => (myHidden = hidden)} />
+```
+
 ## Header groups
 
 Give columns a `group` label to render a spanning parent header over consecutive

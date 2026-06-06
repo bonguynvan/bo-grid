@@ -475,6 +475,24 @@ await waitFor('.bo-filtermenu', 'set-filter menu did not reopen');
 await wait(40);
 if (document.querySelectorAll('.bo-grid .row').length !== beforeFilter)
   fail('set filter: clearing did not restore the rows');
+// Column header menu (⋮): open the Last column's menu and hide it at runtime.
+const headBefore = document.querySelectorAll('.bo-grid .head .h').length;
+const lastMenuBtn = [...document.querySelectorAll('.bo-grid .head .h')]
+  .find((h) => h.querySelector('.label')?.textContent?.trim() === 'Last')
+  ?.querySelector('.hmenu');
+if (!lastMenuBtn) fail('column menu: ⋮ trigger did not render on the Last header');
+lastMenuBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(20);
+const colMenu = document.querySelector('.rowmenu');
+if (!colMenu) fail('column menu did not open');
+[...colMenu.querySelectorAll('.rowmenu-item')]
+  .find((b) => b.textContent.trim() === 'Hide column')
+  ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(20);
+if ([...document.querySelectorAll('.bo-grid .head .h')].some((h) => h.querySelector('.label')?.textContent?.trim() === 'Last'))
+  fail('column menu: Hide did not remove the Last column');
+if (document.querySelectorAll('.bo-grid .head .h').length !== headBefore - 1)
+  fail('column menu: hiding a column did not reduce the header count by one');
 
 const sheetTab = tab('Spreadsheet');
 if (!sheetTab) fail('Spreadsheet example tab not found');
