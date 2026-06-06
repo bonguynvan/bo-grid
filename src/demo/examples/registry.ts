@@ -2,6 +2,7 @@ import type { Component } from 'svelte';
 import TradingDesk from './TradingDesk.svelte';
 import Portfolio from './Portfolio.svelte';
 import Sheet from './Sheet.svelte';
+import OrderBook from './OrderBook.svelte';
 import BigData from './BigData.svelte';
 
 export interface Example {
@@ -30,6 +31,12 @@ export const EXAMPLES: Example[] = [
     title: 'Spreadsheet',
     blurb: 'A general-purpose editable grid — inline edit, copy/paste, resize.',
     component: Sheet,
+  },
+  {
+    id: 'orderbook',
+    title: 'Order book',
+    blurb: 'A live depth ladder — per-row colour, depth bars, realtime size flashes.',
+    component: OrderBook,
   },
   {
     id: 'bigdata',

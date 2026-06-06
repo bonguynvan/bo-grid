@@ -8,9 +8,9 @@ A free alternative to the heavyweight grids that paywall these features.
 **[API reference](https://bonguynvan.github.io/bo-grid/api.html)**
 
 The demo is a small gallery — a realtime **Trading desk**, a grouped **Portfolio**
-with subtotals and pivot, a general-purpose editable **Spreadsheet**, and a
-**1M-row** trade tape windowed from a synthetic source — switch between them with
-the tabs.
+with subtotals and pivot, a general-purpose editable **Spreadsheet**, a live
+**Order book** depth ladder, and a **1M-row** trade tape windowed from a synthetic
+source — switch between them with the tabs.
 
 > **Status: v0.1 (early).** Working: config-driven columns, virtual scroll,
 > client sort + filter, multi-cell selection + live range aggregation, row
@@ -267,6 +267,20 @@ your own column-picker UI and drive the prop; the grid stays presentation-only:
 
 ```svelte
 <Grid {rows} {columns} hiddenColumns={['bonus', 'rating']} height={640} />
+```
+
+## Per-row styling
+
+Return a class from `rowClass` to style rows by their data (e.g. red/green book
+levels). Rows live inside the grid, so target the class with `:global(...)`:
+
+```svelte
+<Grid {rows} {columns} height={640} rowClass={(r) => (r.up ? 'gain' : 'loss')} />
+
+<style>
+  :global(.bo-grid .row.gain) { color: var(--up); }
+  :global(.bo-grid .row.loss) { color: var(--down); }
+</style>
 ```
 
 ## Inline editing

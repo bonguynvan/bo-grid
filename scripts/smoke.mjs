@@ -339,6 +339,18 @@ await wait(20);
 const colsAfter = document.querySelectorAll('.bo-grid .head .h').length;
 if (colsAfter !== colsBefore - 1) fail(`hiding a column should drop one header (${colsBefore} → ${colsAfter})`);
 
+// Order book: per-row colour classes (ask/bid) via rowClass + custom depth cell.
+const obTab = tab('Order book');
+if (!obTab) fail('Order book example tab not found');
+click(obTab);
+await wait(50);
+await waitFor('.bo-grid .row.ask', 'Order book did not apply ask rowClass');
+const obAsk = document.querySelectorAll('.bo-grid .row.ask').length;
+const obBid = document.querySelectorAll('.bo-grid .row.bid').length;
+const obDepth = document.querySelectorAll('.bo-grid .row .depth .fill').length;
+if (obBid === 0) fail('Order book did not apply bid rowClass');
+if (obDepth === 0) fail('Order book custom depth-bar cell did not render');
+
 // Big data: a 1,000,000-row windowed source. Assert real (non-skeleton) rows
 // load after the simulated latency and the scrollbar reflects the full total.
 const bigTab = tab('1M rows');
@@ -366,7 +378,7 @@ console.log(
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups, sheet ${sheetRows} rows (light) + row-select + col-hide, ` +
-    `bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

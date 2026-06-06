@@ -39,6 +39,7 @@
     rowSelection = false,
     onRowSelectionChange,
     hiddenColumns = [],
+    rowClass,
     cell,
   }: {
     rows: GridRow[];
@@ -60,6 +61,9 @@
     /** Column keys to hide (controlled). Build your own column-picker UI and
         drive this prop — the grid stays presentation-only. */
     hiddenColumns?: string[];
+    /** Return extra CSS class(es) for a data row (e.g. to colour by value).
+        Style them via `:global(.your-class)` since rows live inside the grid. */
+    rowClass?: (row: GridRow) => string | undefined;
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -767,7 +771,7 @@
             {/each}
           </div>
         {:else}
-          <div class="row" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(item.row.id)} role="row" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(item.row.id) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
+          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(item.row.id)} role="row" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(item.row.id) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
             {#if rowSelection}
               <span class="selcell" style={selCellStyle(false)}>
                 <input
