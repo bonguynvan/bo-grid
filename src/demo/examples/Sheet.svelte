@@ -46,7 +46,7 @@
 
   // Every column resizable (the default); salary/bonus/rating editable.
   const columns: ColumnDef[] = [
-    { type: 'text', key: 'name', header: 'Name', width: 160 },
+    { type: 'text', key: 'name', header: 'Name', width: 160, tooltip: true },
     { type: 'text', key: 'role', header: 'Role', width: 130, editable: true, options: ROLES },
     { type: 'text', key: 'team', header: 'Team', width: 120 },
     { type: 'number', key: 'salary', header: 'Salary', width: 116, decimals: 0, editable: true },

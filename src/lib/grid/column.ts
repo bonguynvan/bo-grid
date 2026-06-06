@@ -30,6 +30,9 @@ interface ColBase {
   /** Editable choices: when set, editing renders a `<select>` of these options
       instead of a text input (enum/status columns). */
   options?: string[];
+  /** Set a native `title` tooltip on each cell (the full formatted value) — handy
+      when content truncates. */
+  tooltip?: boolean;
   /** Set false to disable drag-to-resize on this column (default on). */
   resizable?: boolean;
   /** Parent header label. Consecutive columns sharing a `group` render under a

@@ -83,6 +83,12 @@
   // though the key is only known at runtime.
   const value = $derived(row[col.key]);
   const kind = $derived(col.type === 'text' ? 'text' : col.type === 'sparkline' ? 'spark' : 'num');
+  // Native tooltip of the full value (opt-in via column `tooltip`).
+  const tip = $derived(
+    col.tooltip && col.type !== 'sparkline' && col.type !== 'custom'
+      ? formatCell(col, value)
+      : undefined,
+  );
 
   function cellStyle(): string {
     let s = width != null ? `flex:0 0 ${width}px;width:${width}px;` : colStyle(col);
@@ -110,6 +116,7 @@
   role="gridcell"
   tabindex="-1"
   id={cellId}
+  title={tip}
   aria-colindex={colIndex}
   aria-selected={selected}
   onpointerdown={(e) => onCellDown?.(r, c, e)}

@@ -392,6 +392,10 @@ await wait(40);
 const roleAfter = document.querySelectorAll('.bo-grid .row')[0].querySelectorAll('.c')[1].textContent.trim();
 if (roleAfter !== 'Designer') fail(`select edit did not commit (cell shows "${roleAfter}")`);
 
+// Cell tooltip: the Name column sets a title attribute of the full value.
+const nameCell = document.querySelectorAll('.bo-grid .row')[0].querySelectorAll('.c')[0];
+if (!nameCell.getAttribute('title')) fail('tooltip column did not set a cell title');
+
 // Row selection: tick one row, then select-all via the header checkbox.
 const firstCheck = document.querySelector('.bo-grid .row .rowcheck');
 if (!firstCheck) fail('row-selection checkbox did not render');
