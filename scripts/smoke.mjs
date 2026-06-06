@@ -262,19 +262,29 @@ if (!pivotHeaders.includes('Total') || !pivotHeaders.includes('sector')) {
 const tab = (label) =>
   [...document.querySelectorAll('[role="tab"]')].find((b) => b.textContent.trim() === label);
 
+// The non-default examples are lazy chunks, so poll until the expected element
+// appears (chunk fetch + mount + reactive flush all settle asynchronously).
+const waitFor = async (selector, label) => {
+  for (let i = 0; i < 60; i++) {
+    if (document.querySelectorAll(selector).length > 0) return;
+    await wait(25);
+  }
+  fail(`${label} (selector "${selector}" never appeared)`);
+};
+
 const portfolioTab = tab('Portfolio');
 if (!portfolioTab) fail('Portfolio example tab not found');
 click(portfolioTab);
-await wait(80);
+await waitFor('.bo-grid .row', 'Portfolio example rendered no rows');
+await waitFor('.bo-grid .group', 'Portfolio example did not group by sector');
 const portfolioRows = document.querySelectorAll('.bo-grid .row').length;
 const portfolioGroups = document.querySelectorAll('.bo-grid .group').length;
-if (portfolioRows === 0) fail('Portfolio example rendered no rows');
-if (portfolioGroups === 0) fail('Portfolio example did not group by sector');
 
 const sheetTab = tab('Spreadsheet');
 if (!sheetTab) fail('Spreadsheet example tab not found');
 click(sheetTab);
-await wait(80);
+await wait(25);
+await waitFor('.bo-grid .row', 'Spreadsheet example rendered no rows');
 const sheetRows = document.querySelectorAll('.bo-grid .row').length;
 const sheetLight = /--bo-grid-bg:\s*#fff/i.test(
   document.querySelector('.bo-grid.grid')?.getAttribute('style') || '',

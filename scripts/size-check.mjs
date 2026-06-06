@@ -1,5 +1,9 @@
-// Bundle-budget guard. The whole pitch is "free + tiny vs AG Grid's ~500kb",
-// so the gzip size is a product promise — fail CI if it regresses.
+// Bundle-budget guard for the DEMO app. The real product-size promise — the
+// gzipped library a consumer actually ships — is enforced separately and more
+// tightly by `size:lib` (scripts/size-lib.mjs). This budget guards the demo
+// entry chunk, which also bundles the Svelte runtime, the examples gallery
+// (trading desk + portfolio + spreadsheet), and the demo data generators, so it
+// is a looser ceiling that just catches accidental demo bloat.
 //
 // Measures the CORE entry chunk only (the `index-*` files). Lazy chunks loaded
 // via dynamic import (e.g. SheetJS for xlsx export) are intentionally excluded —
@@ -8,7 +12,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
 const DIR = 'demo-dist/assets';
-const BUDGET_KB = { js: 30, css: 8 }; // gzipped
+const BUDGET_KB = { js: 36, css: 8 }; // gzipped
 
 function gzipKb(path) {
   return gzipSync(readFileSync(path)).length / 1024;
