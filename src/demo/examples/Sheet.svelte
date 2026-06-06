@@ -53,7 +53,7 @@
     { type: 'number', key: 'salary', header: 'Salary', width: 116, minWidth: 90, maxWidth: 200, decimals: 0, editable: true, format: (v) => `$${Number(v).toLocaleString()}` },
     { type: 'number', key: 'bonus', header: 'Bonus', width: 108, decimals: 0, editable: true },
     { type: 'number', key: 'rating', header: 'Rating', width: 92, decimals: 1, editable: true, cellClass: (v) => (Number(v) >= 4.5 ? 'rating-hot' : '') },
-    { type: 'date', key: 'startDate', header: 'Start date', width: 120, dateStyle: 'short' },
+    { type: 'date', key: 'startDate', header: 'Start date', width: 120, dateStyle: 'short', editable: true },
   ];
 
   let filterText = $state('');

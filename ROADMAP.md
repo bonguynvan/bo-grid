@@ -49,11 +49,12 @@ than AG Grid; heavy UI stays lazy and excluded from the core count).
 
 - [x] **M1 — Fill handle** (`fillHandle`): drag the selection's corner to copy
   the selected value(s) across the extended range (editable columns; tiles).
-- [ ] **M2 — Undo / redo** (Ctrl+Z / Ctrl+Y) for edits, paste and fill.
-- [ ] **M3 — Typed inline editors**: date columns edit with a date picker, number
-  columns with a numeric input (today the editor is a plain text input).
-- [ ] **M4 — Autosize column to content** (carried over from 0.4): double-click
-  the header border to fit. Needs DOM measurement — verify in a real browser.
+- [x] **M2 — Undo / redo** (Ctrl+Z / Ctrl+Y) for edits, paste and fill; row-keyed
+  history (survives sort/filter); paste/fill undo as one step.
+- [x] **M3 — Typed inline editors**: numeric columns edit with a number input,
+  `date` columns with a native date picker (date columns are now editable).
+- [ ] **M4 — Autosize column to content**: double-click the header border to fit.
+  Needs DOM width measurement — verify in a real browser, not the headless smoke.
 
 ## Candidate themes for later versions
 

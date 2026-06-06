@@ -270,7 +270,12 @@
     const row = dataAt(r);
     if (!row) return false;
     let value: string | number = raw;
-    if (isNumeric(col)) {
+    if (col.type === 'date') {
+      // The date editor emits a yyyy-mm-dd string; store the column's ms value.
+      const ms = Date.parse(`${raw}T00:00:00Z`);
+      if (!Number.isFinite(ms)) return false;
+      value = ms;
+    } else if (isNumeric(col)) {
       const n = Number(raw);
       if (!Number.isFinite(n)) return false; // reject invalid number, keep old value
       value = n;
@@ -1237,7 +1242,7 @@
     if (!mod && !e.altKey && e.key.length === 1 && e.key !== ' ' && sel.focus && !editing) {
       const f = sel.focus;
       const col = cols[f.c];
-      if (isEditable(col) && !(col.options && col.options.length) && dataAt(f.r)) {
+      if (isEditable(col) && col.type !== 'date' && !(col.options && col.options.length) && dataAt(f.r)) {
         e.preventDefault();
         startEdit(f.r, f.c, e.key);
         return;

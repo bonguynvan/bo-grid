@@ -15,6 +15,9 @@ Theme: **spreadsheet power** (in progress — see [ROADMAP.md](./ROADMAP.md)).
 - **Undo / redo**: <kbd>Ctrl/⌘</kbd>+<kbd>Z</kbd> / <kbd>Ctrl/⌘</kbd>+<kbd>Y</kbd>
   (or <kbd>Shift</kbd>+<kbd>Z</kbd>) for edits, paste and fill. History is keyed
   by row reference so it survives sort/filter; a paste or fill is one step.
+- **Typed inline editors**: editable `number`/`price`/`percent`/`volume` columns
+  edit with a numeric input, and `date` columns with a native date picker
+  (`date` columns are now editable). Other columns keep the text input.
 
 ## [0.4.0] — Unreleased
 

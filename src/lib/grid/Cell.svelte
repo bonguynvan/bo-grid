@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { ColumnDef, GridRow } from './column';
-  import { formatCell, colStyle, candlesOf } from './column';
+  import { formatCell, colStyle, candlesOf, isNumeric } from './column';
   import { heatColor } from './heatmap';
   import Sparkline from '../sparkline/Sparkline.svelte';
 
@@ -73,6 +73,8 @@
   let cancelled = false;
   function focusSelect(node: HTMLInputElement) {
     node.focus();
+    // Only text/search inputs support text selection; number/date inputs throw.
+    if (node.type !== 'text' && node.type !== 'search') return;
     // Type-to-edit: keep the seeded character and put the caret after it;
     // otherwise select the whole value so the next keystroke replaces it.
     if (seed != null) node.setSelectionRange(node.value.length, node.value.length);
@@ -103,6 +105,14 @@
   // goes through the $state getter — fine-grained reactivity is preserved even
   // though the key is only known at runtime.
   const value = $derived(row[col.key]);
+  // Typed inline editor: date columns edit with a date picker, numeric columns
+  // with a numeric input; everything else stays a text input.
+  const editorType = $derived(col.type === 'date' ? 'date' : isNumeric(col) ? 'number' : 'text');
+  const editorValue = $derived(
+    col.type === 'date' && Number.isFinite(Number(value))
+      ? new Date(Number(value)).toISOString().slice(0, 10)
+      : String(value ?? ''),
+  );
   const kind = $derived(col.type === 'text' ? 'text' : col.type === 'sparkline' ? 'spark' : 'num');
   // Optional per-column cell class (static string or value/row function).
   const extraClass = $derived(
@@ -200,7 +210,8 @@
   {:else if editing}
     <input
       class="bo-edit"
-      value={seed ?? String(value ?? '')}
+      type={editorType}
+      value={seed ?? editorValue}
       use:focusSelect
       onkeydown={onEditKey}
       onblur={onEditBlur}

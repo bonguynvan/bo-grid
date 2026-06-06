@@ -125,7 +125,7 @@ export function isSortable(col: ColumnDef): boolean {
 }
 
 export function isEditable(col: ColumnDef): boolean {
-  return !!col.editable && col.type !== 'sparkline' && col.type !== 'date' && col.type !== 'custom';
+  return !!col.editable && col.type !== 'sparkline' && col.type !== 'custom';
 }
 
 function rawCompare(a: unknown, b: unknown): number {

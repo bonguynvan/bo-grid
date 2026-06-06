@@ -438,7 +438,9 @@ is keyboard-accessible: the <kbd>ContextMenu</kbd> key (or
 Mark a column `editable: true`. Double-click a cell (or press <kbd>Enter</kbd> on
 the focused cell) to edit; <kbd>Enter</kbd>/blur commits, <kbd>Esc</kbd> cancels.
 Or just start typing — a printable key on a focused editable cell opens the
-editor seeded with that character (Excel-style type-to-edit). The grid is
+editor seeded with that character (Excel-style type-to-edit). The editor matches
+the column type: numeric columns get a number input, `date` columns a native date
+picker, `options` columns a `<select>`, everything else a text input. The grid is
 controlled, so it reports the change via `onCellEdit` — update your own row data
 there:
 

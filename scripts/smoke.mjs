@@ -611,6 +611,31 @@ await wait(40);
 const roleAfter = document.querySelectorAll('.bo-grid .row')[0].querySelectorAll('.c')[1].textContent.trim();
 if (roleAfter !== 'Designer') fail(`select edit did not commit (cell shows "${roleAfter}")`);
 
+// Typed inline editors (v0.5): numeric columns use a number input; date columns a
+// date picker. Double-click Bonus (col 4) → number input; Start date (col 6) → date.
+document.querySelectorAll('.bo-grid .row')[0].querySelectorAll('.c')[4].dispatchEvent(
+  new window.MouseEvent('dblclick', { bubbles: true }),
+);
+await wait(40);
+if (!document.querySelector('.bo-grid input.bo-edit[type="number"]'))
+  fail('numeric column did not use a number input editor');
+document
+  .querySelector('.bo-grid input.bo-edit')
+  .dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+await wait(20);
+const dateBefore = document.querySelectorAll('.bo-grid .row')[0].querySelectorAll('.c')[6].textContent.trim();
+document.querySelectorAll('.bo-grid .row')[0].querySelectorAll('.c')[6].dispatchEvent(
+  new window.MouseEvent('dblclick', { bubbles: true }),
+);
+await wait(40);
+const dateInput = document.querySelector('.bo-grid input.bo-edit[type="date"]');
+if (!dateInput) fail('date column did not use a date input editor');
+dateInput.value = '2030-06-15';
+dateInput.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+await wait(40);
+const dateAfter = document.querySelectorAll('.bo-grid .row')[0].querySelectorAll('.c')[6].textContent.trim();
+if (dateAfter === dateBefore) fail(`date edit did not commit (cell still "${dateAfter}")`);
+
 // Cell tooltip: the Name column sets a title attribute of the full value.
 const nameCell = document.querySelectorAll('.bo-grid .row')[0].querySelectorAll('.c')[0];
 if (!nameCell.getAttribute('title')) fail('tooltip column did not set a cell title');
