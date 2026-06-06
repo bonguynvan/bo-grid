@@ -572,6 +572,15 @@
     onCellClick({ row, column, value: row[column.key] }, e);
   }
 
+  // Move the focus to an absolute (r, c), clamped; extend the selection if asked.
+  function focusTo(r: number, c: number, extend: boolean) {
+    const rr = Math.max(0, Math.min(r, maxR));
+    const cc = Math.max(0, Math.min(c, maxC));
+    if (extend) sel.extendTo(rr, cc);
+    else sel.start(rr, cc);
+    scrollFocusIntoView();
+  }
+
   function scrollFocusIntoView() {
     const f = sel.focus;
     if (!f || !viewportEl) return;
@@ -682,6 +691,17 @@
     }
     if (e.key === 'Escape') {
       sel.clear();
+      return;
+    }
+    // Home/End (row, or whole grid with Ctrl/⌘); PageUp/PageDown by a viewport page.
+    const f = sel.focus;
+    if (f && (e.key === 'Home' || e.key === 'End' || e.key === 'PageUp' || e.key === 'PageDown')) {
+      e.preventDefault();
+      const page = Math.max(1, Math.floor(height / baseH) - 1);
+      if (e.key === 'Home') focusTo(mod ? 0 : f.r, 0, e.shiftKey);
+      else if (e.key === 'End') focusTo(mod ? maxR : f.r, maxC, e.shiftKey);
+      else if (e.key === 'PageDown') focusTo(f.r + page, f.c, e.shiftKey);
+      else focusTo(f.r - page, f.c, e.shiftKey);
       return;
     }
     const delta: Record<string, [number, number]> = {

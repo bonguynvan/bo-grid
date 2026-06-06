@@ -68,6 +68,8 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   aggregates all (filtered) rows, sticky to the viewport bottom.
 - **Pinned top rows**: `pinnedRows` keeps rows stuck to the top, always visible
   above the scroll (a benchmark, a summary, "your position").
+- **Keyboard navigation**: <kbd>Home</kbd>/<kbd>End</kbd> (row, or whole grid
+  with Ctrl/⌘) and <kbd>PageUp</kbd>/<kbd>PageDown</kbd>, with Shift to extend.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 - **Theming**: dark-first, self-contained CSS variables (`--bo-grid-*`), no CSS

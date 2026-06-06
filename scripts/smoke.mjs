@@ -220,6 +220,27 @@ if (!adesc || !document.getElementById(adesc)) {
   fail(`aria-activedescendant not set to a live focus cell (${adesc})`);
 }
 
+// Keyboard navigation: Home/End move within the row; Ctrl+Home jumps to the
+// first cell. The focus is read back off aria-activedescendant.
+const gridK = document.querySelector('.bo-grid.grid');
+const pressKey = (k, opts = {}) =>
+  gridK.dispatchEvent(new window.KeyboardEvent('keydown', { key: k, bubbles: true, ...opts }));
+pressKey('Home');
+await wait(20);
+if (!/-c0$/.test(gridK.getAttribute('aria-activedescendant') || '')) {
+  fail(`Home should move focus to column 0 (got ${gridK.getAttribute('aria-activedescendant')})`);
+}
+pressKey('End');
+await wait(20);
+if (!/-c8$/.test(gridK.getAttribute('aria-activedescendant') || '')) {
+  fail(`End should move focus to the last column (got ${gridK.getAttribute('aria-activedescendant')})`);
+}
+pressKey('Home', { ctrlKey: true });
+await wait(20);
+if (gridK.getAttribute('aria-activedescendant') !== `${gridK.id}-r0-c0`) {
+  fail(`Ctrl+Home should jump to the first cell (got ${gridK.getAttribute('aria-activedescendant')})`);
+}
+
 // Grouping (Phase 3): switch the demo to group-by-sector, assert group-header
 // rows render, then collapse one group and assert the scroll height shrinks.
 const sectorBtn = [...document.querySelectorAll('.seg button')].find(
@@ -427,6 +448,6 @@ console.log(
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups, sheet ${sheetRows} rows (light) + row-select + col-hide, ` +
     `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
-    `a11y rowcount/activedescendant ok`,
+    `keyboard Home/End/Ctrl+Home ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

@@ -133,9 +133,10 @@ or sync to the URL), pass a controlled `sort` array and handle `onSortChange`:
 ## Selection & aggregation
 
 Click a cell, then drag or **Shift-click** to extend a rectangular selection.
-Keyboard: **arrows** move, **Shift+arrows** extend, **Ctrl/⌘+A** select all,
-**Ctrl/⌘+C** copy the selection as TSV (Excel-pasteable), **Ctrl/⌘+V** paste,
-**Esc** clear.
+Keyboard: **arrows** move, **Shift+arrows** extend, **Home/End** jump to the
+first/last column (**+Ctrl/⌘** for the first/last cell), **PageUp/PageDown** move
+by a page, **Ctrl/⌘+A** select all, **Ctrl/⌘+C** copy the selection as TSV
+(Excel-pasteable), **Ctrl/⌘+V** paste, **Esc** clear.
 
 Paste writes a TSV block (from a spreadsheet or the grid's own copy) into
 editable cells starting at the selection's top-left. A single copied value fills
