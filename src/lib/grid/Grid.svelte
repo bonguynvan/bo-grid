@@ -15,6 +15,7 @@
   import { aggregate, type AggKind, type AggResult } from './aggregate';
   import { buildFlatRows, activeGroupsAt, type VisualRow, type GroupNode } from './grouping';
   import { moveIndex } from './reorder';
+  import { parseClipboard, isSingleCell } from './clipboard';
   import type { RowSource } from './source';
   import { RowSourceController } from './source.svelte';
   import Cell from './Cell.svelte';
@@ -75,18 +76,27 @@
     if (!isEditable(cols[c]) || !dataAt(r)) return;
     editing = { r, c };
   }
-  function commitEdit(r: number, c: number, raw: string) {
+  // Coerce + validate a raw string for cell (r,c) and emit onCellEdit.
+  // Returns true if a value was written, false if rejected (not editable,
+  // missing row, or invalid number). Shared by inline edit and paste.
+  function writeCell(r: number, c: number, raw: string): boolean {
     const col = cols[c];
+    if (!col || !isEditable(col)) return false;
     const row = dataAt(r);
-    editing = null;
-    if (!row) return;
+    if (!row) return false;
     let value: string | number = raw;
     if (isNumeric(col)) {
       const n = Number(raw);
-      if (!Number.isFinite(n)) return; // reject invalid number, keep old value
+      if (!Number.isFinite(n)) return false; // reject invalid number, keep old value
       value = n;
     }
     onCellEdit?.({ row, column: col, value });
+    return true;
+  }
+
+  function commitEdit(r: number, c: number, raw: string) {
+    editing = null;
+    writeCell(r, c, raw);
   }
 
   const collapsed = new Set<string>();
@@ -353,6 +363,49 @@
     }
   }
 
+  async function pasteSelection() {
+    if (!onCellEdit) return; // no sink for edits — paste is a no-op
+    const anchor = sel.bounds;
+    if (!anchor) return;
+    let text = '';
+    try {
+      text = (await navigator.clipboard?.readText()) ?? '';
+    } catch {
+      return; // clipboard read blocked/unavailable
+    }
+    const grid = parseClipboard(text);
+    if (grid.length === 0) return;
+
+    const single = isSingleCell(grid);
+    // Single value fills the whole selection (Excel behaviour); a block
+    // pastes from the top-left anchor, clamped to the grid bounds.
+    const r0 = anchor.r0;
+    const c0 = anchor.c0;
+    const rSpan = single ? anchor.r1 - anchor.r0 + 1 : grid.length;
+    let wrote = 0;
+    for (let dr = 0; dr < rSpan; dr++) {
+      const r = r0 + dr;
+      if (r > rowCount - 1) break;
+      const srcRow = single ? grid[0] : grid[dr];
+      const cSpan = single ? anchor.c1 - anchor.c0 + 1 : srcRow.length;
+      for (let dc = 0; dc < cSpan; dc++) {
+        const c = c0 + dc;
+        if (c > cols.length - 1) break;
+        const raw = single ? grid[0][0] : (srcRow[dc] ?? '');
+        if (writeCell(r, c, raw)) wrote++;
+      }
+    }
+    // Surface the pasted region as the new selection so it's visible.
+    if (wrote > 0) {
+      const rEnd = Math.min(r0 + rSpan - 1, rowCount - 1);
+      const cEnd = single
+        ? anchor.c1
+        : Math.min(c0 + Math.max(...grid.map((g) => g.length)) - 1, cols.length - 1);
+      sel.start(r0, c0);
+      sel.extendTo(rEnd, cEnd);
+    }
+  }
+
   function onKeydown(e: KeyboardEvent) {
     const mod = e.ctrlKey || e.metaKey;
     if (e.key === 'Enter' && sel.focus && !editing) {
@@ -371,6 +424,11 @@
     if (mod && e.key.toLowerCase() === 'c') {
       e.preventDefault();
       void copySelection();
+      return;
+    }
+    if (mod && e.key.toLowerCase() === 'v') {
+      e.preventDefault();
+      void pasteSelection();
       return;
     }
     if (e.key === 'Escape') {

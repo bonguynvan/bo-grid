@@ -34,6 +34,9 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   scroll (opt-in; the grid is fit-to-width otherwise).
 - **Inline editing**: `editable: true` columns edit on double-click / Enter and
   report committed values via `onCellEdit`.
+- **Clipboard paste**: **Ctrl/⌘+V** pastes a TSV block into editable cells from
+  the selection's top-left (single value fills the selection; blocks clamp to
+  bounds); values run through the same validation as inline editing.
 - **Row height**: `rowHeight` as a number (density) or a function (variable
   per-row heights, virtualized with prefix sums + binary search).
 - **Theming**: `theme` prop accepts `'dark'`/`'light'` presets or a custom token

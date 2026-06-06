@@ -36,6 +36,21 @@ window.HTMLCanvasElement.prototype.getContext = () => ({
   set strokeStyle(_v) {}, set fillStyle(_v) {}, set lineWidth(_v) {},
 });
 
+// jsdom has no clipboard; stub read/write so copy/paste can be exercised.
+// The bundle's bare `navigator` resolves to Node's global navigator (no
+// clipboard), so stub it on every navigator the code might reach.
+let clipboardText = '';
+const clipboardStub = {
+  writeText: async (t) => { clipboardText = String(t); },
+  readText: async () => clipboardText,
+};
+for (const nav of [window.navigator, globalThis.navigator]) {
+  if (!nav) continue;
+  try {
+    Object.defineProperty(nav, 'clipboard', { configurable: true, value: clipboardStub });
+  } catch {}
+}
+
 function fail(msg) {
   console.error(`✗ smoke: ${msg}`);
   process.exit(1);
@@ -82,6 +97,22 @@ editInput.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubb
 await wait(40);
 const editedText = document.querySelectorAll('.row')[0].querySelectorAll('.c')[TARGET_COL].textContent.trim();
 if (editedText !== '999.99') fail(`inline edit did not commit (cell shows "${editedText}")`);
+
+// Clipboard paste (Phase 5): select the Target cell on row 1, put a value on the
+// clipboard, press Ctrl+V, and assert it commits through the same edit path.
+const gridForPaste = document.querySelector('.bo-grid.grid');
+const pasteRow = document.querySelectorAll('.row')[1];
+pasteRow.querySelectorAll('.c')[TARGET_COL].dispatchEvent(
+  new window.MouseEvent('pointerdown', { button: 0, bubbles: true }),
+);
+window.dispatchEvent(new window.Event('pointerup'));
+clipboardText = '123.45';
+gridForPaste.dispatchEvent(
+  new window.KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true }),
+);
+await wait(60);
+const pastedText = document.querySelectorAll('.row')[1].querySelectorAll('.c')[TARGET_COL].textContent.trim();
+if (pastedText !== '123.45') fail(`clipboard paste did not commit (cell shows "${pastedText}")`);
 
 // Variable row height (Phase 5): switch to 'Vary' and assert rendered rows have
 // differing heights, then restore 'Compact' for the remaining assertions.
@@ -206,7 +237,7 @@ console.log(
   `✓ smoke: grid mounted — ${rowCount} rows, ${canvases} sparklines; ` +
     `selection ${selCount} cells + agg bar; grouping ${groupHeaders} headers, ` +
     `edit committed; variable heights ${rowHeights.join('/')}; ` +
-    `collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
+    `paste committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
     `a11y rowcount/activedescendant ok`,
 );

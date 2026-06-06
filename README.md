@@ -119,7 +119,15 @@ it from your own search input — the grid stays presentation-only.
 
 Click a cell, then drag or **Shift-click** to extend a rectangular selection.
 Keyboard: **arrows** move, **Shift+arrows** extend, **Ctrl/⌘+A** select all,
-**Ctrl/⌘+C** copy the selection as TSV (Excel-pasteable), **Esc** clear.
+**Ctrl/⌘+C** copy the selection as TSV (Excel-pasteable), **Ctrl/⌘+V** paste,
+**Esc** clear.
+
+Paste writes a TSV block (from a spreadsheet or the grid's own copy) into
+editable cells starting at the selection's top-left. A single copied value fills
+the whole selection (Excel behaviour); a block clamps to the grid edges. Pasted
+values flow through the same validation as inline editing — non-editable columns
+and invalid numbers are skipped — and each accepted cell emits `onCellEdit`, so
+paste only does anything when you've wired that callback.
 
 When more than one cell is selected, a footer bar shows live **Sum / Avg / Count /
 Min / Max** over the numeric cells in the range — and it keeps updating as a
