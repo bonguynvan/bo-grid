@@ -903,7 +903,7 @@
     {/if}
     {#each cols as col, ci (ci)}
       <button
-        class="h"
+        class="h {col.headerClass ?? ''}"
         class:right={isNumeric(col) || col.align === 'right'}
         class:sortable={isSortable(col)}
         class:dragging={ci === dragSrc}

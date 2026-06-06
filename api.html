@@ -237,6 +237,8 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>width</td><td><span class="type">number</span></td><td>Fixed width (px).</td></tr>
           <tr><td>flex</td><td><span class="type">number</span></td><td>flex-grow weight; column fills remaining space.</td></tr>
           <tr><td>align</td><td><span class="type">'left' | 'right'</span></td><td>Header/text alignment.</td></tr>
+          <tr><td>cellClass</td><td><span class="type">string | (value, row) =&gt; string</span></td><td>Extra class(es) on the column's cells (static or conditional). Target via <code>:global</code>.</td></tr>
+          <tr><td>headerClass</td><td><span class="type">string</span></td><td>Extra class(es) on the column header.</td></tr>
           <tr><td>flash</td><td><span class="type">boolean</span></td><td>Amber flash on value change (drives off <code>flashSeq</code>).</td></tr>
           <tr><td>sortable</td><td><span class="type">boolean</span></td><td>Set <code>false</code> to disable header-click sorting.</td></tr>
           <tr><td>compare</td><td><span class="type">(a, b) =&gt; number</span></td><td>Custom ascending comparator (enum priority, natural sort). In-memory mode.</td></tr>

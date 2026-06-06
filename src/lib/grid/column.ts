@@ -13,6 +13,12 @@ interface ColBase {
   /** flex-grow weight; column stretches to fill remaining space. */
   flex?: number;
   align?: Align;
+  /** Extra class(es) for this column's data cells — a static string, or a
+      function of the cell value/row for conditional styling. Target via
+      `:global(.bo-grid .c.your-class)`. */
+  cellClass?: string | ((value: unknown, row: GridRow) => string | undefined);
+  /** Extra class(es) for this column's header. Target via `:global`. */
+  headerClass?: string;
   /** Amber flash on value change (drives off the row's flashSeq/flashDir). */
   flash?: boolean;
   /** Set false to disable header-click sorting on this column. */

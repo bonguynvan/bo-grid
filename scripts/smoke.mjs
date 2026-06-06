@@ -412,6 +412,10 @@ if (!/^\$/.test(salaryCell.textContent.trim())) {
   fail(`column format() not applied (cell shows "${salaryCell.textContent.trim()}")`);
 }
 
+// Per-column class hooks: cellClass + headerClass apply to the Team column.
+if (!document.querySelector('.bo-grid .c.team-cell')) fail('column cellClass not applied');
+if (!document.querySelector('.bo-grid .h.team-head')) fail('column headerClass not applied');
+
 // Master-detail: click a row's expand toggle and assert the detail panel opens.
 const expandToggle = document.querySelector('.bo-grid .expand-toggle');
 if (!expandToggle) fail('master-detail expand toggle did not render');
@@ -541,7 +545,7 @@ console.log(
     `edit committed + validate; variable heights ${rowHeights.join('/')}; ` +
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
-    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail, ` +
+    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class, ` +
     `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );

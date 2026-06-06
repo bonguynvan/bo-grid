@@ -48,10 +48,10 @@
   const columns: ColumnDef[] = [
     { type: 'text', key: 'name', header: 'Name', width: 160, tooltip: true },
     { type: 'text', key: 'role', header: 'Role', width: 130, editable: true, options: ROLES, compare: (a, b) => ROLES.indexOf(String(a)) - ROLES.indexOf(String(b)) },
-    { type: 'text', key: 'team', header: 'Team', width: 120 },
+    { type: 'text', key: 'team', header: 'Team', width: 120, cellClass: 'team-cell', headerClass: 'team-head' },
     { type: 'number', key: 'salary', header: 'Salary', width: 116, decimals: 0, editable: true, format: (v) => `$${Number(v).toLocaleString()}` },
     { type: 'number', key: 'bonus', header: 'Bonus', width: 108, decimals: 0, editable: true },
-    { type: 'number', key: 'rating', header: 'Rating', width: 92, decimals: 1, editable: true },
+    { type: 'number', key: 'rating', header: 'Rating', width: 92, decimals: 1, editable: true, cellClass: (v) => (Number(v) >= 4.5 ? 'rating-hot' : '') },
     { type: 'date', key: 'startDate', header: 'Start date', width: 120, dateStyle: 'short' },
   ];
 
@@ -272,5 +272,16 @@
   }
   .detail-grid b {
     color: #1a1a1a;
+  }
+  /* Per-column class hooks (cellClass / headerClass). */
+  :global(.bo-grid .h.team-head) {
+    color: #6366f1;
+  }
+  :global(.bo-grid .c.team-cell) {
+    color: #4f46e5;
+  }
+  :global(.bo-grid .c.rating-hot) {
+    font-weight: 700;
+    color: #b45309;
   }
 </style>

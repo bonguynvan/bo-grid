@@ -83,6 +83,10 @@
   // though the key is only known at runtime.
   const value = $derived(row[col.key]);
   const kind = $derived(col.type === 'text' ? 'text' : col.type === 'sparkline' ? 'spark' : 'num');
+  // Optional per-column cell class (static string or value/row function).
+  const extraClass = $derived(
+    typeof col.cellClass === 'function' ? (col.cellClass(value, row) ?? '') : (col.cellClass ?? ''),
+  );
   // Native tooltip of the full value (opt-in via column `tooltip`).
   const tip = $derived(
     col.tooltip && col.type !== 'sparkline' && col.type !== 'custom'
@@ -106,7 +110,7 @@
 <!-- Keyboard interaction is handled at the grid level (arrow nav via aria-activedescendant + Enter); this cell click is a pointer affordance. -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <span
-  class="c {kind}"
+  class="c {kind} {extraClass}"
   class:dim={col.type === 'volume'}
   class:pos={col.type === 'percent' && Number(value) >= 0}
   class:neg={col.type === 'percent' && Number(value) < 0}

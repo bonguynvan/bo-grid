@@ -340,6 +340,14 @@ levels). Rows live inside the grid, so target the class with `:global(...)`:
 </style>
 ```
 
+For per-column styling, a column's `cellClass` (static or `(value, row)`
+conditional) and `headerClass` add classes to that column's cells/header:
+
+```ts
+{ type: 'number', key: 'pnl', header: 'P&L',
+  cellClass: (v) => (Number(v) < 0 ? 'loss' : 'gain'), headerClass: 'num-head' }
+```
+
 `onRowClick(row, event)` fires when a row is activated by click or <kbd>Enter</kbd>
 on the focused cell — wire it to open a detail view or navigate.
 
