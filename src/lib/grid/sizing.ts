@@ -6,9 +6,10 @@ export const MIN_COL_WIDTH = 48;
 /** User width overrides, keyed by column `key` so they survive reorder/pin. */
 export type WidthMap = Record<string, number>;
 
-/** Clamp + round a proposed drag width to the minimum. */
-export function clampWidth(w: number): number {
-  return Math.max(MIN_COL_WIDTH, Math.round(w));
+/** Clamp + round a proposed drag width to [min, max], never below MIN_COL_WIDTH. */
+export function clampWidth(w: number, min = MIN_COL_WIDTH, max = Infinity): number {
+  const lo = Math.max(MIN_COL_WIDTH, min);
+  return Math.min(Math.max(Math.round(w), lo), Math.max(lo, max));
 }
 
 /** Whether a column may be resized, given the grid-level toggle. */

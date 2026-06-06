@@ -388,7 +388,7 @@
     });
   });
 
-  let resize: { key: string; startX: number; startW: number } | null = null;
+  let resize: { key: string; startX: number; startW: number; min?: number; max?: number } | null = null;
   let justResized = false;
 
   function startResize(ci: number, e: PointerEvent) {
@@ -397,13 +397,13 @@
     e.stopPropagation();
     const headCell = (e.currentTarget as HTMLElement).closest('.h') as HTMLElement | null;
     const startW = headCell ? headCell.getBoundingClientRect().width : layout.info[ci].width;
-    resize = { key: cols[ci].key, startX: e.clientX, startW };
+    resize = { key: cols[ci].key, startX: e.clientX, startW, min: cols[ci].minWidth, max: cols[ci].maxWidth };
     window.addEventListener('pointermove', onResizeMove);
     window.addEventListener('pointerup', onResizeUp);
   }
   function onResizeMove(e: PointerEvent) {
     if (!resize) return;
-    const w = clampWidth(resize.startW + (e.clientX - resize.startX));
+    const w = clampWidth(resize.startW + (e.clientX - resize.startX), resize.min, resize.max);
     widths = { ...widths, [resize.key]: w };
   }
   function onResizeUp() {

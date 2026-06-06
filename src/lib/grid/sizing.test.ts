@@ -13,6 +13,14 @@ describe('clampWidth', () => {
     expect(clampWidth(10)).toBe(MIN_COL_WIDTH);
     expect(clampWidth(-50)).toBe(MIN_COL_WIDTH);
   });
+  it('clamps to a per-column min and max', () => {
+    expect(clampWidth(50, 80, 200)).toBe(80); // below min → min
+    expect(clampWidth(300, 80, 200)).toBe(200); // above max → max
+    expect(clampWidth(120, 80, 200)).toBe(120); // within → unchanged
+  });
+  it('never goes below the absolute MIN_COL_WIDTH even if min is smaller', () => {
+    expect(clampWidth(10, 20, 200)).toBe(MIN_COL_WIDTH);
+  });
 });
 
 describe('isResizable', () => {

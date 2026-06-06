@@ -10,6 +10,9 @@ interface ColBase {
   header: string;
   /** Fixed width in px. Ignored when `flex` is set. */
   width?: number;
+  /** Min/max width (px) enforced while drag-resizing this column. */
+  minWidth?: number;
+  maxWidth?: number;
   /** flex-grow weight; column stretches to fill remaining space. */
   flex?: number;
   align?: Align;

@@ -292,8 +292,9 @@ grip to reset it to its default width. Resizing a fit-to-width (`flex`) column
 pins it to the dragged width and lets its neighbours absorb the difference. The
 same `persistKey` remembers widths across reloads.
 
-Resizing is on by default. Turn it off for the whole grid with `resizable={false}`,
-or per column with `resizable: false` (handy for a fixed action column):
+Bound a column's draggable range with `minWidth` / `maxWidth`. Resizing is on by
+default. Turn it off for the whole grid with `resizable={false}`, or per column
+with `resizable: false` (handy for a fixed action column):
 
 ```svelte
 <Grid {rows} {columns} resizable={false} height={640} />
