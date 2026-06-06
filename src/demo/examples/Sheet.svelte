@@ -57,6 +57,22 @@
 
   let filterText = $state('');
   let selectedCount = $state(0);
+
+  // Column show/hide: a controlled list of hidden keys + a little picker menu.
+  let hidden = $state<string[]>([]);
+  let menuOpen = $state(false);
+  const toggleCol = (key: string) =>
+    (hidden = hidden.includes(key) ? hidden.filter((k) => k !== key) : [...hidden, key]);
+
+  // Close the picker when clicking outside it.
+  $effect(() => {
+    if (!menuOpen) return;
+    const close = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('.colmenu')) menuOpen = false;
+    };
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  });
 </script>
 
 <div class="controls">
@@ -67,6 +83,34 @@
     bind:value={filterText}
     aria-label="Filter rows"
   />
+  <div class="colmenu">
+    <button
+      class="colbtn"
+      class:on={menuOpen}
+      aria-haspopup="true"
+      aria-expanded={menuOpen}
+      onclick={(e) => {
+        e.stopPropagation();
+        menuOpen = !menuOpen;
+      }}
+    >
+      Columns{#if hidden.length}<span class="badge">{columns.length - hidden.length}/{columns.length}</span>{/if} ▾
+    </button>
+    {#if menuOpen}
+      <div class="menu" role="menu">
+        {#each columns as col (col.key)}
+          <label class="item">
+            <input
+              type="checkbox"
+              checked={!hidden.includes(col.key)}
+              onchange={() => toggleCol(col.key)}
+            />
+            {col.header}
+          </label>
+        {/each}
+      </div>
+    {/if}
+  </div>
   <span class="hint">
     Tick rows to select · double-click a number to edit · drag a header edge to resize ·
     <kbd>Ctrl/⌘+C</kbd> / <kbd>V</kbd> to copy &amp; paste
@@ -81,6 +125,7 @@
     rows={gridRows}
     {columns}
     filter={filterText}
+    hiddenColumns={hidden}
     theme="light"
     persistKey="demo-sheet"
     height={620}
@@ -125,6 +170,54 @@
     color: #312e81;
     background: #e0e7ff;
     border-radius: 999px;
+  }
+  .colmenu {
+    position: relative;
+  }
+  .colbtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #1a1a1a;
+    background: #fff;
+    border: 1px solid #d2d6dc;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .colbtn.on {
+    border-color: #6366f1;
+  }
+  .colbtn .badge {
+    font-size: 10px;
+    color: #6366f1;
+  }
+  .menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 20;
+    min-width: 160px;
+    padding: 6px;
+    background: #fff;
+    border: 1px solid #d2d6dc;
+    border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(20, 20, 40, 0.16);
+  }
+  .menu .item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    font-size: 12px;
+    color: #1a1a1a;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .menu .item:hover {
+    background: #f1f2f6;
   }
   .hint kbd {
     padding: 1px 5px;

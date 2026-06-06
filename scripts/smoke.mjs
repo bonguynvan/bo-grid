@@ -326,6 +326,19 @@ await wait(20);
 const selectedRows = document.querySelectorAll('.bo-grid .row.rowsel').length;
 if (selectedRows < 2) fail(`select-all did not select the visible rows (${selectedRows})`);
 
+// Column show/hide: open the picker and hide a column, assert a header drops.
+const colsBefore = document.querySelectorAll('.bo-grid .head .h').length;
+const colBtn = [...document.querySelectorAll('.colbtn')].find((b) => b.textContent.includes('Columns'));
+if (!colBtn) fail('column-picker button not found');
+colBtn.click();
+await wait(20);
+const colItem = document.querySelector('.colmenu .menu .item input');
+if (!colItem) fail('column-picker menu did not open');
+colItem.click(); // hide the first column
+await wait(20);
+const colsAfter = document.querySelectorAll('.bo-grid .head .h').length;
+if (colsAfter !== colsBefore - 1) fail(`hiding a column should drop one header (${colsBefore} → ${colsAfter})`);
+
 // Big data: a 1,000,000-row windowed source. Assert real (non-skeleton) rows
 // load after the simulated latency and the scrollbar reflects the full total.
 const bigTab = tab('1M rows');
@@ -352,7 +365,7 @@ console.log(
     `edit committed; variable heights ${rowHeights.join('/')}; ` +
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
-    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups, sheet ${sheetRows} rows (light) + row-select, ` +
+    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups, sheet ${sheetRows} rows (light) + row-select + col-hide, ` +
     `bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `a11y rowcount/activedescendant ok`,
 );

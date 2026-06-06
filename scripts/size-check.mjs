@@ -12,7 +12,10 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
 const DIR = 'demo-dist/assets';
-const BUDGET_KB = { js: 36, css: 8 }; // gzipped
+// Demo entry chunk: Svelte runtime + the 4-example gallery (each eagerly
+// bundled) + the library + demo data. The shipped-library promise is the tight
+// one and lives in size:lib; this is a looser anti-bloat ceiling for the demo.
+const BUDGET_KB = { js: 40, css: 8 }; // gzipped
 
 function gzipKb(path) {
   return gzipSync(readFileSync(path)).length / 1024;

@@ -260,6 +260,15 @@ or per column with `resizable: false` (handy for a fixed action column):
 <Grid {rows} {columns} resizable={false} height={640} />
 ```
 
+## Column visibility
+
+Pass `hiddenColumns` (column keys to hide) — controlled, like `filter`. Build
+your own column-picker UI and drive the prop; the grid stays presentation-only:
+
+```svelte
+<Grid {rows} {columns} hiddenColumns={['bonus', 'rating']} height={640} />
+```
+
 ## Inline editing
 
 Mark a column `editable: true`. Double-click a cell (or press <kbd>Enter</kbd> on

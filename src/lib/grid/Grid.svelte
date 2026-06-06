@@ -38,6 +38,7 @@
     resizable = true,
     rowSelection = false,
     onRowSelectionChange,
+    hiddenColumns = [],
     cell,
   }: {
     rows: GridRow[];
@@ -56,6 +57,9 @@
     rowSelection?: boolean;
     /** Called with the selected row ids whenever the row-selection set changes. */
     onRowSelectionChange?: (selectedIds: number[]) => void;
+    /** Column keys to hide (controlled). Build your own column-picker UI and
+        drive this prop — the grid stays presentation-only. */
+    hiddenColumns?: string[];
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -142,9 +146,14 @@
   }
 
   const ordered = $derived(order.length === columns.length ? order.map((i) => columns[i]) : columns);
+  // Drop hidden columns (controlled via `hiddenColumns`). Applied after ordering
+  // so `order` stays indexed over the full column set.
+  const visible = $derived(
+    hiddenColumns.length ? ordered.filter((c) => !hiddenColumns.includes(c.key)) : ordered,
+  );
   // Apply any resize overrides (turns the dragged column fixed-width), then
   // pin-arrange. Both are no-ops by default, so the grid stays fit-to-width.
-  const sized = $derived(applyWidths(ordered, widths));
+  const sized = $derived(applyWidths(visible, widths));
   // Pin-arrangement: pinned columns move to the front and get sticky offsets.
   // When nothing is pinned this is a no-op and the grid stays fit-to-width.
   const layout = $derived(arrangePinned(sized));
