@@ -160,6 +160,14 @@ that aggregate over all (filtered) rows, sticky to the bottom as you scroll
 <Grid {rows} {columns} height={640} footer />
 ```
 
+Pass `pinnedRows` to keep rows stuck to the **top**, always visible above the
+scroll — a benchmark, a summary, or "your position". They render with the normal
+columns (and `rowClass`) but are display-only:
+
+```svelte
+<Grid {rows} {columns} height={640} pinnedRows={[benchmark]} />
+```
+
 ## Row selection
 
 Set `rowSelection` for a leading checkbox column — whole-row selection keyed by

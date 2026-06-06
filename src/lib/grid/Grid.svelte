@@ -46,6 +46,7 @@
     onSortChange,
     footer = false,
     onCellClick,
+    pinnedRows = [],
     cell,
   }: {
     rows: GridRow[];
@@ -91,6 +92,9 @@
       info: { row: GridRow; column: ColumnDef; value: unknown },
       event: MouseEvent,
     ) => void;
+    /** Rows pinned to the top, always visible above the scroll (a benchmark, a
+        summary, "your position"). Display-only — not virtualized or selectable. */
+    pinnedRows?: GridRow[];
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -811,6 +815,29 @@
     bind:this={viewportEl}
     onscroll={onScroll}
   >
+    {#if pinnedRows.length > 0}
+      <div class="pinned-top">
+        {#each pinnedRows as prow, pi (getRowId(prow))}
+          <div class="row pinrow {rowClass?.(prow) ?? ''}" role="row" aria-hidden="true" style="height:{baseH}px;{rowWidthStyle}">
+            {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
+            {#each cols as col, ci (ci)}
+              <Cell
+                {col}
+                row={prow}
+                r={-1 - pi}
+                c={ci}
+                colIndex={ci + 1 + selOffset}
+                cellId={`${gid}-pin${pi}-c${ci}`}
+                cellSnippet={cell}
+                pinned={pinned && layout.info[ci].pinned}
+                pinLeft={layout.info[ci].left + selOffset * SEL_W}
+                width={pinned ? layout.info[ci].width : undefined}
+              />
+            {/each}
+          </div>
+        {/each}
+      </div>
+    {/if}
     {#if rowCount === 0 && !controller?.loading}
       <div class="empty">No matching rows</div>
     {/if}
@@ -1075,6 +1102,22 @@
   }
   .row.clickable {
     cursor: pointer;
+  }
+
+  /* Pinned top rows: stick to the top of the viewport above the scroll. */
+  .pinned-top {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bo-bg);
+    box-shadow: 0 1px 0 var(--bo-border);
+  }
+  .pinned-top .pinrow {
+    display: flex;
+    align-items: stretch;
+    min-width: 100%;
+    background: color-mix(in srgb, var(--bo-header-bg) 70%, var(--bo-sel-fill) 60%);
+    border-bottom: 0.5px solid var(--bo-border);
   }
 
   /* Pinned totals row: sticks to the bottom of the viewport. */

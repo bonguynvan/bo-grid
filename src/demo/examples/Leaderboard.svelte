@@ -37,6 +37,18 @@
   const rows = $state<Player[]>(build());
   const gridRows = $derived(rows as unknown as GridRow[]);
   const maxScore = Math.max(...rows.map((r) => r.score));
+
+  // The current player, pinned to the top so you never lose your standing.
+  const youRow: GridRow = {
+    id: 999,
+    flashSeq: 0,
+    flashDir: 'up',
+    rank: 42,
+    name: 'You',
+    level: 50,
+    winRate: 58,
+    score: Math.round(maxScore * 0.62),
+  } as unknown as GridRow;
   const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
   const columns: ColumnDef[] = [
@@ -61,7 +73,7 @@
 <div class="controls">
   <span class="stat">{rows.length} players · sorted by score</span>
   <span class="dot">·</span>
-  <span class="stat">click a header to re-sort</span>
+  <span class="stat">your row stays pinned at the top</span>
 </div>
 
 <div class="gridwrap">
@@ -71,6 +83,7 @@
     theme="dark"
     height={rows.length * 36 + 40}
     rowClass={(r) => ((r as Player).rank <= 3 ? 'podium-row' : '')}
+    pinnedRows={[youRow]}
     {cell}
   />
 </div>

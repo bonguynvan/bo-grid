@@ -66,6 +66,8 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   `onCellClick({ row, column, value }, event)`.
 - **Totals footer**: `footer` pins a totals row — each column with a `groupAgg`
   aggregates all (filtered) rows, sticky to the viewport bottom.
+- **Pinned top rows**: `pinnedRows` keeps rows stuck to the top, always visible
+  above the scroll (a benchmark, a summary, "your position").
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 - **Theming**: dark-first, self-contained CSS variables (`--bo-grid-*`), no CSS

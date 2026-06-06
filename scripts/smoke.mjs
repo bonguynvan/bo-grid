@@ -394,8 +394,10 @@ await wait(50);
 await waitFor('.bo-grid .row', 'Leaderboard example rendered no rows');
 const lbBars = document.querySelectorAll('.bo-grid .row .bar .fill').length;
 const lbPodium = document.querySelectorAll('.bo-grid .row.podium-row').length;
+const lbPinned = document.querySelectorAll('.bo-grid .pinned-top .pinrow').length;
 if (lbBars === 0) fail('Leaderboard score bars (custom cell) did not render');
 if (lbPodium === 0) fail('Leaderboard podium rowClass did not apply');
+if (lbPinned === 0) fail('Leaderboard pinned "You" row did not render');
 
 // Big data: a 1,000,000-row windowed source. Assert real (non-skeleton) rows
 // load after the simulated latency and the scrollbar reflects the full total.
@@ -424,7 +426,7 @@ console.log(
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups, sheet ${sheetRows} rows (light) + row-select + col-hide, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `a11y rowcount/activedescendant ok`,
 );
 process.exit(0);
