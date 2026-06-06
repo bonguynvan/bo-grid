@@ -578,6 +578,7 @@ cAt(sheetRowEls()[0], FILL_COL).dispatchEvent(
 window.dispatchEvent(new window.Event('pointerup'));
 await wait(20);
 const fillSrc = cAt(sheetRowEls()[0], FILL_COL).textContent.trim();
+const fillRow2Before = cAt(sheetRowEls()[2], FILL_COL).textContent.trim();
 const fillHandleEl = cAt(sheetRowEls()[0], FILL_COL).querySelector('.fill-handle');
 if (!fillHandleEl) fail('fill handle did not render on the selected cell');
 fillHandleEl.dispatchEvent(new window.MouseEvent('pointerdown', { button: 0, bubbles: true }));
@@ -586,6 +587,16 @@ window.dispatchEvent(new window.Event('pointerup'));
 await wait(30);
 const fillDst = cAt(sheetRowEls()[2], FILL_COL).textContent.trim();
 if (fillDst !== fillSrc) fail(`fill handle did not copy down (src "${fillSrc}", row 2 "${fillDst}")`);
+// Undo/redo (v0.5): one Ctrl+Z reverts the whole fill (grouped); Ctrl+Y re-applies.
+const sheetGrid = document.querySelector('.bo-grid.grid');
+sheetGrid.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true }));
+await wait(30);
+if (cAt(sheetRowEls()[2], FILL_COL).textContent.trim() !== fillRow2Before)
+  fail('undo (Ctrl+Z) did not revert the fill');
+sheetGrid.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'y', ctrlKey: true, bubbles: true }));
+await wait(30);
+if (cAt(sheetRowEls()[2], FILL_COL).textContent.trim() !== fillSrc)
+  fail('redo (Ctrl+Y) did not re-apply the fill');
 
 // Select editor: the Role column edits via a <select> of options. Double-click a
 // role cell and assert a select (not a text input) appears, then commit a change.

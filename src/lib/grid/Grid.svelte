@@ -236,9 +236,34 @@
     editSeed = seed;
     editing = { r, c };
   }
-  // Coerce + validate a raw string for cell (r,c) and emit onCellEdit.
-  // Returns true if a value was written, false if rejected (not editable,
-  // missing row, or invalid number). Shared by inline edit and paste.
+  // ---- Edit history (undo / redo) -------------------------------------------
+  // The grid is controlled (the consumer owns the data via onCellEdit), so undo
+  // re-emits onCellEdit with the previous value. History is keyed by row object
+  // reference + column, so it survives sort/filter/reorder. Multi-cell ops
+  // (paste, fill) record as one grouped step.
+  type EditCell = { row: GridRow; col: ColumnDef; old: string | number; value: string | number };
+  const UNDO_LIMIT = 100;
+  let undoStack: EditCell[][] = [];
+  let redoStack: EditCell[][] = [];
+  let currentBatch: EditCell[] | null = null;
+  function pushUndo(group: EditCell[]): void {
+    undoStack.push(group);
+    if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+    redoStack = [];
+  }
+  /** Group every writeCell inside `fn` into a single undo step. */
+  function batch(fn: () => void): void {
+    const prev = currentBatch;
+    currentBatch = [];
+    fn();
+    const group = currentBatch;
+    currentBatch = prev;
+    if (group.length) pushUndo(group);
+  }
+
+  // Coerce + validate a raw string for cell (r,c) and emit onCellEdit, recording
+  // it for undo. Returns true if written, false if rejected (not editable,
+  // missing row, or invalid number). Shared by inline edit, paste and fill.
   function writeCell(r: number, c: number, raw: string): boolean {
     const col = cols[c];
     if (!col || !isEditable(col)) return false;
@@ -251,8 +276,28 @@
       value = n;
     }
     if (col.validate && !col.validate(value, row)) return false; // consumer rejected it
+    const old = (row[col.key] ?? '') as string | number;
     onCellEdit?.({ row, column: col, value });
+    if (onCellEdit) {
+      const entry: EditCell = { row, col, old, value };
+      if (currentBatch) currentBatch.push(entry);
+      else pushUndo([entry]);
+    }
     return true;
+  }
+  function undo(): void {
+    const group = undoStack.pop();
+    if (!group) return;
+    for (const e of group) onCellEdit?.({ row: e.row, column: e.col, value: e.old });
+    redoStack.push(group);
+    editing = null;
+  }
+  function redo(): void {
+    const group = redoStack.pop();
+    if (!group) return;
+    for (const e of group) onCellEdit?.({ row: e.row, column: e.col, value: e.value });
+    undoStack.push(group);
+    editing = null;
   }
 
   function commitEdit(r: number, c: number, raw: string) {
@@ -962,14 +1007,16 @@
     if (r1 === b.r1 && c1 === b.c1) return; // no extension
     const srcRows = b.r1 - b.r0 + 1;
     const srcCols = b.c1 - b.c0 + 1;
-    for (let r = b.r0; r <= r1; r++) {
-      for (let c = b.c0; c <= c1; c++) {
-        if (r <= b.r1 && c <= b.c1) continue; // skip the source block
-        const srcRow = dataAt(b.r0 + ((r - b.r0) % srcRows));
-        if (!srcRow) continue;
-        writeCell(r, c, String(srcRow[cols[b.c0 + ((c - b.c0) % srcCols)].key] ?? ''));
+    batch(() => {
+      for (let r = b.r0; r <= r1; r++) {
+        for (let c = b.c0; c <= c1; c++) {
+          if (r <= b.r1 && c <= b.c1) continue; // skip the source block
+          const srcRow = dataAt(b.r0 + ((r - b.r0) % srcRows));
+          if (!srcRow) continue;
+          writeCell(r, c, String(srcRow[cols[b.c0 + ((c - b.c0) % srcCols)].key] ?? ''));
+        }
       }
-    }
+    });
     sel.anchor = { r: b.r0, c: b.c0 };
     sel.focus = { r: r1, c: c1 };
   }
@@ -1131,18 +1178,20 @@
     const c0 = anchor.c0;
     const rSpan = single ? anchor.r1 - anchor.r0 + 1 : grid.length;
     let wrote = 0;
-    for (let dr = 0; dr < rSpan; dr++) {
-      const r = r0 + dr;
-      if (r > rowCount - 1) break;
-      const srcRow = single ? grid[0] : grid[dr];
-      const cSpan = single ? anchor.c1 - anchor.c0 + 1 : srcRow.length;
-      for (let dc = 0; dc < cSpan; dc++) {
-        const c = c0 + dc;
-        if (c > cols.length - 1) break;
-        const raw = single ? grid[0][0] : (srcRow[dc] ?? '');
-        if (writeCell(r, c, raw)) wrote++;
+    batch(() => {
+      for (let dr = 0; dr < rSpan; dr++) {
+        const r = r0 + dr;
+        if (r > rowCount - 1) break;
+        const srcRow = single ? grid[0] : grid[dr];
+        const cSpan = single ? anchor.c1 - anchor.c0 + 1 : srcRow.length;
+        for (let dc = 0; dc < cSpan; dc++) {
+          const c = c0 + dc;
+          if (c > cols.length - 1) break;
+          const raw = single ? grid[0][0] : (srcRow[dc] ?? '');
+          if (writeCell(r, c, raw)) wrote++;
+        }
       }
-    }
+    });
     // Surface the pasted region as the new selection so it's visible.
     if (wrote > 0) {
       const rEnd = Math.min(r0 + rSpan - 1, rowCount - 1);
@@ -1191,6 +1240,20 @@
       if (isEditable(col) && !(col.options && col.options.length) && dataAt(f.r)) {
         e.preventDefault();
         startEdit(f.r, f.c, e.key);
+        return;
+      }
+    }
+    if (mod && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+      if (undoStack.length) {
+        e.preventDefault();
+        undo();
+        return;
+      }
+    }
+    if (mod && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))) {
+      if (redoStack.length) {
+        e.preventDefault();
+        redo();
         return;
       }
     }

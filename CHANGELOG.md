@@ -12,6 +12,9 @@ Theme: **spreadsheet power** (in progress — see [ROADMAP.md](./ROADMAP.md)).
 - **Fill handle**: with `fillHandle`, the selection shows an Excel-style square at
   its bottom-right corner — drag it to copy the selected value(s) across the
   extended range (down/right). Editable columns only; multi-cell selections tile.
+- **Undo / redo**: <kbd>Ctrl/⌘</kbd>+<kbd>Z</kbd> / <kbd>Ctrl/⌘</kbd>+<kbd>Y</kbd>
+  (or <kbd>Shift</kbd>+<kbd>Z</kbd>) for edits, paste and fill. History is keyed
+  by row reference so it survives sort/filter; a paste or fill is one step.
 
 ## [0.4.0] — Unreleased
 
