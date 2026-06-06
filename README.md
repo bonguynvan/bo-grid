@@ -6,7 +6,8 @@ A free alternative to the heavyweight grids that paywall these features.
 
 **[Live demo](https://bonguynvan.github.io/bo-grid/)** ·
 **[API reference](https://bonguynvan.github.io/bo-grid/api.html)** ·
-**[Benchmarks](./BENCHMARKS.md)**
+**[Benchmarks](./BENCHMARKS.md)** ·
+**[Roadmap](./ROADMAP.md)**
 
 The demo is a small gallery of nine grid types — a realtime **Trading desk**, a
 grouped **Portfolio** with subtotals and pivot, a general-purpose editable

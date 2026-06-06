@@ -18,6 +18,7 @@
   import { moveIndex } from './reorder';
   import { parseClipboard, isSingleCell } from './clipboard';
   import { applyWidths, clampWidth, isResizable, type WidthMap } from './sizing';
+  import { passesFilters, type ColumnFilter } from './filtering';
   import type { RowSource } from './source';
   import { RowSourceController } from './source.svelte';
   import Cell from './Cell.svelte';
@@ -232,6 +233,10 @@
 
   // Per-column filter text (filterRow), keyed by column key.
   let colFilters = $state<Record<string, string>>({});
+
+  // Structured per-column filters from the header filter menu (v0.3), keyed by
+  // column key. Menu filters take precedence over the filterRow text inputs.
+  let columnFilters = $state<Record<string, ColumnFilter>>({});
 
   // Whole-row selection (opt-in), keyed by row id so it survives sort/filter.
   // Plain Set + a version counter for reactivity (same pattern as `collapsed`).
@@ -504,15 +509,19 @@
     const allCols = columns;
     const f = filter.trim().toLowerCase();
     const s = sorts;
-    // Active per-column filters (filterRow): [key, lowercased needle] pairs.
-    const colF = Object.entries(colFilters)
-      .map(([k, v]) => [k, v.trim().toLowerCase()] as const)
-      .filter(([, v]) => v.length > 0);
+    // Active per-column filters: menu-driven structured filters (columnFilters)
+    // take precedence; filterRow text inputs (colFilters) fill in the rest as
+    // case-insensitive "contains".
+    const active: Record<string, ColumnFilter> = { ...columnFilters };
+    for (const [k, v] of Object.entries(colFilters)) {
+      if (!active[k] && v.trim()) active[k] = { kind: 'text', op: 'contains', q: v };
+    }
+    const hasColFilters = Object.keys(active).length > 0;
     return untrack(() => {
       let r = base;
       if (f) r = r.filter((row) => allCols.some((c) => String(row[c.key] ?? '').toLowerCase().includes(f)));
-      if (colF.length > 0) {
-        r = r.filter((row) => colF.every(([k, v]) => String(row[k] ?? '').toLowerCase().includes(v)));
+      if (hasColFilters) {
+        r = r.filter((row) => passesFilters(row, active));
       }
       if (s.length > 0) {
         const colOf = (k: string) => allCols.find((c) => c.key === k);

@@ -3,7 +3,18 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
-## [0.2.0] — Unreleased
+## [0.3.0] — Unreleased
+
+Theme: **filtering & discoverability** (in progress — see [ROADMAP.md](./ROADMAP.md)).
+
+### Internal
+
+- Structured per-column filter model (`filtering.ts`): typed `ColumnFilter`
+  (text/number/date operators + a set filter) with pure, unit-tested matching.
+  The grid's filtering now runs through it; the existing `filterRow` is migrated
+  onto it with no behavior change. Foundation for the upcoming header filter menu.
+
+## [0.2.0] — 2026-06-06
 
 A large batch of additive, backward-compatible features on top of the initial
 `0.1.0` release. No breaking changes — everything new is opt-in.
@@ -133,5 +144,6 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.3.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.3.0
 [0.2.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.2.0
 [0.1.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.1.0
