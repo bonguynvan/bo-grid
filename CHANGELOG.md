@@ -86,7 +86,9 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Cell tooltips**: a column `tooltip` sets a native `title` (full value) on
   each cell — handy when content truncates.
 - **Row context menu**: `rowMenu(row)` returns right-click menu items (each with
-  a `label` + `onSelect`); closes on select, outside-click, or Esc.
+  a `label` + `onSelect`); closes on select, outside-click, or Esc. Keyboard-
+  accessible — the <kbd>ContextMenu</kbd> key (or <kbd>Shift</kbd>+<kbd>F10</kbd>)
+  opens it at the focused cell.
 - **Custom formatter**: a column `format(value, row)` overrides the built-in type
   formatter for display, tooltip, copy and formatted export.
 - **Custom sort comparator**: a column `compare(a, b)` sorts by custom logic

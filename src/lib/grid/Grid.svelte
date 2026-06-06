@@ -905,6 +905,17 @@
       sel.clear();
       return;
     }
+    // Open the row menu from the keyboard (ContextMenu key / Shift+F10).
+    if (rowMenu && sel.focus && (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10'))) {
+      const row = dataAt(sel.focus.r);
+      const items = row ? rowMenu(row) : [];
+      if (items.length > 0) {
+        e.preventDefault();
+        const rect = document.getElementById(activeId ?? '')?.getBoundingClientRect();
+        menu = { x: rect?.left ?? 0, y: rect?.bottom ?? 0, items };
+        return;
+      }
+    }
     // Tree nav: ArrowRight expands a collapsed node, ArrowLeft collapses an
     // expanded one (treegrid pattern); otherwise arrows move normally.
     if (treeData && sel.focus && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {

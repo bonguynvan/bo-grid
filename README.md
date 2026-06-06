@@ -378,7 +378,9 @@ conditional) and `headerClass` add classes to that column's cells/header:
 on the focused cell — wire it to open a detail view or navigate.
 
 Pass `rowMenu(row)` to add a **right-click menu** of row actions; each item runs
-its `onSelect` and the menu closes (also on outside-click or <kbd>Esc</kbd>):
+its `onSelect` and the menu closes (also on outside-click or <kbd>Esc</kbd>). It
+is keyboard-accessible: the <kbd>ContextMenu</kbd> key (or
+<kbd>Shift</kbd>+<kbd>F10</kbd>) opens it at the focused cell.
 
 ```svelte
 <Grid {rows} {columns} height={640}

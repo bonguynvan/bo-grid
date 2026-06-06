@@ -381,6 +381,25 @@ if (!rowmenu || rowmenu.querySelectorAll('.rowmenu-item').length === 0) fail('ro
 rowmenu.querySelector('.rowmenu-item').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 await wait(20);
 if (document.querySelector('.rowmenu')) fail('row menu did not close after selecting an item');
+// Keyboard access to the row menu: focus a cell, then the ContextMenu key opens
+// the same floating menu (Shift+F10 also works); Esc closes it.
+document.querySelector('.bo-grid .c').dispatchEvent(
+  new window.MouseEvent('pointerdown', { button: 0, bubbles: true }),
+);
+window.dispatchEvent(new window.Event('pointerup'));
+await wait(20);
+document.querySelector('.bo-grid.grid').dispatchEvent(
+  new window.KeyboardEvent('keydown', { key: 'ContextMenu', bubbles: true }),
+);
+await wait(20);
+const kbMenu = document.querySelector('.rowmenu');
+if (!kbMenu || kbMenu.querySelectorAll('.rowmenu-item').length === 0)
+  fail('ContextMenu key did not open the row menu from the keyboard');
+document.querySelector('.bo-grid.grid').dispatchEvent(
+  new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+);
+await wait(20);
+if (document.querySelector('.rowmenu')) fail('Esc did not close the keyboard-opened row menu');
 
 const sheetTab = tab('Spreadsheet');
 if (!sheetTab) fail('Spreadsheet example tab not found');
