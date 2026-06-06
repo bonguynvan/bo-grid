@@ -244,18 +244,25 @@
 
   // Pinned columns sit to the right of the (also-sticky) checkbox column, so
   // their sticky-left offsets shift by SEL_W when row selection is on.
+  // Sticky position for a pinned column: left columns offset past the (also
+  // sticky) checkbox column; right columns offset from the right edge.
+  function pinStick(ci: number): string {
+    const inf = layout.info[ci];
+    if (inf.side === 'right') return `position:sticky;right:${inf.right}px;`;
+    return `position:sticky;left:${inf.left + selOffset * SEL_W}px;`;
+  }
   function headStyle(ci: number): string {
     if (!pinned) return colStyle(cols[ci]);
     const inf = layout.info[ci];
     let s = `flex:0 0 ${inf.width}px;width:${inf.width}px;`;
-    if (inf.pinned) s += `position:sticky;left:${inf.left + selOffset * SEL_W}px;z-index:5;background:var(--bo-header-bg);`;
+    if (inf.pinned) s += `${pinStick(ci)}z-index:5;background:var(--bo-header-bg);`;
     return s;
   }
   function cellWidthStyle(ci: number): string {
     if (!pinned) return colStyle(cols[ci]);
     const inf = layout.info[ci];
     let s = `flex:0 0 ${inf.width}px;width:${inf.width}px;`;
-    if (inf.pinned) s += `position:sticky;left:${inf.left + selOffset * SEL_W}px;z-index:1;background:var(--bo-bg);`;
+    if (inf.pinned) s += `${pinStick(ci)}z-index:1;background:var(--bo-bg);`;
     return s;
   }
   // The leading checkbox column: a fixed-width flex item, sticky-left when the
@@ -919,7 +926,8 @@
                 cellId={`${gid}-pin${pi}-c${ci}`}
                 cellSnippet={cell}
                 pinned={pinned && layout.info[ci].pinned}
-                pinLeft={layout.info[ci].left + selOffset * SEL_W}
+                pinSide={layout.info[ci].side ?? 'left'}
+                pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right : layout.info[ci].left + selOffset * SEL_W}
                 width={pinned ? layout.info[ci].width : undefined}
               />
             {/each}
@@ -988,7 +996,8 @@
                 selected={sel.contains(item.vr, ci)}
                 focused={sel.isFocus(item.vr, ci)}
                 pinned={pinned && layout.info[ci].pinned}
-                pinLeft={layout.info[ci].left + selOffset * SEL_W}
+                pinSide={layout.info[ci].side ?? 'left'}
+                pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right : layout.info[ci].left + selOffset * SEL_W}
                 width={pinned ? layout.info[ci].width : undefined}
                 alt={item.vr % 2 === 1}
                 editing={editing?.r === item.vr && editing?.c === ci}

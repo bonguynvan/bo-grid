@@ -19,8 +19,9 @@ interface ColBase {
   sortable?: boolean;
   /** When grouping is active, show this aggregate of the column on group headers. */
   groupAgg?: AggKind;
-  /** Pin this column to the left; it stays visible during horizontal scroll. */
-  pinned?: boolean;
+  /** Pin this column so it stays visible during horizontal scroll. `true` /
+      `'left'` pins to the left edge, `'right'` to the right. */
+  pinned?: boolean | 'left' | 'right';
   /** Allow inline editing (double-click or Enter on the focused cell). */
   editable?: boolean;
   /** Validate an edited value before it commits (inline edit or paste). Return

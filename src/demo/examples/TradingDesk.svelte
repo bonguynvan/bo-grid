@@ -84,7 +84,13 @@
   // columns overflow and you can see the pinned columns stay put while scrolling.
   const displayColumns = $derived(
     pinMode
-      ? columns.map((c) => (c.key === 'symbol' || c.key === 'price' ? { ...c, pinned: true } : c))
+      ? columns.map((c) =>
+          c.key === 'symbol' || c.key === 'price'
+            ? { ...c, pinned: true as const }
+            : c.key === 'target'
+              ? { ...c, pinned: 'right' as const }
+              : c,
+        )
       : columns,
   );
 

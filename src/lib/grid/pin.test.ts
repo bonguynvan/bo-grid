@@ -33,4 +33,31 @@ describe('arrangePinned', () => {
     expect(r.info[3].pinned).toBe(false);
     expect(r.totalWidth).toBe(120 + 80 + 90 + 100);
   });
+
+  it('pins to the right edge with cumulative right offsets', () => {
+    const c: ColumnDef[] = [
+      { type: 'text', key: 'a', header: 'A', width: 100 },
+      { type: 'number', key: 'b', header: 'B', width: 60, pinned: 'right' },
+      { type: 'number', key: 'c', header: 'C', width: 80, pinned: 'right' },
+    ];
+    const r = arrangePinned(c);
+    // unpinned first, then right-pinned in original order
+    expect(r.columns.map((x) => x.key)).toEqual(['a', 'b', 'c']);
+    expect(r.info[0]).toMatchObject({ pinned: false, side: null });
+    // b sits left of c: its right offset clears c's width (80); c is flush (0)
+    expect(r.info[1]).toMatchObject({ pinned: true, side: 'right', right: 80 });
+    expect(r.info[2]).toMatchObject({ pinned: true, side: 'right', right: 0 });
+  });
+
+  it('supports left and right pins together', () => {
+    const c: ColumnDef[] = [
+      { type: 'text', key: 'sym', header: 'Sym', width: 100, pinned: 'left' },
+      { type: 'number', key: 'mid', header: 'Mid', width: 90 },
+      { type: 'number', key: 'act', header: 'Act', width: 70, pinned: 'right' },
+    ];
+    const r = arrangePinned(c);
+    expect(r.columns.map((x) => x.key)).toEqual(['sym', 'mid', 'act']);
+    expect(r.info[0]).toMatchObject({ side: 'left', left: 0 });
+    expect(r.info[2]).toMatchObject({ side: 'right', right: 0 });
+  });
 });

@@ -13,7 +13,8 @@
     selected = false,
     focused = false,
     pinned = false,
-    pinLeft = 0,
+    pinSide = 'left',
+    pinOffset = 0,
     width,
     alt = false,
     editing = false,
@@ -34,7 +35,8 @@
     selected?: boolean;
     focused?: boolean;
     pinned?: boolean;
-    pinLeft?: number;
+    pinSide?: 'left' | 'right';
+    pinOffset?: number;
     /** Fixed pixel width (pinned/horizontal-scroll mode). */
     width?: number;
     alt?: boolean;
@@ -86,7 +88,7 @@
     let s = width != null ? `flex:0 0 ${width}px;width:${width}px;` : colStyle(col);
     if (col.type === 'heatmap') s += `background:${heatColor(Number(value), col.min, col.max)};`;
     if (pinned) {
-      s += `position:sticky;left:${pinLeft}px;z-index:1;`;
+      s += `position:sticky;${pinSide}:${pinOffset}px;z-index:1;`;
       // Pinned cells must be opaque to cover scrolled content. Heatmap already
       // set a background; otherwise match the (alternating) row colour.
       if (col.type !== 'heatmap') s += `background:var(${alt ? '--bo-row-a' : '--bo-row-b'});`;

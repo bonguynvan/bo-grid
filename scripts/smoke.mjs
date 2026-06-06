@@ -308,6 +308,11 @@ const stickyHeaders = [...document.querySelectorAll('.h')].filter((h) =>
   /position:\s*sticky/.test(h.getAttribute('style') || ''),
 ).length;
 if (stickyHeaders === 0) fail('pinning did not produce sticky columns');
+// Right-pinned column: the Target header sticks to the right edge.
+const rightPinned = [...document.querySelectorAll('.h')].filter((h) =>
+  /right:\s*0px/.test(h.getAttribute('style') || ''),
+).length;
+if (rightPinned === 0) fail('right-pinning did not produce a right-sticky column');
 
 // Pivot (Phase 5): toggle pivot and assert the columns become the pivot output.
 const pivotBtn = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Pivot');
@@ -504,7 +509,7 @@ console.log(
     `multi-sort 2 keys; selection ${selCount} cells + agg bar; grouping ${groupHeaders} headers, ` +
     `edit committed + validate; variable heights ${rowHeights.join('/')}; ` +
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
-    `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
+    `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg, ` +
     `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
