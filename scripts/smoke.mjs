@@ -535,6 +535,20 @@ if (lbBars === 0) fail('Leaderboard score bars (custom cell) did not render');
 if (lbPodium === 0) fail('Leaderboard podium rowClass did not apply');
 if (lbPinned === 0) fail('Leaderboard pinned "You" row did not render');
 
+// Tree data: roots render collapsed; expanding a folder reveals children.
+const treeTab = tab('Tree');
+if (!treeTab) fail('Tree example tab not found');
+click(treeTab);
+await wait(50);
+await waitFor('.bo-grid .row', 'Tree example rendered no rows');
+const treeRootsCount = document.querySelectorAll('.bo-grid .row').length;
+const treeToggle = document.querySelector('.bo-grid .tree-toggle');
+if (!treeToggle) fail('tree expand toggle did not render');
+treeToggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(30);
+const treeAfter = document.querySelectorAll('.bo-grid .row').length;
+if (!(treeAfter > treeRootsCount)) fail(`expanding a tree node did not reveal children (${treeRootsCount} → ${treeAfter})`);
+
 // Big data: a 1,000,000-row windowed source. Assert real (non-skeleton) rows
 // load after the simulated latency and the scrollbar reflects the full total.
 const bigTab = tab('1M rows');
@@ -562,7 +576,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, tree ${treeRootsCount}→${treeAfter} on expand, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

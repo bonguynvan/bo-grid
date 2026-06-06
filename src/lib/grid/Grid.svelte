@@ -14,6 +14,7 @@
   import { Selection } from './selection.svelte';
   import { aggregate, type AggKind, type AggResult } from './aggregate';
   import { buildFlatRows, activeGroupsAt, type VisualRow, type GroupNode } from './grouping';
+  import { buildTreeRows } from './tree';
   import { moveIndex } from './reorder';
   import { parseClipboard, isSingleCell } from './clipboard';
   import { applyWidths, clampWidth, isResizable, type WidthMap } from './sizing';
@@ -53,6 +54,7 @@
     rowMenu,
     detail,
     detailHeight = 160,
+    getChildren,
     pageSize = 0,
     page,
     onPageChange,
@@ -122,6 +124,10 @@
     detail?: Snippet<[{ row: GridRow }]>;
     /** Height (px) of the expanded detail panel. Default 160. */
     detailHeight?: number;
+    /** Tree data: return a row's children (undefined/empty = leaf). When set,
+        `rows` are the roots; the grid renders an indented, expandable tree.
+        In-memory mode; filter/sort/group/paginate are not applied to the tree. */
+    getChildren?: (row: GridRow) => GridRow[] | undefined;
     /** Rows per page. When > 0 (in-memory mode), shows a pager instead of one
         long scroll; rows still virtualize within a page. Default 0 (off). */
     pageSize?: number;
@@ -522,7 +528,16 @@
     paged ? view.slice(currentPage * pageSize, currentPage * pageSize + pageSize) : view,
   );
 
+  const treeData = $derived(!!getChildren && !source);
+
   const flat = $derived.by<VisualRow[]>(() => {
+    if (treeData && getChildren) {
+      const roots = rows;
+      expVersion; // track expand/collapse
+      return untrack(() =>
+        buildTreeRows(roots, getChildren, (r) => expandedRows.has(getRowId(r))),
+      );
+    }
     const v = pageRows;
     const gb = groupBy;
     collapsedVersion;
@@ -625,7 +640,7 @@
 
   type RenderItem =
     | { vr: number; kind: 'group'; group: GroupNode }
-    | { vr: number; kind: 'data'; row: GridRow }
+    | { vr: number; kind: 'data'; row: GridRow; depth?: number; hasChildren?: boolean }
     | { vr: number; kind: 'skeleton' };
 
   const renderItems = $derived.by<RenderItem[]>(() => {
@@ -641,7 +656,7 @@
         const item = flat[vr];
         if (!item) continue;
         if (item.kind === 'group') out.push({ vr, kind: 'group', group: item.group });
-        else out.push({ vr, kind: 'data', row: item.row });
+        else out.push({ vr, kind: 'data', row: item.row, depth: item.depth, hasChildren: item.hasChildren });
       }
     }
     return out;
@@ -1150,6 +1165,14 @@
                 width={pinned ? layout.info[ci].width : undefined}
                 alt={item.vr % 2 === 1}
                 editing={editing?.r === item.vr && editing?.c === ci}
+                tree={treeData && ci === 0
+                  ? {
+                      depth: item.depth ?? 0,
+                      hasChildren: item.hasChildren ?? false,
+                      expanded: isExpanded(getRowId(item.row)),
+                      onToggle: () => toggleExpand(getRowId(item.row)),
+                    }
+                  : undefined}
                 {onCellDown}
                 {onCellEnter}
                 onCellClick={onCellClick ? onCellClicked : undefined}

@@ -189,6 +189,7 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>rowMenu</td><td><span class="type">(row) =&gt; {'{'} label, onSelect {'}'}[]</span></td><td>Right-click row menu items; each runs <code>onSelect</code> and closes.</td></tr>
           <tr><td>detail</td><td><span class="type">Snippet&lt;[{'{'} row {'}'}]&gt;</span></td><td>Master-detail panel under each row; adds a leading expand toggle. In-memory mode.</td></tr>
           <tr><td>detailHeight</td><td><span class="type">number</span></td><td>Height (px) of the expanded detail panel. Default <code>160</code>.</td></tr>
+          <tr><td>getChildren</td><td><span class="type">(row) =&gt; GridRow[]</span></td><td>Tree data: return a row's children. <code>rows</code> become roots; renders an indented, expandable tree.</td></tr>
           <tr><td>pageSize</td><td><span class="type">number</span></td><td>Rows per page (&gt; 0 shows a pager instead of one long scroll). In-memory mode. Default 0.</td></tr>
           <tr><td>page / onPageChange</td><td><span class="type">number / (page) =&gt; void</span></td><td>Controlled current page (0-based) + change callback (URL-sync paging).</td></tr>
           <tr><td>onColumnReorder</td><td><span class="type">(keys: string[]) =&gt; void</span></td><td>New column-key order after a header drag-reorder.</td></tr>

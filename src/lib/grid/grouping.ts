@@ -14,7 +14,7 @@ export interface GroupNode {
 }
 
 export type VisualRow =
-  | { kind: 'data'; row: GridRow }
+  | { kind: 'data'; row: GridRow; depth?: number; hasChildren?: boolean }
   | { kind: 'group'; group: GroupNode };
 
 /**

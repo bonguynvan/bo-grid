@@ -54,6 +54,12 @@ export const EXAMPLES: Example[] = [
     load: () => import('./Leaderboard.svelte'),
   },
   {
+    id: 'tree',
+    title: 'Tree',
+    blurb: 'A file-explorer tree — expandable folders, indented rows (tree data).',
+    load: () => import('./Tree.svelte'),
+  },
+  {
     id: 'bigdata',
     title: '1M rows',
     blurb: 'A million-row trade tape, windowed from a synthetic source on demand.',

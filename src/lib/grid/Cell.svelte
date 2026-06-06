@@ -21,6 +21,7 @@
     colIndex,
     cellId,
     cellSnippet,
+    tree,
     onCellDown,
     onCellEnter,
     onCellClick,
@@ -44,6 +45,8 @@
     colIndex?: number;
     cellId?: string;
     cellSnippet?: Snippet<[{ row: GridRow; column: ColumnDef; value: unknown }]>;
+    /** Tree-data gutter for the first column: indent + expand chevron. */
+    tree?: { depth: number; hasChildren: boolean; expanded: boolean; onToggle: () => void };
     onCellDown?: (r: number, c: number, e: PointerEvent) => void;
     onCellEnter?: (r: number, c: number, e: PointerEvent) => void;
     onCellClick?: (r: number, c: number, e: MouseEvent) => void;
@@ -128,6 +131,27 @@
   onclick={(e) => onCellClick?.(r, c, e)}
   ondblclick={() => onCellDblClick?.(r, c)}
 >
+  {#if tree}
+    <span class="tree-gutter" style="padding-left:{tree.depth * 16}px">
+      {#if tree.hasChildren}
+        <button
+          class="tree-toggle"
+          type="button"
+          aria-expanded={tree.expanded}
+          aria-label="Toggle children"
+          onpointerdown={(e) => e.stopPropagation()}
+          onclick={(e) => {
+            e.stopPropagation();
+            tree.onToggle();
+          }}
+        >
+          {tree.expanded ? '▾' : '▸'}
+        </button>
+      {:else}
+        <span class="tree-leaf"></span>
+      {/if}
+    </span>
+  {/if}
   {#if editing && col.options && col.options.length > 0}
     <select
       class="bo-edit"
@@ -200,6 +224,32 @@
   }
   .spark {
     overflow: visible;
+  }
+  /* Tree-data gutter: indent + expand chevron, before the cell content. */
+  .tree-gutter {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+  }
+  .tree-toggle {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    font-size: 10px;
+    line-height: 1;
+    color: var(--bo-text-dim);
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .tree-toggle:hover {
+    color: var(--bo-text);
+    background: var(--bo-row-hover);
+  }
+  .tree-leaf {
+    display: inline-block;
+    width: 18px;
   }
   .bo-edit {
     width: 100%;

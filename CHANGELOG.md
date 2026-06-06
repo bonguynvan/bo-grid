@@ -92,6 +92,8 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   (enum priority, natural sort) instead of the default value comparison.
 - **Master-detail**: a `detail` snippet renders an expandable panel under each
   row (leading expand toggle, `detailHeight`); virtualized with the height model.
+- **Tree data**: `getChildren` renders hierarchical rows — `rows` become roots,
+  with an indented first column and per-node expand chevrons.
 - **Per-column class hooks**: `cellClass` (static or `(value, row)` conditional)
   and `headerClass` for styling individual columns via `:global`.
 - **Pagination**: `pageSize` switches to a paged view with a pager (first/prev/
