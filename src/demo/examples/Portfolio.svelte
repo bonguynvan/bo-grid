@@ -128,6 +128,7 @@
     {groupBy}
     filterMenu={!pivotMode}
     columnMenu={!pivotMode}
+    columnsPanel={!pivotMode}
     theme="dark"
     persistKey="demo-portfolio"
     height={620}

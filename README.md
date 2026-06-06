@@ -341,9 +341,10 @@ your own column-picker UI and drive the prop; the grid stays presentation-only:
 ```
 
 Or set `columnMenu` for a **per-column header menu** (a ⋮ trigger) with sort,
-**pin** (left/right/unpin), and **Hide column** actions. Runtime hide/pin compose
-with `hiddenColumns` / `col.pinned`, persist via `persistKey`, and hide reports
-through `onColumnVisibilityChange`:
+**pin** (left/right/unpin), and **Hide column** actions, and `columnsPanel` for a
+**"Columns" button** that opens a checklist to toggle visibility (and restore
+hidden columns). Runtime hide/pin compose with `hiddenColumns` / `col.pinned`,
+persist via `persistKey`, and hide reports through `onColumnVisibilityChange`:
 
 ```svelte
 <Grid {rows} {columns} columnMenu height={640}

@@ -52,6 +52,7 @@
     hiddenColumns = [],
     onColumnVisibilityChange,
     columnMenu = false,
+    columnsPanel = false,
     rowClass,
     getRowId = (r: GridRow) => r.id,
     onRowClick,
@@ -104,6 +105,10 @@
     /** Enable a per-column header menu (a ⋮ trigger) with sort, hide and (with
         `filterMenu`) filter actions. Default false. */
     columnMenu?: boolean;
+    /** Show a "Columns" button that opens a panel to toggle column visibility
+        (the place to restore columns hidden via the menu). Lazy-loaded. Default
+        false. */
+    columnsPanel?: boolean;
     /** Return extra CSS class(es) for a data row (e.g. to colour by value).
         Style them via `:global(.your-class)` since rows live inside the grid. */
     rowClass?: (row: GridRow) => string | undefined;
@@ -505,6 +510,35 @@
   function showColumn(key: string): void {
     if (runtimeHidden.includes(key)) setRuntimeHidden(runtimeHidden.filter((k) => k !== key));
   }
+  function toggleColumnVisible(key: string): void {
+    if (effectiveHidden.includes(key)) showColumn(key);
+    else hideColumn(key);
+  }
+  function showAllColumns(): void {
+    setRuntimeHidden([]);
+  }
+  // Columns tool panel (lazy-loaded checklist), anchored at the toolbar button.
+  let ToolPanelComp = $state<typeof import('./ToolPanel.svelte').default | null>(null);
+  let panelXY = $state<{ x: number; y: number } | null>(null);
+  async function openToolPanel(e: Event) {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    if (!ToolPanelComp) ToolPanelComp = (await import('./ToolPanel.svelte')).default;
+    panelXY = { x: rect.left, y: rect.bottom + 2 };
+  }
+  $effect(() => {
+    if (!panelXY) return;
+    const close = () => (panelXY = null);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && (panelXY = null);
+    window.addEventListener('pointerdown', close);
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('blur', close);
+    return () => {
+      window.removeEventListener('pointerdown', close);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('blur', close);
+    };
+  });
 
   // ---- Runtime column pinning (column menu) ---------------------------------
   function pinStorageKey(): string | null {
@@ -1210,15 +1244,20 @@
   bind:this={gridEl}
   onkeydown={onKeydown}
 >
-  {#if quickFilter}
+  {#if quickFilter || columnsPanel}
     <div class="bo-toolbar">
-      <input
-        class="bo-quickfilter"
-        type="search"
-        placeholder="Search…"
-        aria-label="Quick filter"
-        bind:value={quickText}
-      />
+      {#if quickFilter}
+        <input
+          class="bo-quickfilter"
+          type="search"
+          placeholder="Search…"
+          aria-label="Quick filter"
+          bind:value={quickText}
+        />
+      {/if}
+      {#if columnsPanel}
+        <button class="bo-cols-toggle" type="button" onclick={openToolPanel}>⊟ Columns</button>
+      {/if}
     </div>
   {/if}
   {#if headerGroups}
@@ -1551,6 +1590,19 @@
       onClose={() => (filterUi = null)}
     />
   {/if}
+
+  {#if panelXY && ToolPanelComp}
+    {@const Panel = ToolPanelComp}
+    <Panel
+      columns={ordered.map((c) => ({ key: c.key, header: c.header }))}
+      hidden={effectiveHidden}
+      x={panelXY.x}
+      y={panelXY.y}
+      onToggle={toggleColumnVisible}
+      onShowAll={showAllColumns}
+      onClose={() => (panelXY = null)}
+    />
+  {/if}
 </div>
 
 <style>
@@ -1605,6 +1657,20 @@
   }
   .bo-quickfilter::placeholder {
     color: var(--bo-text-dim);
+  }
+  .bo-cols-toggle {
+    margin-left: auto;
+    padding: 5px 11px;
+    font: inherit;
+    font-size: 12px;
+    color: var(--bo-text);
+    background: var(--bo-bg);
+    border: 0.5px solid var(--bo-border);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .bo-cols-toggle:hover {
+    border-color: var(--bo-text-dim);
   }
 
   /* Spanning header groups (row above the column headers). */

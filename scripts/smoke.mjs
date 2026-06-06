@@ -518,6 +518,26 @@ await wait(20);
 clickMenuItem('Unpin');
 await wait(20);
 if (!(headLabels().indexOf('P&L $') > pnlPinned)) fail('pin: Unpin did not move the column back');
+// Columns tool panel (lazy): open it, restore the column hidden earlier via the
+// menu (Show all), then hide a column by unchecking its box.
+document
+  .querySelector('.bo-grid .bo-cols-toggle')
+  .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await waitFor('.bo-toolpanel', 'columns tool panel did not open (lazy chunk)');
+if (document.querySelectorAll('.bo-toolpanel .bo-tp-opt input[type=checkbox]').length === 0)
+  fail('tool panel: no column checkboxes rendered');
+[...document.querySelectorAll('.bo-toolpanel .bo-tp-link')]
+  .find((b) => b.textContent.trim() === 'Show all')
+  ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(30);
+if (!headLabels().includes('Last')) fail('tool panel: Show all did not restore the hidden column');
+const sharesOpt = [...document.querySelectorAll('.bo-toolpanel .bo-tp-opt')].find(
+  (o) => o.querySelector('span')?.textContent?.trim() === 'Shares',
+);
+if (!sharesOpt) fail('tool panel: Shares row not found');
+sharesOpt.querySelector('input[type=checkbox]').click(); // .click() toggles + fires change
+await wait(30);
+if (headLabels().includes('Shares')) fail('tool panel: unchecking a box did not hide the column');
 
 const sheetTab = tab('Spreadsheet');
 if (!sheetTab) fail('Spreadsheet example tab not found');

@@ -14,44 +14,48 @@ backward-compatible unless noted.
   context menu, custom format/compare, type-to-edit, full keyboard a11y, and
   verified SSR/SvelteKit safety. ~45 features in ~20 KB gzip.
 
-## In progress — 0.3 · Filtering & discoverability
+## 0.3 · Filtering & discoverability — done
 
-Closing the biggest functional gap vs heavyweight grids: rich, built-in column
-filtering with a proper UI. **Guiding principle: keep the core tiny** — the heavy
-menu UI is **lazy-loaded inside `Grid`** (like the demo's examples and the `xlsx`
-export), so the ~20 KB core only grows by the small pure filter logic, and you
+Closed the biggest functional gap vs heavyweight grids: rich, built-in column
+filtering. **Guiding principle: keep the core tiny** — heavy menu UI is
+**lazy-loaded inside `Grid`**, so the core only grows by small glue and you
 download a menu only when you open one.
 
-- [x] **M1 — Filter model + logic** (`filtering.ts`): a typed `ColumnFilter`
-  (text / number / date operators + a set filter) with pure, unit-tested
-  matching. `view` filters through it; the existing `filterRow` is migrated onto
-  it, behavior-preserved.
-- [x] **M2 — Header filter menu** (lazy `FilterMenu.svelte`): a per-column funnel
-  opens the right control for the column type — text (contains/equals/starts/
-  ends), number (`=, ≠, <, ≤, >, ≥, between`), date (before/after/on/between).
-  Enabled by `filterMenu`; override per column with `col.filter`.
-- [x] **M3 — Set filter**: `col.filter: 'set'` renders a searchable checkbox list
-  of a column's distinct values (All / None) — the AG-Grid-signature filter.
-- [x] **M5 — Quick filter**: a built-in `quickFilter` global search box.
+- [x] **M1 — Filter model + logic** (`filtering.ts`): typed `ColumnFilter`
+  (text/number/date operators + set), pure + unit-tested; `view` filters through
+  it; `filterRow` migrated onto it.
+- [x] **M2 — Header filter menu** (lazy `FilterMenu.svelte`): per-column funnel,
+  type-aware controls. `filterMenu` + per-column `col.filter`.
+- [x] **M3 — Set filter**: `col.filter: 'set'` — checkbox list of distinct values.
+- [x] **M5 — Quick filter**: built-in `quickFilter` global search box.
 
-Shipped API (all additive): `filterMenu`, `quickFilter`, per-column
-`filter?: false | 'text' | 'number' | 'date' | 'set'`.
+## In progress — 0.4 · Column management & discoverability
 
-Deferred to a later version:
+Runtime column management — the part AG Grid does that needs real capability.
+Heavy UI (the tool panel) is lazy-loaded; the light column menu reuses the
+in-core action menu.
 
-- **M4 — Column header menu + columns tool panel**: a unified menu (sort / pin /
-  hide / filter) and a sidebar. Re-scoped out of 0.3 because a useful version
-  needs **runtime column management** (hide/unhide, runtime pin) — today
-  `hiddenColumns` is consumer-controlled and pinning is static config. That's a
-  coherent feature in its own right; sort + filter are already reachable via
-  header-click and the funnel, so a sort/filter-only menu adds little.
-- **`onFilterChange`** (controlled filtering) + a structured `columnFilters` field
-  on `RowSourceParams` for server-side filtering.
+- [x] **M1 — Column header menu + runtime hide** (`columnMenu`, a ⋮ trigger):
+  Sort asc/desc/clear + Hide column. Runtime-hidden set unions with the
+  controlled `hiddenColumns`, persists via `persistKey`, reports via
+  `onColumnVisibilityChange`.
+- [x] **M2 — Runtime pinning**: Pin left / Pin right / Unpin from the menu,
+  layered over static `col.pinned`, persisted.
+- [x] **M3 — Columns tool panel** (lazy `ToolPanel.svelte`): `columnsPanel` adds a
+  "Columns" button → a checklist to toggle visibility / restore hidden columns.
+- [ ] **M4 — Autosize column to content**: double-click the header border to fit.
+  Deferred — needs DOM width measurement (can't be verified in the headless
+  smoke test) and the core budget is tight; revisit with the budget recalibration.
+
+Shipped API (all additive): `columnMenu`, `columnsPanel`,
+`onColumnVisibilityChange`.
 
 ## Candidate themes for later versions
 
 - **Spreadsheet power** — fill handle (Excel drag-to-fill), undo/redo, more cell
   editors (date picker, stepper, autocomplete), auto-size column to content.
+- **Controlled/server filtering** — `onFilterChange` + a structured
+  `columnFilters` field on `RowSourceParams`.
 - **Scale & server** — full server-side row model (lazy group/tree level
   loading), horizontal column virtualization for 100+ column grids.
 - **Trust & polish** — a formal WCAG 2.1 AA audit, more theme presets + a

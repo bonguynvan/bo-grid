@@ -16,6 +16,9 @@ Theme: **column management & discoverability** (in progress — see
   `hiddenColumns`, persist via `persistKey`, and report through
   `onColumnVisibilityChange`; runtime pins layer over static `col.pinned` and
   also persist.
+- **Columns tool panel**: `columnsPanel` adds a "Columns" button that opens a
+  searchable checklist to toggle column visibility (and **restore** columns
+  hidden via the menu — Show all). Lazy-loaded.
 
 ## [0.3.0] — Unreleased
 
