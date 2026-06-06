@@ -377,6 +377,17 @@ const corrPinned = [...document.querySelectorAll('.bo-grid .row .c')].filter((c)
 if (heatCells === 0) fail('Correlation matrix rendered no heatmap-coloured cells');
 if (corrPinned === 0) fail('Correlation matrix label column did not pin');
 
+// Leaderboard: custom rank/progress cells + podium row highlighting.
+const lbTab = tab('Leaderboard');
+if (!lbTab) fail('Leaderboard example tab not found');
+click(lbTab);
+await wait(50);
+await waitFor('.bo-grid .row', 'Leaderboard example rendered no rows');
+const lbBars = document.querySelectorAll('.bo-grid .row .bar .fill').length;
+const lbPodium = document.querySelectorAll('.bo-grid .row.podium-row').length;
+if (lbBars === 0) fail('Leaderboard score bars (custom cell) did not render');
+if (lbPodium === 0) fail('Leaderboard podium rowClass did not apply');
+
 // Big data: a 1,000,000-row windowed source. Assert real (non-skeleton) rows
 // load after the simulated latency and the scrollbar reflects the full total.
 const bigTab = tab('1M rows');
@@ -404,7 +415,7 @@ console.log(
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups, sheet ${sheetRows} rows (light) + row-select + col-hide, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

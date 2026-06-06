@@ -7,10 +7,11 @@ A free alternative to the heavyweight grids that paywall these features.
 **[Live demo](https://bonguynvan.github.io/bo-grid/)** ·
 **[API reference](https://bonguynvan.github.io/bo-grid/api.html)**
 
-The demo is a small gallery — a realtime **Trading desk**, a grouped **Portfolio**
-with subtotals and pivot, a general-purpose editable **Spreadsheet**, a live
-**Order book** depth ladder, a **Correlation** heatmap matrix, and a **1M-row**
-trade tape windowed from a synthetic source — switch between them with the tabs.
+The demo is a small gallery of seven grid types — a realtime **Trading desk**, a
+grouped **Portfolio** with subtotals and pivot, a general-purpose editable
+**Spreadsheet**, a live **Order book** depth ladder, a **Correlation** heatmap
+matrix, a **Leaderboard** with rank medals and score bars, and a **1M-row** trade
+tape windowed from a synthetic source — switch between them with the tabs.
 
 > **Status: v0.1 (early).** Working: config-driven columns, virtual scroll,
 > client sort + filter, multi-cell selection + live range aggregation, row

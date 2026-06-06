@@ -48,6 +48,12 @@ export const EXAMPLES: Example[] = [
     load: () => import('./Correlation.svelte'),
   },
   {
+    id: 'leaderboard',
+    title: 'Leaderboard',
+    blurb: 'Rank medals and score bars (custom cells), podium row highlighting.',
+    load: () => import('./Leaderboard.svelte'),
+  },
+  {
     id: 'bigdata',
     title: '1M rows',
     blurb: 'A million-row trade tape, windowed from a synthetic source on demand.',
