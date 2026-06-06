@@ -67,6 +67,14 @@ than AG Grid; heavy UI stays lazy and excluded from the core count).
 - [x] **Autosize column to content** via the column menu (character-count
   heuristic; respects min/max; persists like a manual resize).
 - [x] **Keyboard access to the column menu** (<kbd>Alt</kbd>+<kbd>↓</kbd>).
+- [x] **Themed native form controls** (checkbox / date / spinners / scrollbars)
+  via `color-scheme` + `accent-color`.
+
+## 0.8 · Design tokens & polish — done
+
+- [x] **Deep theming tokens**: `radius`, `fontSize`, `cellPad` (shape + density),
+  on top of colour/typography — any look from a small token map.
+- [x] **Themed scrollbars** in the viewport (Firefox + Chromium/Safari).
 
 ## Candidate themes for later versions
 

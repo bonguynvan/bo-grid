@@ -23,6 +23,13 @@ export interface GridTheme {
   /** Native-control color scheme: themes checkboxes, date pickers, number
       spinners, search-clear buttons and scrollbars. Defaults to dark. */
   scheme?: 'light' | 'dark';
+  /** Outer corner radius (e.g. '8px', '0', '14px'). Default 8px. */
+  radius?: string;
+  /** Cell/row font size (e.g. '13px', '12px'). Default 13px. */
+  fontSize?: string;
+  /** Horizontal cell padding — the main density lever (e.g. '8px', '12px').
+      Pair with `rowHeight` for a fully compact or roomy look. Default 8px. */
+  cellPad?: string;
 }
 
 const VARS: Record<keyof GridTheme, string> = {
@@ -43,6 +50,9 @@ const VARS: Record<keyof GridTheme, string> = {
   mono: '--bo-grid-mono',
   sans: '--bo-grid-sans',
   scheme: '--bo-grid-scheme',
+  radius: '--bo-grid-radius',
+  fontSize: '--bo-grid-font-size',
+  cellPad: '--bo-grid-cell-pad',
 };
 
 /** Serialize a theme to a CSS `--bo-grid-*: …;` declaration string. */

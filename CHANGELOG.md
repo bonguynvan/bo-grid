@@ -3,6 +3,19 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.8.0] — Unreleased
+
+Theme: **design tokens & polish** (see [ROADMAP.md](./ROADMAP.md)).
+
+### Added
+
+- **Deep theming tokens**: shape and density are themeable too — `radius`,
+  `fontSize` and `cellPad` (`--bo-grid-radius` / `--bo-grid-font-size` /
+  `--bo-grid-cell-pad`), alongside the existing colour/typography tokens. Compact,
+  roomy, rounded or branded looks are a small token map (or a few CSS vars) away.
+- **Themed scrollbars**: thin, theme-coloured scrollbars in the grid viewport
+  (Firefox `scrollbar-*` + Chromium/Safari `::-webkit-scrollbar`).
+
 ## [0.7.0] — Unreleased
 
 Theme: **column sizing & keyboard polish** (see [ROADMAP.md](./ROADMAP.md)).
@@ -219,6 +232,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.8.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.8.0
 [0.7.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.7.0
 [0.6.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.6.0
 [0.5.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.5.0

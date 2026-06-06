@@ -297,6 +297,25 @@ scrollbars) follow the theme automatically via `color-scheme` + `accent-color`.
 A custom theme defaults to dark; set `scheme: 'light'` (or `--bo-grid-scheme:
 light`) for a light one.
 
+**Tokens** cover colour, typography (`mono`/`sans`/`fontSize`), shape (`radius`),
+and density (`cellPad`, plus the `rowHeight` prop) — so the whole look is yours.
+Numeric columns use tabular figures so digits line up. A few looks:
+
+```svelte
+<!-- Compact / dense -->
+<Grid {rows} {columns} rowHeight={28}
+  theme={{ fontSize: '12px', cellPad: '6px' }} height={640} />
+
+<!-- Roomy & rounded -->
+<Grid {rows} {columns} rowHeight={44}
+  theme={{ radius: '16px', cellPad: '16px', fontSize: '14px' }} height={640} />
+
+<!-- Branded -->
+<Grid {rows} {columns}
+  theme={{ bg: '#0b1020', headerBg: '#0d1226', up: '#22d3ee', down: '#fb7185',
+           selBorder: '#22d3ee', radius: '12px' }} height={640} />
+```
+
 ## Server-side / large datasets
 
 Instead of an in-memory `rows` array, back the grid with a **`RowSource`** — the

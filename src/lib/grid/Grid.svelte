@@ -1803,6 +1803,10 @@
     --bo-header-h: var(--bo-grid-header-h, 28px);
     --bo-mono: var(--bo-grid-mono, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace);
     --bo-sans: var(--bo-grid-sans, Inter, "Segoe UI", system-ui, sans-serif);
+    /* Layout/density tokens (override via --bo-grid-* for a custom look). */
+    --bo-radius: var(--bo-grid-radius, 8px);
+    --bo-font-size: var(--bo-grid-font-size, 13px);
+    --bo-cell-pad: var(--bo-grid-cell-pad, 8px);
 
     /* Theme native controls (checkboxes, date pickers, number spinners, search
        clear buttons, scrollbars) and accent fills to match the grid theme. */
@@ -1815,7 +1819,7 @@
     font-family: var(--bo-sans);
     background: var(--bo-bg);
     border: 0.5px solid var(--bo-border);
-    border-radius: 8px;
+    border-radius: var(--bo-radius);
     overflow: hidden;
     outline: none;
   }
@@ -1898,7 +1902,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 0 8px;
+    padding: 0 var(--bo-cell-pad, 8px);
     min-width: 0;
     font: inherit;
     font-size: 11px;
@@ -2042,6 +2046,26 @@
     overflow-y: auto;
     overflow-x: hidden;
     user-select: none;
+    /* Thin, themed scrollbars (Firefox) — Chromium/Safari below. */
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--bo-text-dim) 55%, transparent) transparent;
+  }
+  .viewport::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  .viewport::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--bo-text-dim) 45%, transparent);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 6px;
+  }
+  .viewport::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--bo-text-dim) 70%, transparent);
+    background-clip: padding-box;
+  }
+  .viewport::-webkit-scrollbar-corner {
+    background: transparent;
   }
   .empty {
     position: absolute;

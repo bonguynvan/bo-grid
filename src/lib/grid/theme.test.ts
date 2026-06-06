@@ -20,4 +20,10 @@ describe('themeVars', () => {
   it('dark and light presets define the same token set', () => {
     expect(Object.keys(darkTheme).sort()).toEqual(Object.keys(lightTheme).sort());
   });
+
+  it('serializes layout/density tokens (radius / fontSize / cellPad)', () => {
+    expect(themeVars({ radius: '14px', fontSize: '12px', cellPad: '12px' })).toBe(
+      '--bo-grid-radius:14px;--bo-grid-font-size:12px;--bo-grid-cell-pad:12px;',
+    );
+  });
 });

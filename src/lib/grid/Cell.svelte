@@ -251,9 +251,9 @@
     position: relative;
     display: flex;
     align-items: center;
-    padding: 0 8px;
+    padding: 0 var(--bo-cell-pad, 8px);
     height: 100%;
-    font-size: 13px;
+    font-size: var(--bo-font-size, 13px);
     line-height: 1.4;
     overflow: hidden;
     white-space: nowrap;
