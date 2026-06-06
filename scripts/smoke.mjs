@@ -479,6 +479,20 @@ roleFilter.value = ''; // clear so later state is clean
 roleFilter.dispatchEvent(new window.Event('input', { bubbles: true }));
 await wait(20);
 
+// Pagination: toggle paged mode and step through pages via the pager.
+const pageToggle = [...document.querySelectorAll('.colbtn')].find((b) => /Scroll|Paged/.test(b.textContent || ''));
+if (!pageToggle) fail('pagination toggle not found');
+pageToggle.click();
+await wait(30);
+const pager = document.querySelector('.bo-grid .pager');
+if (!pager || !/Page 1 of/.test(pager.textContent || '')) fail(`pager did not render (got "${pager?.textContent}")`);
+const nextBtn = [...pager.querySelectorAll('.pg')].find((b) => /Next/.test(b.textContent || ''));
+nextBtn.click();
+await wait(30);
+if (!/Page 2 of/.test(document.querySelector('.bo-grid .pager')?.textContent || '')) {
+  fail('pager Next did not advance the page');
+}
+
 // Order book: per-row colour classes (ask/bid) via rowClass + custom depth cell.
 const obTab = tab('Order book');
 if (!obTab) fail('Order book example tab not found');
@@ -545,7 +559,7 @@ console.log(
     `edit committed + validate; variable heights ${rowHeights.join('/')}; ` +
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
-    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class, ` +
+    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
     `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );

@@ -58,6 +58,7 @@
   let filterText = $state('');
   let selectedCount = $state(0);
   let lastCell = $state('');
+  let pageMode = $state(false);
 
   // Column show/hide: a controlled list of hidden keys + a little picker menu.
   let hidden = $state<string[]>([]);
@@ -116,6 +117,9 @@
     Tick rows to select · double-click a number to edit · drag a header edge to resize ·
     <kbd>Ctrl/⌘+C</kbd> / <kbd>V</kbd> to copy &amp; paste
   </span>
+  <button class="colbtn" class:on={pageMode} onclick={() => (pageMode = !pageMode)}>
+    {pageMode ? 'Paged' : 'Scroll'}
+  </button>
   {#if selectedCount > 0}
     <span class="count">{selectedCount} selected</span>
   {/if}
@@ -153,6 +157,7 @@
     onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}
     detail={detailPanel}
     detailHeight={84}
+    pageSize={pageMode ? 12 : 0}
   />
 </div>
 

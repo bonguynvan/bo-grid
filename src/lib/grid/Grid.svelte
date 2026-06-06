@@ -53,6 +53,7 @@
     rowMenu,
     detail,
     detailHeight = 160,
+    pageSize = 0,
     cell,
   }: {
     rows: GridRow[];
@@ -117,6 +118,9 @@
     detail?: Snippet<[{ row: GridRow }]>;
     /** Height (px) of the expanded detail panel. Default 160. */
     detailHeight?: number;
+    /** Rows per page. When > 0 (in-memory mode), shows a pager instead of one
+        long scroll; rows still virtualize within a page. Default 0 (off). */
+    pageSize?: number;
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -482,12 +486,37 @@
     });
   });
 
+  // Pagination (in-memory only): slice the view into pages; rows still
+  // virtualize within a page. Off when pageSize <= 0.
+  const paged = $derived(pageSize > 0 && !source);
+  let page = $state(0);
+  const pageCount = $derived(paged ? Math.max(1, Math.ceil(view.length / pageSize)) : 1);
+  // Keep the page in range when the view shrinks (filter/sort changes).
+  $effect(() => {
+    const max = pageCount - 1;
+    untrack(() => {
+      if (page > max) page = max;
+    });
+  });
+  const pageRows = $derived(
+    paged ? view.slice(page * pageSize, page * pageSize + pageSize) : view,
+  );
+
   const flat = $derived.by<VisualRow[]>(() => {
-    const v = view;
+    const v = pageRows;
     const gb = groupBy;
     collapsedVersion;
     return untrack(() => buildFlatRows(v, gb, collapsed));
   });
+
+  function goToPage(p: number): void {
+    const next = Math.max(0, Math.min(p, pageCount - 1));
+    if (next === page) return;
+    page = next;
+    sel.clear();
+    editing = null;
+    if (viewportEl) viewportEl.scrollTop = 0;
+  }
 
   // Header select-all state over the in-memory rows (source mode can't enumerate
   // unloaded ids, so the header checkbox is disabled there).
@@ -1133,6 +1162,16 @@
 
   <AggregationBar result={agg} kinds={aggregations} />
 
+  {#if paged}
+    <div class="pager" role="navigation" aria-label="Pagination">
+      <button type="button" class="pg" disabled={page === 0} aria-label="First page" onclick={() => goToPage(0)}>«</button>
+      <button type="button" class="pg" disabled={page === 0} onclick={() => goToPage(page - 1)}>‹ Prev</button>
+      <span class="pageinfo">Page {page + 1} of {pageCount} · {view.length.toLocaleString()} rows</span>
+      <button type="button" class="pg" disabled={page >= pageCount - 1} onclick={() => goToPage(page + 1)}>Next ›</button>
+      <button type="button" class="pg" disabled={page >= pageCount - 1} aria-label="Last page" onclick={() => goToPage(pageCount - 1)}>»</button>
+    </div>
+  {/if}
+
   {#if menu}
     <div class="rowmenu" role="menu" tabindex="-1" style="left:{menu.x}px;top:{menu.y}px;" onpointerdown={(e) => e.stopPropagation()}>
       {#each menu.items as item (item.label)}
@@ -1467,6 +1506,41 @@
   }
   .footer .fcell.right {
     justify-content: flex-end;
+  }
+
+  /* Pagination bar. */
+  .pager {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--bo-header-bg);
+    border-top: 0.5px solid var(--bo-border);
+  }
+  .pager .pg {
+    padding: 3px 9px;
+    font: inherit;
+    font-family: var(--bo-mono);
+    font-size: 11px;
+    color: var(--bo-text);
+    background: transparent;
+    border: 0.5px solid var(--bo-border);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .pager .pg:hover:not(:disabled) {
+    background: var(--bo-row-hover);
+    border-color: var(--bo-sel-border);
+  }
+  .pager .pg:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .pager .pageinfo {
+    font-family: var(--bo-mono);
+    font-size: 11px;
+    color: var(--bo-text-dim);
+    font-variant-numeric: tabular-nums;
   }
 
   /* Right-click row menu (floating). */

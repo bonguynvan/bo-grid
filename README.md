@@ -112,6 +112,15 @@ a function for variable per-row heights (in-memory mode):
 Variable heights use a prefix-sum + binary-search virtualizer, so scrolling stays
 O(log n). Source mode is uniform-only (unloaded row heights aren't known).
 
+## Pagination
+
+Prefer pages over one long scroll? Set `pageSize` (> 0) for a paged view with a
+first/prev/next/last pager; rows still virtualize within each page. In-memory mode.
+
+```svelte
+<Grid {rows} {columns} height={640} pageSize={25} />
+```
+
 ## Sort & filter
 
 Click a column header to sort (asc → desc → off). **Shift-click** additional

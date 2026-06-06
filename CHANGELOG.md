@@ -94,6 +94,8 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   row (leading expand toggle, `detailHeight`); virtualized with the height model.
 - **Per-column class hooks**: `cellClass` (static or `(value, row)` conditional)
   and `headerClass` for styling individual columns via `:global`.
+- **Pagination**: `pageSize` switches to a paged view with a pager (first/prev/
+  next/last) instead of one long scroll; rows still virtualize within a page.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 - **Theming**: dark-first, self-contained CSS variables (`--bo-grid-*`), no CSS
