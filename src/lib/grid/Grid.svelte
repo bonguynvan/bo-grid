@@ -36,6 +36,8 @@
     rowHeight,
     theme,
     resizable = true,
+    rowSelection = false,
+    onRowSelectionChange,
     cell,
   }: {
     rows: GridRow[];
@@ -49,6 +51,11 @@
     /** Allow drag-to-resize column widths. Default true; opt out per column
         with `resizable: false`. */
     resizable?: boolean;
+    /** Show a leading checkbox column for whole-row selection (keyed by row id,
+        stable across sort/filter). Default false. */
+    rowSelection?: boolean;
+    /** Called with the selected row ids whenever the row-selection set changes. */
+    onRowSelectionChange?: (selectedIds: number[]) => void;
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -116,6 +123,24 @@
   // User column-width overrides (drag-to-resize), keyed by column key.
   let widths = $state<WidthMap>({});
 
+  // Whole-row selection (opt-in), keyed by row id so it survives sort/filter.
+  // Plain Set + a version counter for reactivity (same pattern as `collapsed`).
+  const SEL_W = 40; // checkbox column width (px)
+  const selectedRows = new Set<number>();
+  let selRowsVersion = $state(0);
+  const selOffset = $derived(rowSelection ? 1 : 0);
+
+  function isRowSelected(id: number): boolean {
+    selRowsVersion; // track
+    return selectedRows.has(id);
+  }
+  function toggleRow(id: number): void {
+    if (selectedRows.has(id)) selectedRows.delete(id);
+    else selectedRows.add(id);
+    selRowsVersion++;
+    onRowSelectionChange?.([...selectedRows]);
+  }
+
   const ordered = $derived(order.length === columns.length ? order.map((i) => columns[i]) : columns);
   // Apply any resize overrides (turns the dragged column fixed-width), then
   // pin-arrange. Both are no-ops by default, so the grid stays fit-to-width.
@@ -135,18 +160,28 @@
   // cell is always scrolled into view, so its element exists in the DOM).
   const activeId = $derived(sel.focus ? `${gid}-r${sel.focus.r}-c${sel.focus.c}` : undefined);
 
+  // Pinned columns sit to the right of the (also-sticky) checkbox column, so
+  // their sticky-left offsets shift by SEL_W when row selection is on.
   function headStyle(ci: number): string {
     if (!pinned) return colStyle(cols[ci]);
     const inf = layout.info[ci];
     let s = `flex:0 0 ${inf.width}px;width:${inf.width}px;`;
-    if (inf.pinned) s += `position:sticky;left:${inf.left}px;z-index:5;background:var(--bo-header-bg);`;
+    if (inf.pinned) s += `position:sticky;left:${inf.left + selOffset * SEL_W}px;z-index:5;background:var(--bo-header-bg);`;
     return s;
   }
   function cellWidthStyle(ci: number): string {
     if (!pinned) return colStyle(cols[ci]);
     const inf = layout.info[ci];
     let s = `flex:0 0 ${inf.width}px;width:${inf.width}px;`;
-    if (inf.pinned) s += `position:sticky;left:${inf.left}px;z-index:1;background:var(--bo-bg);`;
+    if (inf.pinned) s += `position:sticky;left:${inf.left + selOffset * SEL_W}px;z-index:1;background:var(--bo-bg);`;
+    return s;
+  }
+  // The leading checkbox column: a fixed-width flex item, sticky-left when the
+  // grid scrolls horizontally (pinned mode).
+  function selCellStyle(header: boolean): string {
+    let s = `flex:0 0 ${SEL_W}px;width:${SEL_W}px;`;
+    if (pinned)
+      s += `position:sticky;left:0;z-index:${header ? 6 : 2};background:var(--bo-${header ? 'header-bg' : 'bg'});`;
     return s;
   }
 
@@ -316,6 +351,28 @@
     return untrack(() => buildFlatRows(v, gb, collapsed));
   });
 
+  // Header select-all state over the in-memory rows (source mode can't enumerate
+  // unloaded ids, so the header checkbox is disabled there).
+  const selectAll = $derived.by(() => {
+    selRowsVersion;
+    if (source) return { checked: false, indeterminate: false };
+    const v = view;
+    let n = 0;
+    for (const r of v) if (selectedRows.has(r.id)) n++;
+    return { checked: n > 0 && n === v.length, indeterminate: n > 0 && n < v.length };
+  });
+
+  function toggleAll(): void {
+    if (source) return;
+    const clearing = selectAll.checked;
+    for (const r of view) {
+      if (clearing) selectedRows.delete(r.id);
+      else selectedRows.add(r.id);
+    }
+    selRowsVersion++;
+    onRowSelectionChange?.([...selectedRows]);
+  }
+
   // Unified row count: from the source total or the flattened in-memory list.
   const rowCount = $derived(source ? (controller?.total ?? 0) : flat.length);
 
@@ -340,7 +397,9 @@
   const hm = $derived(variable && heights ? variableHeights(heights) : uniformHeights(rowCount, baseH));
 
   const total = $derived(hm.total);
-  const rowWidthStyle = $derived(pinned ? `width:${layout.totalWidth}px;right:auto;` : '');
+  const rowWidthStyle = $derived(
+    pinned ? `width:${layout.totalWidth + selOffset * SEL_W}px;right:auto;` : '',
+  );
   const visibleCount = $derived(Math.ceil(height / baseH) + OVERSCAN * 2);
   const start = $derived(Math.max(0, hm.indexAt(scrollTop) - OVERSCAN));
   const renderEnd = $derived(
@@ -581,7 +640,7 @@
   tabindex="0"
   id={gid}
   aria-rowcount={rowCount + 1}
-  aria-colcount={cols.length}
+  aria-colcount={cols.length + selOffset}
   aria-multiselectable="true"
   aria-activedescendant={activeId}
   style={themeStyle}
@@ -589,6 +648,20 @@
   onkeydown={onKeydown}
 >
   <div class="head" role="row" aria-rowindex={1} bind:this={headEl} style={pinned ? 'overflow:hidden;' : ''}>
+    {#if rowSelection}
+      <span class="selcell selhead" role="columnheader" aria-colindex={1} style={selCellStyle(true)}>
+        <input
+          type="checkbox"
+          class="rowcheck"
+          checked={selectAll.checked}
+          indeterminate={selectAll.indeterminate}
+          disabled={!!source}
+          aria-label="Select all rows"
+          onclick={(e) => e.stopPropagation()}
+          onchange={toggleAll}
+        />
+      </span>
+    {/if}
     {#each cols as col, ci (ci)}
       <button
         class="h"
@@ -599,7 +672,7 @@
         style={headStyle(ci)}
         type="button"
         role="columnheader"
-        aria-colindex={ci + 1}
+        aria-colindex={ci + 1 + selOffset}
         draggable="true"
         aria-sort={isSortable(col) && sortInfo(col.key)
           ? sortInfo(col.key)?.dir === 'asc'
@@ -670,33 +743,48 @@
         {/each}
       </div>
     {/if}
-    <div class="spacer" style="height:{total}px;{pinned ? `width:${layout.totalWidth}px;` : ''}">
+    <div class="spacer" style="height:{total}px;{pinned ? `width:${layout.totalWidth + selOffset * SEL_W}px;` : ''}">
       {#each renderItems as item (item.vr)}
         {#if item.kind === 'group'}
           <div class="grouprow" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
+            {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
             <GroupRow group={item.group} columns={cols} onToggle={toggleGroup} rowIndex={item.vr + 2} />
           </div>
         {:else if item.kind === 'skeleton'}
           <div class="row skeleton" role="row" aria-rowindex={item.vr + 2} aria-hidden="true" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
+            {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
             {#each cols as col, ci (ci)}
               <span class="c" style={cellWidthStyle(ci)}><span class="skelbar"></span></span>
             {/each}
           </div>
         {:else}
-          <div class="row" class:alt={item.vr % 2 === 1} role="row" aria-rowindex={item.vr + 2} style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
+          <div class="row" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(item.row.id)} role="row" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(item.row.id) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
+            {#if rowSelection}
+              <span class="selcell" style={selCellStyle(false)}>
+                <input
+                  type="checkbox"
+                  class="rowcheck"
+                  checked={isRowSelected(item.row.id)}
+                  aria-label="Select row"
+                  onpointerdown={(e) => e.stopPropagation()}
+                  onclick={(e) => e.stopPropagation()}
+                  onchange={() => toggleRow(item.row.id)}
+                />
+              </span>
+            {/if}
             {#each cols as col, ci (ci)}
               <Cell
                 {col}
                 row={item.row}
                 r={item.vr}
                 c={ci}
-                colIndex={ci + 1}
+                colIndex={ci + 1 + selOffset}
                 cellId={`${gid}-r${item.vr}-c${ci}`}
                 cellSnippet={cell}
                 selected={sel.contains(item.vr, ci)}
                 focused={sel.isFocus(item.vr, ci)}
                 pinned={pinned && layout.info[ci].pinned}
-                pinLeft={layout.info[ci].left}
+                pinLeft={layout.info[ci].left + selOffset * SEL_W}
                 width={pinned ? layout.info[ci].width : undefined}
                 alt={item.vr % 2 === 1}
                 editing={editing?.r === item.vr && editing?.c === ci}
@@ -888,6 +976,30 @@
   }
   .row:not(.skeleton):hover {
     background: var(--bo-row-hover);
+  }
+  .row.rowsel {
+    background: var(--bo-sel-fill);
+  }
+
+  /* Leading checkbox column (row selection). */
+  .selcell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+  .selhead {
+    border-bottom: 0.5px solid var(--bo-border);
+  }
+  .rowcheck {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    accent-color: var(--bo-sel-border);
+  }
+  .rowcheck:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
   }
 
   .skeleton .c {

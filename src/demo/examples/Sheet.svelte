@@ -56,6 +56,7 @@
   ];
 
   let filterText = $state('');
+  let selectedCount = $state(0);
 </script>
 
 <div class="controls">
@@ -67,9 +68,12 @@
     aria-label="Filter rows"
   />
   <span class="hint">
-    Double-click a number to edit · drag a header edge to resize · <kbd>Ctrl/⌘+C</kbd> /
-    <kbd>V</kbd> to copy &amp; paste
+    Tick rows to select · double-click a number to edit · drag a header edge to resize ·
+    <kbd>Ctrl/⌘+C</kbd> / <kbd>V</kbd> to copy &amp; paste
   </span>
+  {#if selectedCount > 0}
+    <span class="count">{selectedCount} selected</span>
+  {/if}
 </div>
 
 <div class="gridwrap">
@@ -80,6 +84,8 @@
     theme="light"
     persistKey="demo-sheet"
     height={620}
+    rowSelection
+    onRowSelectionChange={(ids) => (selectedCount = ids.length)}
     onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}
   />
 </div>
@@ -110,6 +116,15 @@
   }
   .hint {
     color: var(--text-dim);
+  }
+  .count {
+    padding: 3px 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: #312e81;
+    background: #e0e7ff;
+    border-radius: 999px;
   }
   .hint kbd {
     padding: 1px 5px;

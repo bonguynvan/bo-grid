@@ -313,6 +313,19 @@ const sheetLight = /--bo-grid-bg:\s*#fff/i.test(
 if (sheetRows === 0) fail('Spreadsheet example rendered no rows');
 if (!sheetLight) fail('Spreadsheet example did not apply the light theme');
 
+// Row selection: tick one row, then select-all via the header checkbox.
+const firstCheck = document.querySelector('.bo-grid .row .rowcheck');
+if (!firstCheck) fail('row-selection checkbox did not render');
+firstCheck.click();
+await wait(20);
+if (!document.querySelector('.bo-grid .row.rowsel')) fail('ticking a row did not select it');
+const selAll = document.querySelector('.bo-grid .selhead .rowcheck');
+if (!selAll) fail('select-all header checkbox did not render');
+selAll.click();
+await wait(20);
+const selectedRows = document.querySelectorAll('.bo-grid .row.rowsel').length;
+if (selectedRows < 2) fail(`select-all did not select the visible rows (${selectedRows})`);
+
 // Big data: a 1,000,000-row windowed source. Assert real (non-skeleton) rows
 // load after the simulated latency and the scrollbar reflects the full total.
 const bigTab = tab('1M rows');
@@ -339,7 +352,7 @@ console.log(
     `edit committed; variable heights ${rowHeights.join('/')}; ` +
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
-    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups, sheet ${sheetRows} rows (light), ` +
+    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups, sheet ${sheetRows} rows (light) + row-select, ` +
     `bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `a11y rowcount/activedescendant ok`,
 );

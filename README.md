@@ -144,6 +144,26 @@ realtime feed ticks. Choose which stats to show:
 <Grid {rows} {columns} aggregations={['sum', 'avg', 'count']} height={640} />
 ```
 
+## Row selection
+
+Set `rowSelection` for a leading checkbox column — whole-row selection keyed by
+`row.id`, so it survives sorting and filtering (unlike the positional cell
+selection above). The header checkbox selects/clears all matching rows.
+`onRowSelectionChange` reports the selected ids:
+
+```svelte
+<Grid
+  {rows}
+  {columns}
+  height={640}
+  rowSelection
+  onRowSelectionChange={(ids) => (selected = ids)}
+/>
+```
+
+In server (`source`) mode the per-row checkboxes work on loaded rows; the
+select-all header checkbox is disabled (unloaded ids can't be enumerated).
+
 ## Grouping
 
 Pass `groupBy` (column keys) to group rows — single or nested. Groups are
