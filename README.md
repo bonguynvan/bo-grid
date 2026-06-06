@@ -8,8 +8,9 @@ A free alternative to the heavyweight grids that paywall these features.
 **[API reference](https://bonguynvan.github.io/bo-grid/api.html)**
 
 The demo is a small gallery — a realtime **Trading desk**, a grouped **Portfolio**
-with subtotals and pivot, and a general-purpose editable **Spreadsheet** — switch
-between them with the tabs.
+with subtotals and pivot, a general-purpose editable **Spreadsheet**, and a
+**1M-row** trade tape windowed from a synthetic source — switch between them with
+the tabs.
 
 > **Status: v0.1 (early).** Working: config-driven columns, virtual scroll,
 > client sort + filter, multi-cell selection + live range aggregation, row

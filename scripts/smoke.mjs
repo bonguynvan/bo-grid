@@ -292,13 +292,34 @@ const sheetLight = /--bo-grid-bg:\s*#fff/i.test(
 if (sheetRows === 0) fail('Spreadsheet example rendered no rows');
 if (!sheetLight) fail('Spreadsheet example did not apply the light theme');
 
+// Big data: a 1,000,000-row windowed source. Assert real (non-skeleton) rows
+// load after the simulated latency and the scrollbar reflects the full total.
+const bigTab = tab('1M rows');
+if (!bigTab) fail('1M rows example tab not found');
+click(bigTab);
+await wait(50); // let the previous example tear down before we read the new grid
+// Poll until the windowed source has resolved its total (spacer height grows to
+// cover all 1,000,000 rows) — total lands a tick after the first window.
+const bigHeightOf = () => parseInt(document.querySelector('.bo-grid .spacer')?.style.height || '0', 10);
+let bigHeight = 0;
+for (let i = 0; i < 80; i++) {
+  bigHeight = bigHeightOf();
+  if (bigHeight > 1_000_000) break;
+  await wait(25);
+}
+const bigRows = document.querySelectorAll('.bo-grid .row:not(.skeleton)').length;
+// 1,000,000 rows × 36px ≈ 36,000,000px of virtual scroll height.
+if (bigHeight < 1_000_000) fail(`1M-rows scroll height too small for the dataset (${bigHeight}px)`);
+if (bigRows === 0) fail('1M-rows example loaded no windowed rows');
+
 console.log(
   `✓ smoke: grid mounted — ${rowCount} rows, ${canvases} sparklines; ` +
     `selection ${selCount} cells + agg bar; grouping ${groupHeaders} headers, ` +
     `edit committed; variable heights ${rowHeights.join('/')}; ` +
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
-    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups, sheet ${sheetRows} rows (light); ` +
+    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups, sheet ${sheetRows} rows (light), ` +
+    `bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `a11y rowcount/activedescendant ok`,
 );
 process.exit(0);
