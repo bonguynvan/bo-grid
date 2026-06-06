@@ -114,6 +114,30 @@ await wait(60);
 const pastedText = document.querySelectorAll('.row')[1].querySelectorAll('.c')[TARGET_COL].textContent.trim();
 if (pastedText !== '123.45') fail(`clipboard paste did not commit (cell shows "${pastedText}")`);
 
+// Column resize (Phase 5): drag the Price header's grip and assert the header
+// switches to an explicit pixel width. jsdom reports a 0px rect, so the dragged
+// delta becomes the new width directly.
+const RESIZE_COL = 1;
+const resizeHead = document.querySelectorAll('.h')[RESIZE_COL];
+const grip = resizeHead.querySelector('.grip');
+if (!grip) fail('resize grip did not render on header');
+const widthBefore = resizeHead.getAttribute('style') || '';
+grip.dispatchEvent(new window.MouseEvent('pointerdown', { button: 0, clientX: 0, bubbles: true }));
+window.dispatchEvent(new window.MouseEvent('pointermove', { clientX: 150, bubbles: true }));
+window.dispatchEvent(new window.MouseEvent('pointerup', { clientX: 150, bubbles: true }));
+await wait(40);
+const widthAfter = document.querySelectorAll('.h')[RESIZE_COL].getAttribute('style') || '';
+if (!/150px/.test(widthAfter)) {
+  fail(`column resize did not apply a 150px width (before="${widthBefore}" after="${widthAfter}")`);
+}
+// Double-click the grip clears the override back to the default width.
+document.querySelectorAll('.h')[RESIZE_COL]
+  .querySelector('.grip')
+  .dispatchEvent(new window.MouseEvent('dblclick', { bubbles: true }));
+await wait(40);
+const widthReset = document.querySelectorAll('.h')[RESIZE_COL].getAttribute('style') || '';
+if (/150px/.test(widthReset)) fail(`double-click did not reset the column width (style="${widthReset}")`);
+
 // Variable row height (Phase 5): switch to 'Vary' and assert rendered rows have
 // differing heights, then restore 'Compact' for the remaining assertions.
 const varyBtn = [...document.querySelectorAll('.seg button')].find((b) => b.textContent.trim() === 'Vary');
@@ -237,7 +261,7 @@ console.log(
   `✓ smoke: grid mounted — ${rowCount} rows, ${canvases} sparklines; ` +
     `selection ${selCount} cells + agg bar; grouping ${groupHeaders} headers, ` +
     `edit committed; variable heights ${rowHeights.join('/')}; ` +
-    `paste committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
+    `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
     `a11y rowcount/activedescendant ok`,
 );

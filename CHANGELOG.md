@@ -30,6 +30,9 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   (`exportXLSX`, SheetJS via dynamic import — optional `xlsx` peer).
 - **Column reorder**: drag headers to reorder, with optional `persistKey`
   localStorage persistence.
+- **Column resize**: drag a header's right-edge grip to resize (double-click to
+  reset); on by default, opt out with `resizable={false}` (grid) or
+  `resizable: false` (column). Widths persist via `persistKey`.
 - **Pinned columns**: `pinned: true` keeps a column visible during horizontal
   scroll (opt-in; the grid is fit-to-width otherwise).
 - **Inline editing**: `editable: true` columns edit on double-click / Enter and

@@ -16,6 +16,7 @@
   import { buildFlatRows, activeGroupsAt, type VisualRow, type GroupNode } from './grouping';
   import { moveIndex } from './reorder';
   import { parseClipboard, isSingleCell } from './clipboard';
+  import { applyWidths, clampWidth, isResizable, type WidthMap } from './sizing';
   import type { RowSource } from './source';
   import { RowSourceController } from './source.svelte';
   import Cell from './Cell.svelte';
@@ -34,6 +35,7 @@
     onCellEdit,
     rowHeight,
     theme,
+    resizable = true,
     cell,
   }: {
     rows: GridRow[];
@@ -44,6 +46,9 @@
     rowHeight?: number | ((row: GridRow, index: number) => number);
     /** Built-in theme name or a custom token map. Default 'dark'. */
     theme?: 'dark' | 'light' | GridTheme;
+    /** Allow drag-to-resize column widths. Default true; opt out per column
+        with `resizable: false`. */
+    resizable?: boolean;
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -107,10 +112,16 @@
   let dragSrc = $state(-1);
   let dragOver = $state(-1);
 
+  // User column-width overrides (drag-to-resize), keyed by column key.
+  let widths = $state<WidthMap>({});
+
   const ordered = $derived(order.length === columns.length ? order.map((i) => columns[i]) : columns);
+  // Apply any resize overrides (turns the dragged column fixed-width), then
+  // pin-arrange. Both are no-ops by default, so the grid stays fit-to-width.
+  const sized = $derived(applyWidths(ordered, widths));
   // Pin-arrangement: pinned columns move to the front and get sticky offsets.
   // When nothing is pinned this is a no-op and the grid stays fit-to-width.
-  const layout = $derived(arrangePinned(ordered));
+  const layout = $derived(arrangePinned(sized));
   const cols = $derived(layout.columns);
   const pinned = $derived(layout.anyPinned);
 
@@ -181,7 +192,77 @@
     }
   }
 
+  // ---- Column resizing -------------------------------------------------------
+  function widthStorageKey(): string | null {
+    return persistKey ? `bo-grid:widths:${persistKey}` : null;
+  }
+  function persistWidths() {
+    const key = widthStorageKey();
+    if (!key || typeof localStorage === 'undefined') return;
+    try {
+      localStorage.setItem(key, JSON.stringify(widths));
+    } catch {
+      /* storage unavailable — overrides still apply this session */
+    }
+  }
+
+  $effect(() => {
+    persistKey;
+    untrack(() => {
+      const key = widthStorageKey();
+      if (!key || typeof localStorage === 'undefined') return;
+      try {
+        const saved = JSON.parse(localStorage.getItem(key) ?? 'null');
+        if (saved && typeof saved === 'object') widths = saved as WidthMap;
+      } catch {
+        /* corrupt value — ignore */
+      }
+    });
+  });
+
+  let resize: { key: string; startX: number; startW: number } | null = null;
+  let justResized = false;
+
+  function startResize(ci: number, e: PointerEvent) {
+    if (!isResizable(cols[ci], resizable)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const headCell = (e.currentTarget as HTMLElement).closest('.h') as HTMLElement | null;
+    const startW = headCell ? headCell.getBoundingClientRect().width : layout.info[ci].width;
+    resize = { key: cols[ci].key, startX: e.clientX, startW };
+    window.addEventListener('pointermove', onResizeMove);
+    window.addEventListener('pointerup', onResizeUp);
+  }
+  function onResizeMove(e: PointerEvent) {
+    if (!resize) return;
+    const w = clampWidth(resize.startW + (e.clientX - resize.startX));
+    widths = { ...widths, [resize.key]: w };
+  }
+  function onResizeUp() {
+    if (!resize) return;
+    resize = null;
+    justResized = true; // swallow the click that ends this drag (no sort toggle)
+    window.removeEventListener('pointermove', onResizeMove);
+    window.removeEventListener('pointerup', onResizeUp);
+    persistWidths();
+  }
+  /** Double-click a resize grip to clear the override and restore the default. */
+  function resetWidth(ci: number, e: MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const key = cols[ci].key;
+    if (widths[key] == null) return;
+    const next = { ...widths };
+    delete next[key];
+    widths = next;
+    persistWidths();
+  }
+
   function toggleSort(col: ColumnDef) {
+    if (justResized) {
+      justResized = false;
+      return;
+    }
     if (!isSortable(col)) return;
     if (!sortState || sortState.key !== col.key) sortState = { key: col.key, dir: 'asc' };
     else if (sortState.dir === 'asc') sortState = { key: col.key, dir: 'desc' };
@@ -523,6 +604,18 @@
         {#if sortState?.key === col.key}
           <span class="ind">{sortState.dir === 'asc' ? '▲' : '▼'}</span>
         {/if}
+        {#if isResizable(col, resizable)}
+          <span
+            class="grip"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize {col.header}"
+            onpointerdown={(e) => startResize(ci, e)}
+            ondblclick={(e) => resetWidth(ci, e)}
+            ondragstart={(e) => e.preventDefault()}
+            draggable="false"
+          ></span>
+        {/if}
       </button>
     {/each}
   </div>
@@ -632,6 +725,7 @@
     border-bottom: 0.5px solid var(--bo-border);
   }
   .h {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 4px;
@@ -645,6 +739,33 @@
     background: transparent;
     border: 0;
     cursor: grab;
+  }
+  /* Drag-to-resize grip: a thin hit-target straddling the column's right edge. */
+  .h .grip {
+    position: absolute;
+    top: 0;
+    right: -3px;
+    width: 7px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 6;
+    touch-action: none;
+  }
+  .h .grip::after {
+    content: '';
+    position: absolute;
+    top: 20%;
+    right: 3px;
+    width: 1px;
+    height: 60%;
+    background: var(--bo-border);
+    opacity: 0;
+    transition: opacity 120ms;
+  }
+  .h .grip:hover::after,
+  .h .grip:active::after {
+    opacity: 1;
+    background: var(--bo-sel-border);
   }
   .h.sortable {
     cursor: pointer;

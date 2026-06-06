@@ -10,8 +10,9 @@ A free alternative to the heavyweight grids that paywall these features.
 > **Status: v0.1 (early).** Working: config-driven columns, virtual scroll,
 > client sort + filter, multi-cell selection + live range aggregation, row
 > grouping (nested, collapsible, sticky headers, live subtotals), a server-side
-> `RowSource` for huge datasets, CSV/Excel export, drag-to-reorder columns,
-> pinned columns, inline cell editing, sparklines, realtime flash, heatmaps. Unit
+> `RowSource` for huge datasets, CSV/Excel export, drag-to-reorder and
+> drag-to-resize columns, pinned columns, inline cell editing with clipboard
+> copy/paste, sparklines, realtime flash, heatmaps. Unit
 > tests (Vitest), type-check, a headless mount smoke-test, and library + demo
 > bundle-size budgets all run in CI. Feature-complete for v0; a formal WCAG audit
 > is the main thing left — see the roadmap.
@@ -217,6 +218,20 @@ user's order across reloads (saved to `localStorage`):
 
 ```svelte
 <Grid {rows} {columns} persistKey="watchlist" height={640} />
+```
+
+## Column resize
+
+Drag the grip on a header's right edge to resize a column; **double-click** the
+grip to reset it to its default width. Resizing a fit-to-width (`flex`) column
+pins it to the dragged width and lets its neighbours absorb the difference. The
+same `persistKey` remembers widths across reloads.
+
+Resizing is on by default. Turn it off for the whole grid with `resizable={false}`,
+or per column with `resizable: false` (handy for a fixed action column):
+
+```svelte
+<Grid {rows} {columns} resizable={false} height={640} />
 ```
 
 ## Inline editing

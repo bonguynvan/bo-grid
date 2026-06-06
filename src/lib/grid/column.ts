@@ -23,6 +23,8 @@ interface ColBase {
   pinned?: boolean;
   /** Allow inline editing (double-click or Enter on the focused cell). */
   editable?: boolean;
+  /** Set false to disable drag-to-resize on this column (default on). */
+  resizable?: boolean;
 }
 
 export interface CellEditEvent {
