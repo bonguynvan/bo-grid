@@ -33,7 +33,7 @@ export function rowsToMatrix(
   const matrix: Cell[][] = [];
   if (opts.header !== false) matrix.push(cols.map((c) => c.header));
   for (const row of rows) {
-    matrix.push(cols.map((c) => (opts.formatted ? formatCell(c, row[c.key]) : rawValue(c, row[c.key]))));
+    matrix.push(cols.map((c) => (opts.formatted ? formatCell(c, row[c.key], row) : rawValue(c, row[c.key]))));
   }
   return matrix;
 }

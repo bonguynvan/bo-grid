@@ -677,7 +677,7 @@
       const cells: string[] = [];
       for (let c = b.c0; c <= cEnd; c++) {
         const col = cols[c];
-        cells.push(col.type === 'sparkline' || col.type === 'custom' ? '' : formatCell(col, row[col.key]));
+        cells.push(col.type === 'sparkline' || col.type === 'custom' ? '' : formatCell(col, row[col.key], row));
       }
       lines.push(cells.join('\t'));
     }

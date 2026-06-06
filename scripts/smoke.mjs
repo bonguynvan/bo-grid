@@ -406,6 +406,12 @@ if (roleAfter !== 'Designer') fail(`select edit did not commit (cell shows "${ro
 const nameCell = document.querySelectorAll('.bo-grid .row')[0].querySelectorAll('.c')[0];
 if (!nameCell.getAttribute('title')) fail('tooltip column did not set a cell title');
 
+// Custom formatter: the Salary column renders via format() ($-prefixed).
+const salaryCell = document.querySelectorAll('.bo-grid .row')[0].querySelectorAll('.c')[3];
+if (!/^\$/.test(salaryCell.textContent.trim())) {
+  fail(`column format() not applied (cell shows "${salaryCell.textContent.trim()}")`);
+}
+
 // Row selection: tick one row, then select-all via the header checkbox.
 const firstCheck = document.querySelector('.bo-grid .row .rowcheck');
 if (!firstCheck) fail('row-selection checkbox did not render');

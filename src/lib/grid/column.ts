@@ -33,6 +33,10 @@ interface ColBase {
   /** Set a native `title` tooltip on each cell (the full formatted value) — handy
       when content truncates. */
   tooltip?: boolean;
+  /** Custom display formatter, overriding the built-in type formatter. Applies
+      to display, tooltip, copy and (formatted) export. `row` is absent for
+      aggregate cells. */
+  format?: (value: unknown, row?: GridRow) => string;
   /** Set false to disable drag-to-resize on this column (default on). */
   resizable?: boolean;
   /** Parent header label. Consecutive columns sharing a `group` render under a
@@ -78,7 +82,8 @@ export interface GridRow {
   [field: string]: unknown;
 }
 
-export function formatCell(col: ColumnDef, value: unknown): string {
+export function formatCell(col: ColumnDef, value: unknown, row?: GridRow): string {
+  if (col.format) return col.format(value, row);
   const n = typeof value === 'number' ? value : Number(value);
   switch (col.type) {
     case 'price':

@@ -86,7 +86,7 @@
   // Native tooltip of the full value (opt-in via column `tooltip`).
   const tip = $derived(
     col.tooltip && col.type !== 'sparkline' && col.type !== 'custom'
-      ? formatCell(col, value)
+      ? formatCell(col, value, row)
       : undefined,
   );
 
@@ -154,13 +154,13 @@
   {:else if col.type === 'sparkline'}
     <Sparkline candles={candlesOf(row, col.sparkKey)} />
   {:else if col.type === 'text'}
-    <strong>{formatCell(col, value)}</strong>{#if col.sub}<em>{row[col.sub]}</em>{/if}
+    <strong>{formatCell(col, value, row)}</strong>{#if col.sub}<em>{row[col.sub]}</em>{/if}
   {:else if col.flash}
     {#key row.flashSeq}
-      <span class="flash {row.flashDir}">{formatCell(col, value)}</span>
+      <span class="flash {row.flashDir}">{formatCell(col, value, row)}</span>
     {/key}
   {:else}
-    {formatCell(col, value)}
+    {formatCell(col, value, row)}
   {/if}
 </span>
 
