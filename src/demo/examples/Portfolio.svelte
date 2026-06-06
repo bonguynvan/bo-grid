@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { Grid, pivot, type ColumnDef, type GridRow, type PivotConfig } from '../../lib';
+  import { Grid, pivot, type ColumnDef, type GridRow, type PivotConfig, type SortState } from '../../lib';
   import { generateTickers } from '../data/generate';
 
   // A static "positions" book derived from the shared ticker seeds. No realtime
@@ -85,6 +85,12 @@
   $effect(() => {
     if (pivotMode) picked = null;
   });
+
+  // Controlled sort: the example owns the sort order, so it can show and clear it.
+  let sortState = $state<SortState[]>([]);
+  const sortLabel = $derived(
+    sortState.map((s) => `${s.key} ${s.dir === 'asc' ? '↑' : '↓'}`).join(', '),
+  );
 </script>
 
 <div class="controls">
@@ -94,6 +100,11 @@
   <button class="pill" class:on={pivotMode} onclick={() => (pivotMode = !pivotMode)}>
     Pivot · value by exchange
   </button>
+  {#if sortState.length}
+    <button class="pill clear" onclick={() => (sortState = [])} title="Clear sort">
+      Sort: {sortLabel} ✕
+    </button>
+  {/if}
   <span class="spacer"></span>
   {#if picked}
     <span class="picked">
@@ -117,6 +128,8 @@
     theme="dark"
     persistKey="demo-portfolio"
     height={620}
+    sort={sortState}
+    onSortChange={(s) => (sortState = s)}
     onRowClick={(r) => !pivotMode && (picked = r as Position)}
   />
 </div>
@@ -152,6 +165,10 @@
   .pill:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+  .pill.clear {
+    color: var(--text);
+    border-color: var(--up);
   }
   .stat {
     color: var(--text-dim);

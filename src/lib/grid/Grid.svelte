@@ -41,6 +41,8 @@
     hiddenColumns = [],
     rowClass,
     onRowClick,
+    sort,
+    onSortChange,
     cell,
   }: {
     rows: GridRow[];
@@ -68,6 +70,12 @@
     /** Called when a data row is activated by click or Enter (open a detail
         view, navigate, …). Edit-input and checkbox clicks are excluded. */
     onRowClick?: (row: GridRow, event: MouseEvent | KeyboardEvent) => void;
+    /** Controlled sort order (multi-key, primary first). When set, the grid
+        reflects this and reports changes via `onSortChange` instead of holding
+        its own state. Omit for uncontrolled sorting. */
+    sort?: SortState[];
+    /** Called with the new sort order whenever a header is clicked. */
+    onSortChange?: (sort: SortState[]) => void;
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -88,7 +96,13 @@
 
   let scrollTop = $state(0);
   // Sort order, primary first. Empty = unsorted. Multiple keys via Shift-click.
-  let sorts = $state<SortState[]>([]);
+  // Controlled by the `sort` prop when provided, else internal state.
+  let internalSorts = $state<SortState[]>([]);
+  const sorts = $derived(sort ?? internalSorts);
+  function setSorts(next: SortState[]): void {
+    if (sort === undefined) internalSorts = next; // uncontrolled: own the state
+    onSortChange?.(next); // always notify (lets consumers observe/persist)
+  }
   let gridEl: HTMLDivElement;
   let viewportEl: HTMLDivElement;
   let headEl: HTMLDivElement;
@@ -330,14 +344,14 @@
     if (additive) {
       // Shift-click: add/cycle this key while keeping the rest of the order.
       const rest = sorts.filter((s) => s.key !== col.key);
-      sorts = dir ? [...rest, { key: col.key, dir }] : rest;
+      setSorts(dir ? [...rest, { key: col.key, dir }] : rest);
       return;
     }
     // Plain click: sort by this column alone. If it's already the sole key,
     // cycle its direction (asc → desc → off); otherwise start fresh ascending.
     const soleAndSame = sorts.length === 1 && sorts[0].key === col.key;
-    if (soleAndSame) sorts = dir ? [{ key: col.key, dir }] : [];
-    else sorts = [{ key: col.key, dir: 'asc' }];
+    if (soleAndSame) setSorts(dir ? [{ key: col.key, dir }] : []);
+    else setSorts([{ key: col.key, dir: 'asc' }]);
   }
 
   // Sort direction + 1-based position for a column, or null if unsorted.

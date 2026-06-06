@@ -122,6 +122,13 @@ in place (trading-grid behaviour), so a realtime feed never reshuffles the view.
 Pass a `filter` string to quick-filter rows (matches across column values). Drive
 it from your own search input — the grid stays presentation-only.
 
+Sorting is uncontrolled by default. To own it (persist it, set an initial sort,
+or sync to the URL), pass a controlled `sort` array and handle `onSortChange`:
+
+```svelte
+<Grid {rows} {columns} height={640} {sort} onSortChange={(s) => (sort = s)} />
+```
+
 ## Selection & aggregation
 
 Click a cell, then drag or **Shift-click** to extend a rectangular selection.

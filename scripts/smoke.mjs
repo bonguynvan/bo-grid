@@ -304,6 +304,13 @@ const portfolioGroups = document.querySelectorAll('.bo-grid .group').length;
 click(document.querySelector('.bo-grid .row'));
 await wait(20);
 if (!document.querySelector('.picked')) fail('onRowClick did not surface the clicked position');
+// Controlled sort: a header click drives the example's external sort state.
+click(document.querySelectorAll('.bo-grid .head .h')[1]);
+await wait(20);
+if (!document.querySelector('.pill.clear')) fail('controlled sort (onSortChange) did not surface');
+click(document.querySelector('.pill.clear'));
+await wait(20);
+if (document.querySelector('.pill.clear')) fail('clearing controlled sort did not take effect');
 
 const sheetTab = tab('Spreadsheet');
 if (!sheetTab) fail('Spreadsheet example tab not found');
