@@ -23,6 +23,8 @@
   import Cell from './Cell.svelte';
   import GroupRow from './GroupRow.svelte';
   import AggregationBar from './AggregationBar.svelte';
+  import Pager from './Pager.svelte';
+  import RowMenu from './RowMenu.svelte';
 
   let {
     rows,
@@ -1233,31 +1235,11 @@
   <AggregationBar result={agg} kinds={aggregations} />
 
   {#if paged}
-    <div class="pager" role="navigation" aria-label="Pagination">
-      <button type="button" class="pg" disabled={currentPage === 0} aria-label="First page" onclick={() => goToPage(0)}>«</button>
-      <button type="button" class="pg" disabled={currentPage === 0} onclick={() => goToPage(currentPage - 1)}>‹ Prev</button>
-      <span class="pageinfo">Page {currentPage + 1} of {pageCount} · {view.length.toLocaleString()} rows</span>
-      <button type="button" class="pg" disabled={currentPage >= pageCount - 1} onclick={() => goToPage(currentPage + 1)}>Next ›</button>
-      <button type="button" class="pg" disabled={currentPage >= pageCount - 1} aria-label="Last page" onclick={() => goToPage(pageCount - 1)}>»</button>
-    </div>
+    <Pager page={currentPage} {pageCount} total={view.length} onGoto={goToPage} />
   {/if}
 
   {#if menu}
-    <div class="rowmenu" role="menu" tabindex="-1" style="left:{menu.x}px;top:{menu.y}px;" onpointerdown={(e) => e.stopPropagation()}>
-      {#each menu.items as item (item.label)}
-        <button
-          class="rowmenu-item"
-          type="button"
-          role="menuitem"
-          onclick={() => {
-            item.onSelect();
-            menu = null;
-          }}
-        >
-          {item.label}
-        </button>
-      {/each}
-    </div>
+    <RowMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => (menu = null)} />
   {/if}
 </div>
 
@@ -1579,69 +1561,6 @@
   }
   .footer .fcell.right {
     justify-content: flex-end;
-  }
-
-  /* Pagination bar. */
-  .pager {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    background: var(--bo-header-bg);
-    border-top: 0.5px solid var(--bo-border);
-  }
-  .pager .pg {
-    padding: 3px 9px;
-    font: inherit;
-    font-family: var(--bo-mono);
-    font-size: 11px;
-    color: var(--bo-text);
-    background: transparent;
-    border: 0.5px solid var(--bo-border);
-    border-radius: 6px;
-    cursor: pointer;
-  }
-  .pager .pg:hover:not(:disabled) {
-    background: var(--bo-row-hover);
-    border-color: var(--bo-sel-border);
-  }
-  .pager .pg:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-  .pager .pageinfo {
-    font-family: var(--bo-mono);
-    font-size: 11px;
-    color: var(--bo-text-dim);
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Right-click row menu (floating). */
-  .rowmenu {
-    position: fixed;
-    z-index: 20;
-    min-width: 150px;
-    padding: 4px;
-    background: var(--bo-header-bg);
-    border: 0.5px solid var(--bo-border);
-    border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-  }
-  .rowmenu-item {
-    display: block;
-    width: 100%;
-    padding: 6px 10px;
-    font: inherit;
-    font-size: 12px;
-    text-align: left;
-    color: var(--bo-text);
-    background: transparent;
-    border: 0;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  .rowmenu-item:hover {
-    background: var(--bo-row-hover);
   }
 
   /* Master-detail: leading expand-toggle column + detail panel. */
