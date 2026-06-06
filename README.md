@@ -16,14 +16,16 @@ matrix, a **Leaderboard** with rank medals and score bars, a **Tree** file
 explorer, a drag-to-reorder **Tasks** list, and a **1M-row** trade tape windowed
 from a synthetic source — switch between them with the tabs.
 
-> **Status: v0.2.** Working: config-driven columns, virtual scroll, client
-> single/multi/controlled sort + global & per-column filters, multi-cell selection
-> + live range aggregation, row grouping (nested, collapsible, sticky headers,
-> live subtotals), pivot tables, tree data, master-detail, a server-side
-> `RowSource` for huge datasets, CSV/Excel export, drag-to-reorder and
-> drag-to-resize columns, pinned columns (left/right), row selection, pagination,
-> inline editing with validation, type-to-edit, clipboard copy/paste, sparklines,
-> realtime flash, heatmaps, theming, and full keyboard a11y. **SSR/SvelteKit-safe.**
+> **Status: actively developed.** Working: config-driven columns, virtual scroll,
+> sort (single / multi / controlled), filtering (global, per-column row, header
+> filter menus with set / number / date filters, quick search, controlled +
+> server-side), multi-cell selection + live aggregation, grouping (nested, sticky,
+> subtotals), pivot, tree data, master-detail, a server-side `RowSource` for huge
+> datasets, CSV/Excel export, column management (reorder, resize, pin L/R, hide,
+> autosize, tool panel, column menu), spreadsheet editing (inline + typed editors,
+> validation, copy/paste, fill handle, undo/redo), row selection, pagination,
+> sparklines, realtime flash, heatmaps, theming, and full keyboard a11y.
+> **SSR/SvelteKit-safe.**
 > Unit tests (Vitest), type-check, a headless mount smoke-test, an SSR render
 > check, and library + demo bundle-size budgets all run in CI. A formal WCAG audit
 > is the main thing left — see the roadmap.

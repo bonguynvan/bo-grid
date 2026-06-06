@@ -1,8 +1,21 @@
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { readFileSync } from 'node:fs';
+
+// Single source of truth for the demo/API-page version label — read from
+// package.json so it can never drift. Injected into JS via `define` and into the
+// static HTML (api.html) by replacing the `__BO_GRID_VERSION__` token.
+const version = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version;
 
 export default defineConfig({
-  plugins: [svelte()],
+  plugins: [
+    svelte(),
+    {
+      name: 'bo-grid-version-html',
+      transformIndexHtml: (html) => html.replace(/__BO_GRID_VERSION__/g, version),
+    },
+  ],
+  define: { __BO_GRID_VERSION__: JSON.stringify(version) },
   server: { port: 5180 },
   // Demo/playground build only. The publishable library is built separately by
   // `pnpm package` (svelte-package) into dist/ — keep the two outputs apart so

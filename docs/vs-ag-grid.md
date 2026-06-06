@@ -70,7 +70,7 @@ bundle size and SSR matter; your domain is fintech/data-dense tables.
 Excel-grade set filters, or lazy server-side grouping today; you want a mature
 product with commercial support and don't mind the size/cost.
 
-> bo-grid is at v0.2 and young. It's comprehensive for its size, but AG Grid is a
+> bo-grid is young. It's comprehensive for its size, but AG Grid is a
 > decade-deep product. This comparison is written to be accurate, not flattering —
 > if you spot something wrong or out of date, please open an issue.
 ```

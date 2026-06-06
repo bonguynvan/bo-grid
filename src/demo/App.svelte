@@ -37,7 +37,7 @@
 </script>
 
 <nav class="lp-nav">
-  <a class="lp-brand" href="#top">bo-grid<span class="lp-ver">0.4</span></a>
+  <a class="lp-brand" href="#top">bo-grid<span class="lp-ver">{__BO_GRID_VERSION__}</span></a>
   <div class="lp-nav-links">
     <a href="#examples">Examples</a>
     <a href="./api.html">API</a>
@@ -136,7 +136,7 @@
 <footer class="lp-foot">
   <div class="lp-foot-cols">
     <div>
-      <span class="lp-brand">bo-grid<span class="lp-ver">0.4</span></span>
+      <span class="lp-brand">bo-grid<span class="lp-ver">{__BO_GRID_VERSION__}</span></span>
       <p>A free, fintech-focused Svelte&nbsp;5 data grid. MIT licensed.</p>
     </div>
     <nav class="lp-foot-links" aria-label="Documentation">
