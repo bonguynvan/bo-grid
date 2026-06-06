@@ -567,6 +567,26 @@ await wait(30);
 if (document.querySelectorAll('.bo-grid .row').length !== sheetRows)
   fail('quick filter: clearing the query did not restore the rows');
 
+// Fill handle (v0.5): select an editable cell, drag its corner down two rows, and
+// assert the source value copied into the rows below.
+const FILL_COL = 4; // Bonus — editable number, no custom format
+const cAt = (rEl, c) => rEl.querySelectorAll('.c')[c];
+const sheetRowEls = () => document.querySelectorAll('.bo-grid .row');
+cAt(sheetRowEls()[0], FILL_COL).dispatchEvent(
+  new window.MouseEvent('pointerdown', { button: 0, bubbles: true }),
+);
+window.dispatchEvent(new window.Event('pointerup'));
+await wait(20);
+const fillSrc = cAt(sheetRowEls()[0], FILL_COL).textContent.trim();
+const fillHandleEl = cAt(sheetRowEls()[0], FILL_COL).querySelector('.fill-handle');
+if (!fillHandleEl) fail('fill handle did not render on the selected cell');
+fillHandleEl.dispatchEvent(new window.MouseEvent('pointerdown', { button: 0, bubbles: true }));
+cAt(sheetRowEls()[2], FILL_COL).dispatchEvent(new window.MouseEvent('pointerenter', { bubbles: true }));
+window.dispatchEvent(new window.Event('pointerup'));
+await wait(30);
+const fillDst = cAt(sheetRowEls()[2], FILL_COL).textContent.trim();
+if (fillDst !== fillSrc) fail(`fill handle did not copy down (src "${fillSrc}", row 2 "${fillDst}")`);
+
 // Select editor: the Role column edits via a <select> of options. Double-click a
 // role cell and assert a select (not a text input) appears, then commit a change.
 const roleCell = document.querySelectorAll('.bo-grid .row')[0].querySelectorAll('.c')[1];

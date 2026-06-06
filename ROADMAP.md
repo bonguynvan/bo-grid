@@ -29,31 +29,34 @@ download a menu only when you open one.
 - [x] **M3 — Set filter**: `col.filter: 'set'` — checkbox list of distinct values.
 - [x] **M5 — Quick filter**: built-in `quickFilter` global search box.
 
-## In progress — 0.4 · Column management & discoverability
+## 0.4 · Column management & discoverability — done
 
 Runtime column management — the part AG Grid does that needs real capability.
 Heavy UI (the tool panel) is lazy-loaded; the light column menu reuses the
 in-core action menu.
 
-- [x] **M1 — Column header menu + runtime hide** (`columnMenu`, a ⋮ trigger):
-  Sort asc/desc/clear + Hide column. Runtime-hidden set unions with the
-  controlled `hiddenColumns`, persists via `persistKey`, reports via
-  `onColumnVisibilityChange`.
-- [x] **M2 — Runtime pinning**: Pin left / Pin right / Unpin from the menu,
-  layered over static `col.pinned`, persisted.
-- [x] **M3 — Columns tool panel** (lazy `ToolPanel.svelte`): `columnsPanel` adds a
-  "Columns" button → a checklist to toggle visibility / restore hidden columns.
-- [ ] **M4 — Autosize column to content**: double-click the header border to fit.
-  Deferred — needs DOM width measurement (can't be verified in the headless
-  smoke test) and the core budget is tight; revisit with the budget recalibration.
+- [x] **M1 — Column header menu + runtime hide** (`columnMenu`).
+- [x] **M2 — Runtime pinning** (Pin left/right/Unpin), layered over `col.pinned`.
+- [x] **M3 — Columns tool panel** (lazy `ToolPanel.svelte`, `columnsPanel`).
 
 Shipped API (all additive): `columnMenu`, `columnsPanel`,
 `onColumnVisibilityChange`.
 
+## In progress — 0.5 · Spreadsheet power
+
+Excel-grade editing. Lib budget recalibrated 24 → 28 KB (still ~15–20× smaller
+than AG Grid; heavy UI stays lazy and excluded from the core count).
+
+- [x] **M1 — Fill handle** (`fillHandle`): drag the selection's corner to copy
+  the selected value(s) across the extended range (editable columns; tiles).
+- [ ] **M2 — Undo / redo** (Ctrl+Z / Ctrl+Y) for edits, paste and fill.
+- [ ] **M3 — Typed inline editors**: date columns edit with a date picker, number
+  columns with a numeric input (today the editor is a plain text input).
+- [ ] **M4 — Autosize column to content** (carried over from 0.4): double-click
+  the header border to fit. Needs DOM measurement — verify in a real browser.
+
 ## Candidate themes for later versions
 
-- **Spreadsheet power** — fill handle (Excel drag-to-fill), undo/redo, more cell
-  editors (date picker, stepper, autocomplete), auto-size column to content.
 - **Controlled/server filtering** — `onFilterChange` + a structured
   `columnFilters` field on `RowSourceParams`.
 - **Scale & server** — full server-side row model (lazy group/tree level

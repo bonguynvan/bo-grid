@@ -3,10 +3,19 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.5.0] — Unreleased
+
+Theme: **spreadsheet power** (in progress — see [ROADMAP.md](./ROADMAP.md)).
+
+### Added
+
+- **Fill handle**: with `fillHandle`, the selection shows an Excel-style square at
+  its bottom-right corner — drag it to copy the selected value(s) across the
+  extended range (down/right). Editable columns only; multi-cell selections tile.
+
 ## [0.4.0] — Unreleased
 
-Theme: **column management & discoverability** (in progress — see
-[ROADMAP.md](./ROADMAP.md)).
+Theme: **column management & discoverability** (see [ROADMAP.md](./ROADMAP.md)).
 
 ### Added
 
@@ -175,6 +184,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.5.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.5.0
 [0.4.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.4.0
 [0.3.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.3.0
 [0.2.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.2.0

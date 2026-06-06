@@ -184,6 +184,10 @@ values flow through the same validation as inline editing — non-editable colum
 and invalid numbers are skipped — and each accepted cell emits `onCellEdit`, so
 paste only does anything when you've wired that callback.
 
+Set `fillHandle` for an **Excel-style fill handle**: the selection grows a small
+square at its bottom-right corner; drag it down or right to copy the selected
+value(s) across the extended range (editable columns; multi-cell selections tile).
+
 When more than one cell is selected, a footer bar shows live **Sum / Avg / Count /
 Min / Max** over the numeric cells in the range — and it keeps updating as a
 realtime feed ticks. Choose which stats to show:

@@ -11,10 +11,12 @@ import { gzipSync } from 'node:zlib';
 
 const DIR = 'lib-dist';
 // Recalibrated as the library matured from a minimal Phase-0 core into a full
-// grid: 16 → 20 (sort/selection/footer/…), then 20 → 24 (master-detail,
-// pagination, tree data). At ~24 KB gzip it is still ~20× smaller than AG Grid
-// (~500 KB) — the "tiny" claim holds with room for the remaining big features.
-const BUDGET_KB = { js: 24, css: 5 }; // gzipped, Svelte excluded, eager core only
+// grid: 16 → 20 (sort/selection/footer/…), 20 → 24 (master-detail, pagination,
+// tree), then 24 → 28 (filtering, column management, spreadsheet power). At
+// ~28 KB gzip it is still ~15–20× smaller than AG Grid (~500 KB) — the "tiny"
+// claim holds. Heavy optional UI (filter menu, tool panel) stays lazy and is
+// excluded below, so this is genuinely the always-loaded core.
+const BUDGET_KB = { js: 28, css: 6 }; // gzipped, Svelte excluded, eager core only
 
 const gzipKb = (path) => gzipSync(readFileSync(path)).length / 1024;
 const jsFiles = readdirSync(DIR).filter((f) => f.endsWith('.js'));

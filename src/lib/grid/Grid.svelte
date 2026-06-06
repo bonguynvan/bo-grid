@@ -64,6 +64,7 @@
     filterRow = false,
     filterMenu = false,
     quickFilter = false,
+    fillHandle = false,
     emptyMessage = 'No matching rows',
     loading = false,
     rowMenu,
@@ -148,6 +149,10 @@
         all column values (ANDed with the `filter` prop). In-memory mode only.
         Default false. */
     quickFilter?: boolean;
+    /** Show an Excel-style fill handle at the selection's bottom-right corner;
+        drag it to copy the selected value(s) across the extended range (editable
+        columns only). In-memory mode only. Default false. */
+    fillHandle?: boolean;
     /** Message shown when there are no rows. Default 'No matching rows'. */
     emptyMessage?: string;
     /** Show a loading overlay over the grid (for consumer-driven async work in
@@ -217,6 +222,10 @@
 
   const sel = new Selection();
   let dragging = $state(false);
+  // Fill handle: drag the selection's corner to copy its value(s) across.
+  let filling = $state(false);
+  let fillTo = $state<{ r: number; c: number } | null>(null);
+  let fillSource: { r0: number; c0: number; r1: number; c1: number } | null = null;
   let editing = $state<{ r: number; c: number } | null>(null);
   // When editing was opened by typing a character (type-to-edit), the editor
   // seeds its input with it; null means edit the existing value (dblclick/Enter).
@@ -913,7 +922,56 @@
   }
 
   function onCellEnter(r: number, c: number) {
-    if (dragging) sel.extendTo(r, c);
+    if (filling) fillTo = { r, c };
+    else if (dragging) sel.extendTo(r, c);
+  }
+
+  // Fill handle: start dragging from the selection's bottom-right corner.
+  function onFillStart(): void {
+    const b = sel.bounds;
+    if (!b) return;
+    fillSource = { ...b };
+    fillTo = { r: b.r1, c: b.c1 };
+    filling = true;
+  }
+  // The rectangle the fill drag currently covers (extends down/right only).
+  const fillRange = $derived.by(() => {
+    if (!filling || !fillSource || !fillTo) return null;
+    return {
+      r0: fillSource.r0,
+      c0: fillSource.c0,
+      r1: Math.max(fillSource.r1, fillTo.r),
+      c1: Math.max(fillSource.c1, fillTo.c),
+    };
+  });
+  function inFillPreview(r: number, c: number): boolean {
+    const fr = fillRange;
+    return !!fr && r >= fr.r0 && r <= fr.r1 && c >= fr.c0 && c <= fr.c1 && !sel.contains(r, c);
+  }
+  // Commit the fill: tile the source block's values across the extended range.
+  function commitFill(): void {
+    if (!filling) return;
+    filling = false;
+    const b = fillSource;
+    const ft = fillTo;
+    fillTo = null;
+    fillSource = null;
+    if (!b || !ft) return;
+    const r1 = Math.max(b.r1, ft.r);
+    const c1 = Math.max(b.c1, ft.c);
+    if (r1 === b.r1 && c1 === b.c1) return; // no extension
+    const srcRows = b.r1 - b.r0 + 1;
+    const srcCols = b.c1 - b.c0 + 1;
+    for (let r = b.r0; r <= r1; r++) {
+      for (let c = b.c0; c <= c1; c++) {
+        if (r <= b.r1 && c <= b.c1) continue; // skip the source block
+        const srcRow = dataAt(b.r0 + ((r - b.r0) % srcRows));
+        if (!srcRow) continue;
+        writeCell(r, c, String(srcRow[cols[b.c0 + ((c - b.c0) % srcCols)].key] ?? ''));
+      }
+    }
+    sel.anchor = { r: b.r0, c: b.c0 };
+    sel.focus = { r: r1, c: c1 };
   }
 
   // Right-click row menu (floating).
@@ -1211,7 +1269,10 @@
   }
 
   $effect(() => {
-    const up = () => (dragging = false);
+    const up = () => {
+      dragging = false;
+      if (filling) commitFill();
+    };
     window.addEventListener('pointerup', up);
     return () => window.removeEventListener('pointerup', up);
   });
@@ -1522,6 +1583,9 @@
                 alt={item.vr % 2 === 1}
                 editing={editing?.r === item.vr && editing?.c === ci}
                 seed={editing?.r === item.vr && editing?.c === ci ? editSeed : null}
+                fillCorner={fillHandle && !!sel.bounds && item.vr === sel.bounds.r1 && ci === sel.bounds.c1}
+                fillpreview={inFillPreview(item.vr, ci)}
+                {onFillStart}
                 tree={treeData && ci === 0
                   ? {
                       depth: item.depth ?? 0,

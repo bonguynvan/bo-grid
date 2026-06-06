@@ -148,6 +148,7 @@
     hiddenColumns={hidden}
     filterRow
     quickFilter
+    fillHandle
     emptyMessage="No people match your filters"
     theme={ui.theme}
     persistKey="demo-sheet"

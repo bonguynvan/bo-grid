@@ -19,6 +19,8 @@
     alt = false,
     editing = false,
     seed = null,
+    fillCorner = false,
+    fillpreview = false,
     colIndex,
     cellId,
     cellSnippet,
@@ -30,6 +32,7 @@
     onCellDblClick,
     onEditCommit,
     onEditCancel,
+    onFillStart,
   }: {
     col: ColumnDef;
     row: GridRow;
@@ -47,6 +50,10 @@
     /** Type-to-edit seed: when set, the editor opens pre-filled with this string
         (the character that triggered the edit) instead of the current value. */
     seed?: string | null;
+    /** Show the fill handle (this cell is the selection's bottom-right corner). */
+    fillCorner?: boolean;
+    /** This cell is inside the in-progress fill drag's preview range. */
+    fillpreview?: boolean;
     colIndex?: number;
     cellId?: string;
     cellSnippet?: Snippet<[{ row: GridRow; column: ColumnDef; value: unknown }]>;
@@ -60,6 +67,7 @@
     onCellDblClick?: (r: number, c: number) => void;
     onEditCommit?: (raw: string) => void;
     onEditCancel?: () => void;
+    onFillStart?: () => void;
   } = $props();
 
   let cancelled = false;
@@ -129,6 +137,7 @@
   class:neg={col.type === 'percent' && Number(value) < 0}
   class:sel={selected}
   class:focus={focused}
+  class:fillpreview={fillpreview}
   style={cellStyle()}
   role="gridcell"
   tabindex="-1"
@@ -211,6 +220,18 @@
     {/key}
   {:else}
     {formatCell(col, value, row)}
+  {/if}
+  {#if fillCorner}
+    <span
+      class="fill-handle"
+      role="button"
+      tabindex="-1"
+      aria-label="Fill"
+      onpointerdown={(e) => {
+        e.stopPropagation();
+        onFillStart?.();
+      }}
+    ></span>
   {/if}
 </span>
 
@@ -317,6 +338,22 @@
     box-shadow:
       inset 0 0 0 1000px var(--bo-sel-fill),
       inset 0 0 0 1px var(--bo-sel-border);
+  }
+  /* Fill: a draggable square at the selection's corner + the drag preview. */
+  .fill-handle {
+    position: absolute;
+    right: -3px;
+    bottom: -3px;
+    width: 7px;
+    height: 7px;
+    background: var(--bo-sel-border);
+    border: 1px solid var(--bo-bg);
+    cursor: crosshair;
+    z-index: 4;
+    touch-action: none;
+  }
+  .c.fillpreview {
+    box-shadow: inset 0 0 0 1px var(--bo-sel-border);
   }
 
   .flash {
