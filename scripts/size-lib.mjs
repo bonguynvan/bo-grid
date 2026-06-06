@@ -5,7 +5,11 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
 const DIR = 'lib-dist';
-const BUDGET_KB = { js: 16, css: 4 }; // gzipped, Svelte excluded
+// Recalibrated once (16 → 20 KB) after the library matured from a minimal Phase-0
+// core into a full grid (multi-sort, row selection, column show/hide, totals
+// footer, row/cell callbacks, …). At ~20 KB gzip it is still ~25× smaller than
+// AG Grid (~500 KB) — the "tiny" claim holds with room for a few more features.
+const BUDGET_KB = { js: 20, css: 4 }; // gzipped, Svelte excluded
 
 function gzipKb(path) {
   return gzipSync(readFileSync(path)).length / 1024;

@@ -52,6 +52,20 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Pivot tables**: `pivot(rows, config)` transforms flat rows into pivot
   rows + dynamic columns (row fields × a column field, aggregated measure, with
   totals) — feed the result straight to `<Grid>`.
+- **Multi-column sort**: Shift-click headers to add secondary sort keys; each
+  sorted header shows its position. `compareBySorts` applies keys in order.
+- **Controlled sort**: optional `sort` + `onSortChange` to own the sort order
+  (persist it, set an initial sort, sync to the URL); uncontrolled otherwise.
+- **Row selection**: `rowSelection` adds a leading checkbox column (header
+  select-all), keyed by `getRowId` (default `row.id`; override for string/
+  composite keys) so it survives sort/filter; `onRowSelectionChange` reports ids.
+- **Column show/hide**: controlled `hiddenColumns` (column keys) — drive your own
+  column-picker UI.
+- **Per-row styling**: `rowClass(row)` returns CSS class(es) per data row.
+- **Row & cell clicks**: `onRowClick(row, event)` (click or Enter) and
+  `onCellClick({ row, column, value }, event)`.
+- **Totals footer**: `footer` pins a totals row — each column with a `groupAgg`
+  aggregates all (filtered) rows, sticky to the viewport bottom.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 - **Theming**: dark-first, self-contained CSS variables (`--bo-grid-*`), no CSS
