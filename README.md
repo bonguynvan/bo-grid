@@ -329,6 +329,14 @@ levels). Rows live inside the grid, so target the class with `:global(...)`:
 `onRowClick(row, event)` fires when a row is activated by click or <kbd>Enter</kbd>
 on the focused cell — wire it to open a detail view or navigate.
 
+Pass `rowMenu(row)` to add a **right-click menu** of row actions; each item runs
+its `onSelect` and the menu closes (also on outside-click or <kbd>Esc</kbd>):
+
+```svelte
+<Grid {rows} {columns} height={640}
+  rowMenu={(r) => [{ label: 'Delete', onSelect: () => remove(r.id) }]} />
+```
+
 ## Inline editing
 
 Mark a column `editable: true`. Double-click a cell (or press <kbd>Enter</kbd> on

@@ -366,6 +366,16 @@ const hgroups = [...document.querySelectorAll('.bo-grid .head-groups .hg')].filt
   (h) => (h.textContent || '').trim().length > 0,
 );
 if (hgroups.length === 0) fail('column header groups did not render');
+// Right-click row menu: contextmenu on a row opens a floating menu of actions.
+document.querySelector('.bo-grid .row').dispatchEvent(
+  new window.MouseEvent('contextmenu', { bubbles: true, clientX: 80, clientY: 80 }),
+);
+await wait(20);
+const rowmenu = document.querySelector('.rowmenu');
+if (!rowmenu || rowmenu.querySelectorAll('.rowmenu-item').length === 0) fail('row context menu did not open');
+rowmenu.querySelector('.rowmenu-item').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(20);
+if (document.querySelector('.rowmenu')) fail('row menu did not close after selecting an item');
 
 const sheetTab = tab('Spreadsheet');
 if (!sheetTab) fail('Spreadsheet example tab not found');
@@ -514,7 +524,7 @@ console.log(
     `edit committed + validate; variable heights ${rowHeights.join('/')}; ` +
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
-    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg, ` +
+    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg, ` +
     `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );

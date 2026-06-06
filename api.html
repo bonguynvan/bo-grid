@@ -186,6 +186,7 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>filterRow</td><td><span class="type">boolean</span></td><td>Per-column filter input row under the header (AND across columns). In-memory mode only.</td></tr>
           <tr><td>emptyMessage</td><td><span class="type">string</span></td><td>Text shown when there are no rows. Default <code>'No matching rows'</code>.</td></tr>
           <tr><td>loading</td><td><span class="type">boolean</span></td><td>Show a loading overlay (consumer-driven async in in-memory mode).</td></tr>
+          <tr><td>rowMenu</td><td><span class="type">(row) =&gt; {'{'} label, onSelect {'}'}[]</span></td><td>Right-click row menu items; each runs <code>onSelect</code> and closes.</td></tr>
           <tr><td>groupBy</td><td><span class="type">string[]</span></td><td>Column keys to group by (nested). In-memory mode only. Default <code>[]</code>.</td></tr>
           <tr><td>aggregations</td><td><span class="type">AggKind[]</span></td><td>Stats shown in the selection footer. Default all five.</td></tr>
           <tr><td>persistKey</td><td><span class="type">string</span></td><td>Persist the user's column order and widths to <code>localStorage</code> under this key.</td></tr>

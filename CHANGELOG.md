@@ -84,6 +84,8 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   consumer-driven async work (in-memory mode).
 - **Cell tooltips**: a column `tooltip` sets a native `title` (full value) on
   each cell — handy when content truncates.
+- **Row context menu**: `rowMenu(row)` returns right-click menu items (each with
+  a `label` + `onSelect`); closes on select, outside-click, or Esc.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 - **Theming**: dark-first, self-contained CSS variables (`--bo-grid-*`), no CSS

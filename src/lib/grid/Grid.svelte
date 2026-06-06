@@ -50,6 +50,7 @@
     filterRow = false,
     emptyMessage = 'No matching rows',
     loading = false,
+    rowMenu,
     cell,
   }: {
     rows: GridRow[];
@@ -106,6 +107,9 @@
     /** Show a loading overlay over the grid (for consumer-driven async work in
         in-memory mode; source mode shows skeleton rows automatically). */
     loading?: boolean;
+    /** Right-click row menu. Return the items for a row; an empty array shows no
+        menu. Each item runs `onSelect` and closes the menu. */
+    rowMenu?: (row: GridRow) => Array<{ label: string; onSelect: () => void }>;
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -612,6 +616,29 @@
     if (dragging) sel.extendTo(r, c);
   }
 
+  // Right-click row menu (floating).
+  let menu = $state<{ x: number; y: number; items: Array<{ label: string; onSelect: () => void }> } | null>(null);
+  function openRowMenu(row: GridRow, e: MouseEvent) {
+    if (!rowMenu) return;
+    const items = rowMenu(row);
+    if (items.length === 0) return;
+    e.preventDefault();
+    menu = { x: e.clientX, y: e.clientY, items };
+  }
+  $effect(() => {
+    if (!menu) return;
+    const close = () => (menu = null);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && (menu = null);
+    window.addEventListener('pointerdown', close);
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('blur', close);
+    return () => {
+      window.removeEventListener('pointerdown', close);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('blur', close);
+    };
+  });
+
   function onCellClicked(r: number, c: number, e: MouseEvent) {
     if (!onCellClick) return;
     const row = dataAt(r);
@@ -970,7 +997,7 @@
         {:else}
           <!-- Row activation is keyboard-accessible at the grid level: Enter on the focused cell fires onRowClick (focus is via aria-activedescendant). -->
           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:clickable={!!onRowClick} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)}>
+          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:clickable={!!onRowClick} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)} oncontextmenu={(e) => openRowMenu(item.row, e)}>
             {#if rowSelection}
               <span class="selcell" style={selCellStyle(false)}>
                 <input
@@ -1026,6 +1053,24 @@
   </div>
 
   <AggregationBar result={agg} kinds={aggregations} />
+
+  {#if menu}
+    <div class="rowmenu" role="menu" tabindex="-1" style="left:{menu.x}px;top:{menu.y}px;" onpointerdown={(e) => e.stopPropagation()}>
+      {#each menu.items as item (item.label)}
+        <button
+          class="rowmenu-item"
+          type="button"
+          role="menuitem"
+          onclick={() => {
+            item.onSelect();
+            menu = null;
+          }}
+        >
+          {item.label}
+        </button>
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -1343,6 +1388,34 @@
   }
   .footer .fcell.right {
     justify-content: flex-end;
+  }
+
+  /* Right-click row menu (floating). */
+  .rowmenu {
+    position: fixed;
+    z-index: 20;
+    min-width: 150px;
+    padding: 4px;
+    background: var(--bo-header-bg);
+    border: 0.5px solid var(--bo-border);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+  .rowmenu-item {
+    display: block;
+    width: 100%;
+    padding: 6px 10px;
+    font: inherit;
+    font-size: 12px;
+    text-align: left;
+    color: var(--bo-text);
+    background: transparent;
+    border: 0;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .rowmenu-item:hover {
+    background: var(--bo-row-hover);
   }
 
   /* Leading checkbox column (row selection). */

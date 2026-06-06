@@ -131,6 +131,13 @@
     sort={sortState}
     onSortChange={(s) => (sortState = s)}
     onRowClick={(r) => !pivotMode && (picked = r as Position)}
+    rowMenu={(r) =>
+      pivotMode
+        ? []
+        : [
+            { label: 'Inspect position', onSelect: () => (picked = r as Position) },
+            { label: 'Clear', onSelect: () => (picked = null) },
+          ]}
     footer={!pivotMode}
   />
 </div>
