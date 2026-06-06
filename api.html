@@ -237,6 +237,7 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>align</td><td><span class="type">'left' | 'right'</span></td><td>Header/text alignment.</td></tr>
           <tr><td>flash</td><td><span class="type">boolean</span></td><td>Amber flash on value change (drives off <code>flashSeq</code>).</td></tr>
           <tr><td>sortable</td><td><span class="type">boolean</span></td><td>Set <code>false</code> to disable header-click sorting.</td></tr>
+          <tr><td>compare</td><td><span class="type">(a, b) =&gt; number</span></td><td>Custom ascending comparator (enum priority, natural sort). In-memory mode.</td></tr>
           <tr><td>group</td><td><span class="type">string</span></td><td>Parent header label; consecutive columns sharing it render under one spanning header.</td></tr>
           <tr><td>groupAgg</td><td><span class="type">AggKind</span></td><td>Show this aggregate on group headers.</td></tr>
           <tr><td>pinned</td><td><span class="type">boolean | 'left' | 'right'</span></td><td>Pin to the left (<code>true</code>/<code>'left'</code>) or right edge; stays visible during horizontal scroll.</td></tr>

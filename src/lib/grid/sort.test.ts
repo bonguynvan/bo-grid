@@ -27,6 +27,15 @@ describe('compareBySorts', () => {
     expect(compareBySorts(row({ group: 'A', score: 1 }), row({ group: 'B', score: 9 }), sorts)).toBeLessThan(0);
   });
 
+  it('uses a column custom comparator when provided', () => {
+    const order = ['low', 'mid', 'high'];
+    const colOf = () => ({ compare: (a: unknown, b: unknown) => order.indexOf(String(a)) - order.indexOf(String(b)) }) as never;
+    const sorts: SortState[] = [{ key: 'level', dir: 'asc' }];
+    // alphabetical would put 'high' first; the custom comparator keeps low<mid<high
+    expect(compareBySorts(row({ level: 'low' }), row({ level: 'high' }), sorts, colOf)).toBeLessThan(0);
+    expect(compareBySorts(row({ level: 'high' }), row({ level: 'low' }), sorts, colOf)).toBeGreaterThan(0);
+  });
+
   it('produces a stable multi-key ordering when used with Array.sort', () => {
     const rows = [
       row({ team: 'B', pts: 3 }),

@@ -17,6 +17,9 @@ interface ColBase {
   flash?: boolean;
   /** Set false to disable header-click sorting on this column. */
   sortable?: boolean;
+  /** Custom ascending comparator for this column's values (e.g. enum priority or
+      natural sort). Direction is applied by the grid. In-memory mode only. */
+  compare?: (a: unknown, b: unknown) => number;
   /** When grouping is active, show this aggregate of the column on group headers. */
   groupAgg?: AggKind;
   /** Pin this column so it stays visible during horizontal scroll. `true` /
@@ -116,8 +119,8 @@ function rawCompare(a: unknown, b: unknown): number {
   return String(a ?? '').localeCompare(String(b ?? ''));
 }
 
-export function compareRows(a: GridRow, b: GridRow, sort: SortState): number {
-  const d = rawCompare(a[sort.key], b[sort.key]);
+export function compareRows(a: GridRow, b: GridRow, sort: SortState, col?: ColumnDef): number {
+  const d = col?.compare ? col.compare(a[sort.key], b[sort.key]) : rawCompare(a[sort.key], b[sort.key]);
   return sort.dir === 'asc' ? d : -d;
 }
 
@@ -125,9 +128,14 @@ export function compareRows(a: GridRow, b: GridRow, sort: SortState): number {
  * Multi-key comparison: apply each sort in order, returning the first that
  * separates the rows. An empty list leaves rows in their original order.
  */
-export function compareBySorts(a: GridRow, b: GridRow, sorts: readonly SortState[]): number {
+export function compareBySorts(
+  a: GridRow,
+  b: GridRow,
+  sorts: readonly SortState[],
+  colOf?: (key: string) => ColumnDef | undefined,
+): number {
   for (const sort of sorts) {
-    const d = compareRows(a, b, sort);
+    const d = compareRows(a, b, sort, colOf?.(sort.key));
     if (d !== 0) return d;
   }
   return 0;

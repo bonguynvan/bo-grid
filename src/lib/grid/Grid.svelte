@@ -439,7 +439,10 @@
       if (colF.length > 0) {
         r = r.filter((row) => colF.every(([k, v]) => String(row[k] ?? '').toLowerCase().includes(v)));
       }
-      if (s.length > 0) r = [...r].sort((a, b) => compareBySorts(a, b, s));
+      if (s.length > 0) {
+        const colOf = (k: string) => allCols.find((c) => c.key === k);
+        r = [...r].sort((a, b) => compareBySorts(a, b, s, colOf));
+      }
       return r;
     });
   });
