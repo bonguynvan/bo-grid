@@ -5,3 +5,6 @@ lib-dist/
 .svelte-kit/
 *.tgz
 .DS_Store
+
+# Claude Code harness runtime
+.claude/
