@@ -37,6 +37,7 @@ if (!dry) {
 // 2. Quality gates (any failure aborts the release).
 run('pnpm check');
 run('pnpm test');
+run('pnpm ssr');
 run('pnpm package');
 run('pnpm smoke');
 run('pnpm size');

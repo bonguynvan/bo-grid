@@ -41,6 +41,11 @@ npm i bo-grid
 # peer dependency: svelte@^5
 ```
 
+Works with **SvelteKit / SSR** out of the box — `<Grid>` server-renders to HTML
+without touching `window`/`document`/`localStorage` (a CI gate, `pnpm ssr`,
+proves it). The package is `sideEffects: false`, so unused exports tree-shake
+away.
+
 ## Usage
 
 ```svelte

@@ -110,8 +110,11 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Resize clamps**: per-column `minWidth`/`maxWidth` bound drag-resizing.
 - **Layout callbacks**: `onColumnReorder(keys)` and `onColumnResize(key, width)`
   report header drag-reorder / resize so apps can persist layout server-side.
-- **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
-  publish.
+- **SSR / SvelteKit-safe**: `<Grid>` server-renders without touching browser
+  globals; `sideEffects: false` for tree-shaking. A `pnpm ssr` gate (in CI and
+  the release) server-renders the grid to guard against regressions.
+- **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates
+  (`check`/`test`/`ssr`/`package`/`smoke`/`size`/`size:lib`) then publish.
 - **Theming**: dark-first, self-contained CSS variables (`--bo-grid-*`), no CSS
   import required.
 
