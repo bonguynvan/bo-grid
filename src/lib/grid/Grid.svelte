@@ -154,6 +154,7 @@
       if (!Number.isFinite(n)) return false; // reject invalid number, keep old value
       value = n;
     }
+    if (col.validate && !col.validate(value, row)) return false; // consumer rejected it
     onCellEdit?.({ row, column: col, value });
     return true;
   }

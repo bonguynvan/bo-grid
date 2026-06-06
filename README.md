@@ -346,7 +346,13 @@ own row data there:
 ```
 
 `e.value` is parsed to a number for numeric columns (invalid input is rejected),
-otherwise the raw string. Make the edited field `$state` so the cell updates.
+otherwise the raw string. Make the edited field `$state` so the cell updates. Add
+a column `validate(value, row)` to reject edits that fail your own rule (it
+applies to paste too):
+
+```ts
+{ type: 'number', key: 'qty', header: 'Qty', editable: true, validate: (v) => v >= 0 }
+```
 
 ## Pinned columns
 

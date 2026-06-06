@@ -25,7 +25,7 @@
     { type: 'heatmap', key: 'changePct', header: 'Heat', width: 76, min: -5, max: 5 },
     { type: 'custom', key: 'changePct', header: 'Signal', width: 66, sortable: false },
     { type: 'volume', key: 'volume', header: 'Volume', width: 90, groupAgg: 'sum' },
-    { type: 'number', key: 'target', header: 'Target', width: 78, decimals: 2, editable: true },
+    { type: 'number', key: 'target', header: 'Target', width: 78, decimals: 2, editable: true, validate: (v) => Number(v) >= 0 },
     { type: 'date', key: 'listedAt', header: 'Listed', width: 92, dateStyle: 'short' },
     { type: 'sparkline', key: 'candles', sparkKey: 'candles', header: 'Trend (24)', flex: 1 },
   ];

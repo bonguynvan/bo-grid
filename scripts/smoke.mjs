@@ -119,6 +119,18 @@ await wait(40);
 const editedText = document.querySelectorAll('.row')[0].querySelectorAll('.c')[TARGET_COL].textContent.trim();
 if (editedText !== '999.99') fail(`inline edit did not commit (cell shows "${editedText}")`);
 
+// Edit validation: the Target column rejects negatives — an invalid edit keeps
+// the previous value.
+document.querySelectorAll('.row')[0].querySelectorAll('.c')[TARGET_COL]
+  .dispatchEvent(new window.MouseEvent('dblclick', { bubbles: true }));
+await wait(40);
+const badInput = document.querySelectorAll('.row')[0].querySelector('input.bo-edit');
+badInput.value = '-5';
+badInput.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+await wait(40);
+const afterBad = document.querySelectorAll('.row')[0].querySelectorAll('.c')[TARGET_COL].textContent.trim();
+if (afterBad !== '999.99') fail(`validate should reject the negative edit (cell shows "${afterBad}")`);
+
 // Clipboard paste (Phase 5): select the Target cell on row 1, put a value on the
 // clipboard, press Ctrl+V, and assert it commits through the same edit path.
 const gridForPaste = document.querySelector('.bo-grid.grid');
@@ -458,7 +470,7 @@ if (bigRows === 0) fail('1M-rows example loaded no windowed rows');
 console.log(
   `✓ smoke: grid mounted — ${rowCount} rows, ${canvases} sparklines; ` +
     `multi-sort 2 keys; selection ${selCount} cells + agg bar; grouping ${groupHeaders} headers, ` +
-    `edit committed; variable heights ${rowHeights.join('/')}; ` +
+    `edit committed + validate; variable heights ${rowHeights.join('/')}; ` +
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups, sheet ${sheetRows} rows (light) + row-select + col-hide + col-filter, ` +

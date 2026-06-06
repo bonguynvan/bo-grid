@@ -23,6 +23,9 @@ interface ColBase {
   pinned?: boolean;
   /** Allow inline editing (double-click or Enter on the focused cell). */
   editable?: boolean;
+  /** Validate an edited value before it commits (inline edit or paste). Return
+      false to reject and keep the old value. Receives the coerced value. */
+  validate?: (value: string | number, row: GridRow) => boolean;
   /** Set false to disable drag-to-resize on this column (default on). */
   resizable?: boolean;
   /** Parent header label. Consecutive columns sharing a `group` render under a
