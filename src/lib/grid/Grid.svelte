@@ -54,6 +54,8 @@
     detail,
     detailHeight = 160,
     pageSize = 0,
+    page,
+    onPageChange,
     onColumnReorder,
     onColumnResize,
     cell,
@@ -123,6 +125,10 @@
     /** Rows per page. When > 0 (in-memory mode), shows a pager instead of one
         long scroll; rows still virtualize within a page. Default 0 (off). */
     pageSize?: number;
+    /** Controlled current page (0-based). Omit for uncontrolled paging. */
+    page?: number;
+    /** Called with the new page index when the pager is used. */
+    onPageChange?: (page: number) => void;
     /** Called with the new column-key order after a header drag-reorder. */
     onColumnReorder?: (keys: string[]) => void;
     /** Called with a column key + new width after a drag-resize. */
@@ -498,17 +504,22 @@
   // Pagination (in-memory only): slice the view into pages; rows still
   // virtualize within a page. Off when pageSize <= 0.
   const paged = $derived(pageSize > 0 && !source);
-  let page = $state(0);
+  let internalPage = $state(0);
+  const currentPage = $derived(page ?? internalPage); // controlled by `page` prop, else internal
+  function setPage(p: number): void {
+    if (page === undefined) internalPage = p; // uncontrolled: own the state
+    onPageChange?.(p); // always notify
+  }
   const pageCount = $derived(paged ? Math.max(1, Math.ceil(view.length / pageSize)) : 1);
   // Keep the page in range when the view shrinks (filter/sort changes).
   $effect(() => {
     const max = pageCount - 1;
     untrack(() => {
-      if (page > max) page = max;
+      if (currentPage > max) setPage(max);
     });
   });
   const pageRows = $derived(
-    paged ? view.slice(page * pageSize, page * pageSize + pageSize) : view,
+    paged ? view.slice(currentPage * pageSize, currentPage * pageSize + pageSize) : view,
   );
 
   const flat = $derived.by<VisualRow[]>(() => {
@@ -520,8 +531,8 @@
 
   function goToPage(p: number): void {
     const next = Math.max(0, Math.min(p, pageCount - 1));
-    if (next === page) return;
-    page = next;
+    if (next === currentPage) return;
+    setPage(next);
     sel.clear();
     editing = null;
     if (viewportEl) viewportEl.scrollTop = 0;
@@ -1173,11 +1184,11 @@
 
   {#if paged}
     <div class="pager" role="navigation" aria-label="Pagination">
-      <button type="button" class="pg" disabled={page === 0} aria-label="First page" onclick={() => goToPage(0)}>«</button>
-      <button type="button" class="pg" disabled={page === 0} onclick={() => goToPage(page - 1)}>‹ Prev</button>
-      <span class="pageinfo">Page {page + 1} of {pageCount} · {view.length.toLocaleString()} rows</span>
-      <button type="button" class="pg" disabled={page >= pageCount - 1} onclick={() => goToPage(page + 1)}>Next ›</button>
-      <button type="button" class="pg" disabled={page >= pageCount - 1} aria-label="Last page" onclick={() => goToPage(pageCount - 1)}>»</button>
+      <button type="button" class="pg" disabled={currentPage === 0} aria-label="First page" onclick={() => goToPage(0)}>«</button>
+      <button type="button" class="pg" disabled={currentPage === 0} onclick={() => goToPage(currentPage - 1)}>‹ Prev</button>
+      <span class="pageinfo">Page {currentPage + 1} of {pageCount} · {view.length.toLocaleString()} rows</span>
+      <button type="button" class="pg" disabled={currentPage >= pageCount - 1} onclick={() => goToPage(currentPage + 1)}>Next ›</button>
+      <button type="button" class="pg" disabled={currentPage >= pageCount - 1} aria-label="Last page" onclick={() => goToPage(pageCount - 1)}>»</button>
     </div>
   {/if}
 

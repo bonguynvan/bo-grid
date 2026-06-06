@@ -96,6 +96,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   and `headerClass` for styling individual columns via `:global`.
 - **Pagination**: `pageSize` switches to a paged view with a pager (first/prev/
   next/last) instead of one long scroll; rows still virtualize within a page.
+  Optionally controlled via `page` + `onPageChange` (URL-synced paging).
 - **Resize clamps**: per-column `minWidth`/`maxWidth` bound drag-resizing.
 - **Layout callbacks**: `onColumnReorder(keys)` and `onColumnResize(key, width)`
   report header drag-reorder / resize so apps can persist layout server-side.
