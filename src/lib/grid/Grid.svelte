@@ -47,6 +47,7 @@
     footer = false,
     onCellClick,
     pinnedRows = [],
+    filterRow = false,
     cell,
   }: {
     rows: GridRow[];
@@ -95,6 +96,9 @@
     /** Rows pinned to the top, always visible above the scroll (a benchmark, a
         summary, "your position"). Display-only — not virtualized or selectable. */
     pinnedRows?: GridRow[];
+    /** Show a per-column filter input row under the header. Rows must match every
+        non-empty column filter (AND). In-memory mode only. Default false. */
+    filterRow?: boolean;
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -125,6 +129,7 @@
   let gridEl: HTMLDivElement;
   let viewportEl: HTMLDivElement;
   let headEl: HTMLDivElement;
+  let filterRowEl = $state<HTMLDivElement>();
 
   const sel = new Selection();
   let dragging = $state(false);
@@ -167,6 +172,9 @@
 
   // User column-width overrides (drag-to-resize), keyed by column key.
   let widths = $state<WidthMap>({});
+
+  // Per-column filter text (filterRow), keyed by column key.
+  let colFilters = $state<Record<string, string>>({});
 
   // Whole-row selection (opt-in), keyed by row id so it survives sort/filter.
   // Plain Set + a version counter for reactivity (same pattern as `collapsed`).
@@ -386,9 +394,16 @@
     const allCols = columns;
     const f = filter.trim().toLowerCase();
     const s = sorts;
+    // Active per-column filters (filterRow): [key, lowercased needle] pairs.
+    const colF = Object.entries(colFilters)
+      .map(([k, v]) => [k, v.trim().toLowerCase()] as const)
+      .filter(([, v]) => v.length > 0);
     return untrack(() => {
       let r = base;
       if (f) r = r.filter((row) => allCols.some((c) => String(row[c.key] ?? '').toLowerCase().includes(f)));
+      if (colF.length > 0) {
+        r = r.filter((row) => colF.every(([k, v]) => String(row[k] ?? '').toLowerCase().includes(v)));
+      }
       if (s.length > 0) r = [...r].sort((a, b) => compareBySorts(a, b, s));
       return r;
     });
@@ -542,6 +557,7 @@
     const el = e.currentTarget as HTMLElement;
     scrollTop = el.scrollTop;
     if (pinned && headEl) headEl.scrollLeft = el.scrollLeft; // keep header in sync
+    if (pinned && filterRowEl) filterRowEl.scrollLeft = el.scrollLeft; // and the filter row
   }
 
   function toggleGroup(path: string) {
@@ -829,6 +845,26 @@
     {/each}
   </div>
 
+  {#if filterRow && !source}
+    <div class="filter-row" role="row" bind:this={filterRowEl} style={pinned ? 'overflow:hidden;' : ''}>
+      {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
+      {#each cols as col, ci (ci)}
+        <span class="fr-cell" style={cellWidthStyle(ci)}>
+          {#if col.type !== 'sparkline' && col.type !== 'custom'}
+            <input
+              class="fr-input"
+              type="search"
+              placeholder="filter…"
+              aria-label="Filter {col.header}"
+              value={colFilters[col.key] ?? ''}
+              oninput={(e) => (colFilters = { ...colFilters, [col.key]: e.currentTarget.value })}
+            />
+          {/if}
+        </span>
+      {/each}
+    </div>
+  {/if}
+
   <div
     class="viewport"
     style="height:{height}px;{pinned ? 'overflow-x:auto;' : ''}"
@@ -1061,6 +1097,37 @@
     line-height: 1;
     color: var(--bo-text-dim);
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Per-column filter input row, under the header. */
+  .filter-row {
+    display: flex;
+    align-items: stretch;
+    height: 30px;
+    border-bottom: 0.5px solid var(--bo-border);
+    background: var(--bo-header-bg);
+  }
+  .filter-row .fr-cell {
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    min-width: 0;
+  }
+  .filter-row .fr-input {
+    width: 100%;
+    min-width: 0;
+    padding: 2px 6px;
+    font: inherit;
+    font-family: var(--bo-mono);
+    font-size: 11px;
+    color: var(--bo-text);
+    background: var(--bo-bg);
+    border: 0.5px solid var(--bo-border);
+    border-radius: 4px;
+    outline: none;
+  }
+  .filter-row .fr-input:focus {
+    border-color: var(--bo-sel-border);
   }
 
   .viewport {

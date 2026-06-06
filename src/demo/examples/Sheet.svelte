@@ -130,6 +130,7 @@
     {columns}
     filter={filterText}
     hiddenColumns={hidden}
+    filterRow
     theme="light"
     persistKey="demo-sheet"
     height={620}

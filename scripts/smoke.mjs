@@ -380,6 +380,16 @@ await wait(20);
 const colsAfter = document.querySelectorAll('.bo-grid .head .h').length;
 if (colsAfter !== colsBefore - 1) fail(`hiding a column should drop one header (${colsBefore} → ${colsAfter})`);
 
+// Per-column filter row: typing in a column's input narrows the rows.
+const roleFilter = document.querySelector('.bo-grid .filter-row [aria-label="Filter Role"]');
+if (!roleFilter) fail('per-column filter input did not render');
+const frBefore = document.querySelectorAll('.bo-grid .row').length;
+roleFilter.value = 'Engineer';
+roleFilter.dispatchEvent(new window.Event('input', { bubbles: true }));
+await wait(30);
+const frAfter = document.querySelectorAll('.bo-grid .row').length;
+if (!(frAfter < frBefore)) fail(`column filter did not narrow rows (${frBefore} → ${frAfter})`);
+
 // Order book: per-row colour classes (ask/bid) via rowClass + custom depth cell.
 const obTab = tab('Order book');
 if (!obTab) fail('Order book example tab not found');
@@ -446,7 +456,7 @@ console.log(
     `edit committed; variable heights ${rowHeights.join('/')}; ` +
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
-    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups, sheet ${sheetRows} rows (light) + row-select + col-hide, ` +
+    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups, sheet ${sheetRows} rows (light) + row-select + col-hide + col-filter, ` +
     `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; a11y rowcount/activedescendant ok`,
 );
