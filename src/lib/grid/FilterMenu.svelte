@@ -16,6 +16,7 @@
     kind,
     header,
     filter,
+    values = [],
     x,
     y,
     onApply,
@@ -24,6 +25,8 @@
     kind: FilterKind;
     header: string;
     filter: ColumnFilter | null;
+    /** Distinct column values for a set filter's checklist. */
+    values?: string[];
     x: number;
     y: number;
     onApply: (f: ColumnFilter | null) => void;
@@ -71,6 +74,16 @@
   let dateOp = $state<DateOp>(init?.kind === 'date' ? init.op : 'on');
   let dateA = $state(init?.kind === 'date' ? toDateInput(init.a) : '');
   let dateB = $state(init?.kind === 'date' && init.b != null ? toDateInput(init.b) : '');
+  // Set filter: track the *excluded* values (unchecked boxes).
+  let excluded = $state(new Set<string>(init?.kind === 'set' ? init.excluded : []));
+  let search = $state('');
+  const shown = $derived(values.filter((v) => v.toLowerCase().includes(search.trim().toLowerCase())));
+  function toggleVal(v: string) {
+    const n = new Set(excluded);
+    if (n.has(v)) n.delete(v);
+    else n.add(v);
+    excluded = n;
+  }
 
   function build(): ColumnFilter | null {
     let f: ColumnFilter;
@@ -78,6 +91,8 @@
       f = { kind: 'number', op: numOp, a: numA ?? NaN, b: numB ?? undefined };
     } else if (kind === 'date') {
       f = { kind: 'date', op: dateOp, a: toMs(dateA), b: dateB ? toMs(dateB) : undefined };
+    } else if (kind === 'set') {
+      f = { kind: 'set', excluded: [...excluded] };
     } else {
       f = { kind: 'text', op: textOp, q: textQ };
     }
@@ -123,6 +138,20 @@
     {#if dateOp === 'between'}
       <input class="bo-fm-in" type="date" bind:value={dateB} aria-label="End date" />
     {/if}
+  {:else if kind === 'set'}
+    <input class="bo-fm-in" type="search" bind:value={search} placeholder="search…" aria-label="Search values" />
+    <div class="bo-fm-setbar">
+      <button type="button" class="bo-fm-link" onclick={() => (excluded = new Set())}>All</button>
+      <button type="button" class="bo-fm-link" onclick={() => (excluded = new Set(values))}>None</button>
+    </div>
+    <div class="bo-fm-list">
+      {#each shown as v (v)}
+        <label class="bo-fm-opt">
+          <input type="checkbox" checked={!excluded.has(v)} onchange={() => toggleVal(v)} />
+          <span>{v === '' ? '(blank)' : v}</span>
+        </label>
+      {/each}
+    </div>
   {:else}
     <select class="bo-fm-op" bind:value={textOp} aria-label="Operator">
       {#each TEXT_OPS as o (o.op)}<option value={o.op}>{o.label}</option>{/each}
@@ -167,6 +196,45 @@
     background: var(--bo-bg);
     border: 0.5px solid var(--bo-border);
     border-radius: 5px;
+  }
+  .bo-fm-setbar {
+    display: flex;
+    gap: 12px;
+  }
+  .bo-fm-link {
+    padding: 0;
+    font: inherit;
+    font-size: 11px;
+    color: var(--bo-up);
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+  .bo-fm-link:hover {
+    text-decoration: underline;
+  }
+  .bo-fm-list {
+    display: flex;
+    flex-direction: column;
+    max-height: 180px;
+    overflow-y: auto;
+    border: 0.5px solid var(--bo-border);
+    border-radius: 5px;
+  }
+  .bo-fm-opt {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 7px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .bo-fm-opt:hover {
+    background: var(--bo-row-hover);
+  }
+  .bo-fm-opt span {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .bo-fm-actions {
     display: flex;

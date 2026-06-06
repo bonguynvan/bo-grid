@@ -447,6 +447,34 @@ await waitFor('.bo-filtermenu', 'header filter menu did not reopen');
 await wait(40);
 if (document.querySelectorAll('.bo-grid .row').length !== beforeFilter)
   fail('filter menu: clearing the filter did not restore the rows');
+// Set filter (checkbox value list): open the Exch funnel, exclude every value
+// via "None" (→ no rows), then reopen and clear (→ rows restored).
+const exchFunnel = () =>
+  [...document.querySelectorAll('.bo-grid .head .h')]
+    .find((h) => h.querySelector('.label')?.textContent?.trim() === 'Exch')
+    ?.querySelector('.funnel');
+if (!exchFunnel()) fail('set filter: funnel did not render on the Exch header');
+exchFunnel().dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await waitFor('.bo-filtermenu .bo-fm-list', 'set-filter checklist did not render');
+if (document.querySelectorAll('.bo-filtermenu .bo-fm-opt input[type=checkbox]').length === 0)
+  fail('set filter: no value checkboxes rendered');
+[...document.querySelectorAll('.bo-filtermenu .bo-fm-link')]
+  .find((b) => b.textContent.trim() === 'None')
+  .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+document
+  .querySelector('.bo-filtermenu .bo-fm-apply')
+  .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(40);
+if (document.querySelectorAll('.bo-grid .row').length !== 0)
+  fail('set filter: excluding every value did not empty the grid');
+exchFunnel().dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await waitFor('.bo-filtermenu', 'set-filter menu did not reopen');
+[...document.querySelectorAll('.bo-filtermenu .bo-fm-btn')]
+  .find((b) => b.textContent.trim() === 'Clear')
+  .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(40);
+if (document.querySelectorAll('.bo-grid .row').length !== beforeFilter)
+  fail('set filter: clearing did not restore the rows');
 
 const sheetTab = tab('Spreadsheet');
 if (!sheetTab) fail('Spreadsheet example tab not found');

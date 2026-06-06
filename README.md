@@ -153,9 +153,10 @@ every non-empty column filter; in-memory mode).
 For richer filtering, set `filterMenu` to add a **funnel to each column header**.
 Clicking it opens a menu whose control matches the column type — text
 (contains / equals / starts / ends), number (`=, ≠, <, ≤, >, ≥, between`), or date
-(before / after / on / between). The menu is lazy-loaded on first open, so it
-costs nothing until used. Override or disable the control per column with
-`col.filter` (`'text' | 'number' | 'date' | 'set' | false`):
+(before / after / on / between). Set `col.filter: 'set'` for a **set filter** — a
+searchable checkbox list of the column's distinct values (All / None). The menu
+is lazy-loaded on first open, so it costs nothing until used; disable it per
+column with `col.filter: false`:
 
 ```svelte
 <Grid {rows} {columns} height={640} filterMenu />

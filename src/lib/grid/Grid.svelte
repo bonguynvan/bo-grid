@@ -22,6 +22,7 @@
     passesFilters,
     isFilterActive,
     defaultFilterKind,
+    distinctValues,
     type ColumnFilter,
     type FilterKind,
   } from './filtering';
@@ -804,9 +805,14 @@
 
   // Header filter menu (v0.3), lazy-loaded on first open to keep the core lean.
   let FilterMenuComp = $state<typeof import('./FilterMenu.svelte').default | null>(null);
-  let filterUi = $state<{ key: string; kind: FilterKind; header: string; x: number; y: number } | null>(
-    null,
-  );
+  let filterUi = $state<{
+    key: string;
+    kind: FilterKind;
+    header: string;
+    values: string[];
+    x: number;
+    y: number;
+  } | null>(null);
   function filterKindFor(col: ColumnDef): FilterKind {
     return typeof col.filter === 'string' ? col.filter : defaultFilterKind(col);
   }
@@ -814,8 +820,11 @@
     e.stopPropagation();
     // Read the anchor rect now — after the await, the event's currentTarget is null.
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const kind = filterKindFor(col);
+    // A set filter needs the column's distinct values for its checklist.
+    const values = kind === 'set' ? distinctValues(rows, col.key) : [];
     if (!FilterMenuComp) FilterMenuComp = (await import('./FilterMenu.svelte')).default;
-    filterUi = { key: col.key, kind: filterKindFor(col), header: col.header, x: rect.left, y: rect.bottom + 2 };
+    filterUi = { key: col.key, kind, header: col.header, values, x: rect.left, y: rect.bottom + 2 };
   }
   function applyColumnFilter(key: string, f: ColumnFilter | null): void {
     const next = { ...columnFilters };
@@ -1387,6 +1396,7 @@
       kind={filterUi.kind}
       header={filterUi.header}
       filter={columnFilters[key] ?? null}
+      values={filterUi.values}
       x={filterUi.x}
       y={filterUi.y}
       onApply={(f) => applyColumnFilter(key, f)}

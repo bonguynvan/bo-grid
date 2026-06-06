@@ -15,6 +15,8 @@ Theme: **filtering & discoverability** (in progress — see [ROADMAP.md](./ROADM
   date (before / after / on / between). Override or disable per column with
   `col.filter` (`'text'|'number'|'date'|'set'|false`). The menu UI is
   **lazy-loaded** on first open, so the core bundle is unaffected until used.
+- **Set filter**: `col.filter: 'set'` gives a column a searchable checkbox list
+  of its distinct values (All / None), filtering to the checked ones.
 
 ### Internal
 

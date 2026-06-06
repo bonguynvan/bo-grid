@@ -50,6 +50,7 @@
 
   const columns: ColumnDef[] = [
     { type: 'text', key: 'symbol', sub: 'sector', header: 'Symbol', width: 124, pinned: true, group: 'Holding' },
+    { type: 'text', key: 'exchange', header: 'Exch', width: 78, group: 'Holding', filter: 'set' },
     { type: 'number', key: 'shares', header: 'Shares', width: 92, decimals: 0, groupAgg: 'sum', group: 'Holding' },
     { type: 'price', key: 'avgCost', header: 'Avg Cost', width: 96, group: 'Pricing' },
     { type: 'price', key: 'last', header: 'Last', width: 92, group: 'Pricing' },
