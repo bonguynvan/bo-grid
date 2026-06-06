@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Grid, type ColumnDef, type GridRow } from '../../lib';
+  import { ui } from '../theme.svelte';
 
   // A correlation matrix: an N×N grid of heatmap cells with a pinned label
   // column. Shows dynamically-built columns, the heatmap cell type across a
@@ -47,7 +48,7 @@
 </div>
 
 <div class="gridwrap">
-  <Grid {rows} {columns} theme="dark" height={ASSETS.length * 36 + 40} />
+  <Grid {rows} {columns} theme={ui.theme} height={ASSETS.length * 36 + 40} />
 </div>
 
 <style>

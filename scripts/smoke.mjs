@@ -223,16 +223,22 @@ if (document.querySelector('.bo-grid.grid')?.getAttribute('aria-label') !== 'Mar
   fail('grid ariaLabel not applied');
 }
 
-// Theming (Phase 5): switch to the light preset and assert the grid root carries
-// the --bo-grid-bg override, then restore dark.
-click([...document.querySelectorAll('.seg button')].find((b) => b.textContent.trim() === 'Light'));
+// Global theme toggle (nav): flips the whole page (a `light` class on <html>)
+// and every grid to the light preset, then restores dark.
+const themeBtn = document.querySelector('.lp-theme');
+if (!themeBtn) fail('global theme toggle not found in the nav');
+click(themeBtn);
 await wait(40);
+if (!document.documentElement.classList.contains('light')) {
+  fail('theme toggle did not put the page into light mode');
+}
 const gridStyle = document.querySelector('.bo-grid.grid')?.getAttribute('style') || '';
 if (!/--bo-grid-bg:\s*#fff/i.test(gridStyle)) {
-  fail(`light theme did not apply --bo-grid-bg (style="${gridStyle.slice(0, 60)}…")`);
+  fail(`light theme did not reach the grid (style="${gridStyle.slice(0, 60)}…")`);
 }
-click([...document.querySelectorAll('.seg button')].find((b) => b.textContent.trim() === 'Dark'));
+click(themeBtn);
 await wait(40);
+if (document.documentElement.classList.contains('light')) fail('theme toggle did not restore dark mode');
 
 // Simulate a drag-selection down the Price column and assert the highlight +
 // live aggregation bar appear (Phase 2). Catches selection wiring regressions.
@@ -545,11 +551,7 @@ click(sheetTab);
 await wait(25);
 await waitFor('.bo-grid .row', 'Spreadsheet example rendered no rows');
 const sheetRows = document.querySelectorAll('.bo-grid .row').length;
-const sheetLight = /--bo-grid-bg:\s*#fff/i.test(
-  document.querySelector('.bo-grid.grid')?.getAttribute('style') || '',
-);
 if (sheetRows === 0) fail('Spreadsheet example rendered no rows');
-if (!sheetLight) fail('Spreadsheet example did not apply the light theme');
 // Quick filter (built-in search box): an impossible query empties the grid;
 // clearing it restores the rows (deterministic, no data knowledge needed).
 const quickBox = document.querySelector('.bo-grid .bo-quickfilter');

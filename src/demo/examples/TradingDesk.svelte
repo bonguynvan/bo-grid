@@ -11,6 +11,7 @@
     type PivotConfig,
   } from '../../lib';
   import { generateTickers } from '../data/generate';
+  import { ui } from '../theme.svelte';
   import { buildRows, type TickerRow } from '../data/rows.svelte';
   import { Feed } from '../data/feed.svelte';
   import { FpsMeter } from '../perf/fps.svelte';
@@ -55,7 +56,6 @@
     rowMode === 'vary' ? (_row: GridRow, i: number) => 40 + (i % 4) * 12 : undefined,
   );
 
-  let gridTheme = $state<'dark' | 'light'>('dark');
   let pinMode = $state(false);
 
   let dataMode = $state<'client' | 'server'>('client');
@@ -143,10 +143,6 @@
     <button class:on={dataMode === 'client'} onclick={() => (dataMode = 'client')}>Client</button>
     <button class:on={dataMode === 'server'} onclick={() => (dataMode = 'server')}>Server</button>
   </div>
-  <div class="seg" role="group" aria-label="Theme">
-    <button class:on={gridTheme === 'dark'} onclick={() => (gridTheme = 'dark')}>Dark</button>
-    <button class:on={gridTheme === 'light'} onclick={() => (gridTheme = 'light')}>Light</button>
-  </div>
   <div class="seg" role="group" aria-label="Row height">
     <button class:on={rowMode === 'compact'} onclick={() => (rowMode = 'compact')}>Compact</button>
     <button class:on={rowMode === 'vary'} onclick={() => (rowMode = 'vary')}>Vary</button>
@@ -188,7 +184,7 @@
     groupBy={pivotMode ? [] : dataMode === 'server' ? [] : groupBy}
     source={pivotMode ? undefined : source}
     {rowHeight}
-    theme={gridTheme}
+    theme={ui.theme}
     persistKey={pivotMode ? undefined : 'demo'}
     height={620}
     loading={loadingState}

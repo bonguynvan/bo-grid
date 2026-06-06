@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Grid, fmtPrice, type ColumnDef, type GridRow } from '../../lib';
+  import { ui } from '../theme.svelte';
 
   // A live order book: ask levels (red) above the spread, bid levels (green)
   // below, each row carrying a cumulative-depth bar. Shows rowClass (per-row
@@ -100,7 +101,7 @@
   <Grid
     rows={gridRows}
     {columns}
-    theme="dark"
+    theme={ui.theme}
     height={620}
     rowClass={(r) => (r as Level).side}
     {cell}

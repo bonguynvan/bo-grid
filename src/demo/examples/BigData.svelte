@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Grid, type ColumnDef, type GridRow, type RowSource } from '../../lib';
+  import { ui } from '../theme.svelte';
 
   // One million rows, never materialized. The RowSource generates only the
   // requested window on demand (deterministically from the row index), so the
@@ -74,7 +75,7 @@
 </div>
 
 <div class="gridwrap">
-  <Grid rows={[]} {columns} {source} theme="dark" height={620} {cell} />
+  <Grid rows={[]} {columns} {source} theme={ui.theme} height={620} {cell} />
 </div>
 
 <style>

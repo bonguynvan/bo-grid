@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Grid, type ColumnDef, type GridRow } from '../../lib';
+  import { ui } from '../theme.svelte';
 
   // A leaderboard: rank medals and score progress bars (custom cells), sorted by
   // score. Shows two distinct custom-cell renderers in one grid plus rowClass for
@@ -80,7 +81,7 @@
   <Grid
     rows={gridRows}
     {columns}
-    theme="dark"
+    theme={ui.theme}
     height={rows.length * 36 + 40}
     rowClass={(r) => ((r as Player).rank <= 3 ? 'podium-row' : '')}
     pinnedRows={[youRow]}

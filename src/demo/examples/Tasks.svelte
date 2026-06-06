@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Grid, type ColumnDef, type GridRow } from '../../lib';
+  import { ui } from '../theme.svelte';
 
   // A drag-to-reorder task list. Grab the ⠿ handle in the first column and drop a
   // row onto another to reorder. The grid is presentation-only, so onRowReorder
@@ -46,7 +47,7 @@
   <Grid
     rows={gridRows}
     {columns}
-    theme="dark"
+    theme={ui.theme}
     height={tasks.length * 36 + 40}
     onRowReorder={reorder}
   />

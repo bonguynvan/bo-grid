@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Grid, type ColumnDef, type GridRow } from '../../lib';
+  import { ui } from '../theme.svelte';
 
   // A plain, non-financial dataset — a team roster — to show the grid is a
   // general-purpose data grid: inline edit, clipboard copy/paste, drag-to-resize,
@@ -148,7 +149,7 @@
     filterRow
     quickFilter
     emptyMessage="No people match your filters"
-    theme="light"
+    theme={ui.theme}
     persistKey="demo-sheet"
     height={620}
     rowSelection

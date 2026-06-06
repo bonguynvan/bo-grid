@@ -23,6 +23,24 @@
   color-scheme: dark;
 }
 
+/* Light page theme (toggled on <html> from the nav) — an intentional light
+   palette, not an inversion. Drives the page chrome; grids follow via their own
+   theme prop. */
+html.light {
+  --bg: #ffffff;
+  --header-bg: #f6f7f9;
+  --row-a: #ffffff;
+  --row-b: #fafbfc;
+  --row-hover: #eef1f5;
+  --text: #14171c;
+  --text-dim: #687280;
+  --border: rgba(0, 0, 0, 0.1);
+  --up: #059669;
+  --down: #dc2626;
+  --amber: #b45309;
+  color-scheme: light;
+}
+
 * { box-sizing: border-box; }
 
 html { scroll-behavior: smooth; }

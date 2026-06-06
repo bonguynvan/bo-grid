@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Grid, type ColumnDef, type GridRow } from '../../lib';
+  import { ui } from '../theme.svelte';
 
   // A file-explorer tree: folders expand to reveal children. Demonstrates
   // tree-data (getChildren), the indented first column with expand chevrons, and
@@ -54,7 +55,7 @@
   <Grid
     rows={gridRows}
     {columns}
-    theme="dark"
+    theme={ui.theme}
     height={520}
     getChildren={(r) => (r as Node).children}
     rowClass={(r) => ((r as Node).kind === 'folder' ? 'folder-row' : '')}

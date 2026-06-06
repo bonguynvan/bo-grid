@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { Grid, pivot, type ColumnDef, type GridRow, type PivotConfig, type SortState } from '../../lib';
+  import { ui } from '../theme.svelte';
   import { generateTickers } from '../data/generate';
 
   // A static "positions" book derived from the shared ticker seeds. No realtime
@@ -129,7 +130,7 @@
     filterMenu={!pivotMode}
     columnMenu={!pivotMode}
     columnsPanel={!pivotMode}
-    theme="dark"
+    theme={ui.theme}
     persistKey="demo-portfolio"
     height={620}
     sort={sortState}

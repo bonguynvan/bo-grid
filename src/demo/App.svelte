@@ -1,9 +1,15 @@
 <script lang="ts">
   import { EXAMPLES } from './examples/registry';
+  import { ui, toggleTheme } from './theme.svelte';
 
   let activeId = $state(EXAMPLES[0].id);
   const active = $derived(EXAMPLES.find((e) => e.id === activeId) ?? EXAMPLES[0]);
   const Eager = $derived(active.component);
+
+  // Drive the whole page (chrome + every grid) from one theme toggle.
+  $effect(() => {
+    document.documentElement.classList.toggle('light', ui.theme === 'light');
+  });
 
   const REPO = 'https://github.com/bonguynvan/bo-grid';
   const NPM = 'https://www.npmjs.com/package/bo-grid';
@@ -31,13 +37,20 @@
 </script>
 
 <nav class="lp-nav">
-  <a class="lp-brand" href="#top">bo-grid<span class="lp-ver">0.2</span></a>
+  <a class="lp-brand" href="#top">bo-grid<span class="lp-ver">0.4</span></a>
   <div class="lp-nav-links">
     <a href="#examples">Examples</a>
     <a href="./api.html">API</a>
     <a href="{REPO}/blob/main/docs/vs-ag-grid.md">vs AG Grid</a>
     <a class="lp-nav-cta" href={NPM} target="_blank" rel="noreferrer">npm ↗</a>
     <a class="lp-nav-cta" href={REPO} target="_blank" rel="noreferrer">GitHub ↗</a>
+    <button
+      class="lp-theme"
+      type="button"
+      onclick={toggleTheme}
+      aria-label="Switch to {ui.theme === 'dark' ? 'light' : 'dark'} theme"
+      title="Toggle theme"
+    >{ui.theme === 'dark' ? '☀' : '☾'}</button>
   </div>
 </nav>
 
@@ -123,7 +136,7 @@
 <footer class="lp-foot">
   <div class="lp-foot-cols">
     <div>
-      <span class="lp-brand">bo-grid<span class="lp-ver">0.2</span></span>
+      <span class="lp-brand">bo-grid<span class="lp-ver">0.4</span></span>
       <p>A free, fintech-focused Svelte&nbsp;5 data grid. MIT licensed.</p>
     </div>
     <nav class="lp-foot-links" aria-label="Documentation">
@@ -187,6 +200,24 @@
   }
   .lp-nav-cta {
     color: var(--text) !important;
+  }
+  .lp-theme {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    font-size: 13px;
+    color: var(--text-dim);
+    background: transparent;
+    border: 0.5px solid var(--border);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: color 120ms, border-color 120ms;
+  }
+  .lp-theme:hover {
+    color: var(--text);
+    border-color: var(--text-dim);
   }
 
   /* ---- hero ---- */
