@@ -362,6 +362,21 @@ const obDepth = document.querySelectorAll('.bo-grid .row .depth .fill').length;
 if (obBid === 0) fail('Order book did not apply bid rowClass');
 if (obDepth === 0) fail('Order book custom depth-bar cell did not render');
 
+// Correlation: an N×N heatmap matrix with a pinned label column.
+const corrTab = tab('Correlation');
+if (!corrTab) fail('Correlation example tab not found');
+click(corrTab);
+await wait(50);
+await waitFor('.bo-grid .row', 'Correlation example rendered no rows');
+const heatCells = [...document.querySelectorAll('.bo-grid .row .c')].filter((c) =>
+  /background:\s*(rgb|#|hsl|oklch)/i.test(c.getAttribute('style') || ''),
+).length;
+const corrPinned = [...document.querySelectorAll('.bo-grid .row .c')].filter((c) =>
+  /position:\s*sticky/.test(c.getAttribute('style') || ''),
+).length;
+if (heatCells === 0) fail('Correlation matrix rendered no heatmap-coloured cells');
+if (corrPinned === 0) fail('Correlation matrix label column did not pin');
+
 // Big data: a 1,000,000-row windowed source. Assert real (non-skeleton) rows
 // load after the simulated latency and the scrollbar reflects the full total.
 const bigTab = tab('1M rows');
@@ -389,7 +404,7 @@ console.log(
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups, sheet ${sheetRows} rows (light) + row-select + col-hide, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

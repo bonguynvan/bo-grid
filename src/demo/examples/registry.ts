@@ -3,6 +3,7 @@ import TradingDesk from './TradingDesk.svelte';
 import Portfolio from './Portfolio.svelte';
 import Sheet from './Sheet.svelte';
 import OrderBook from './OrderBook.svelte';
+import Correlation from './Correlation.svelte';
 import BigData from './BigData.svelte';
 
 export interface Example {
@@ -37,6 +38,12 @@ export const EXAMPLES: Example[] = [
     title: 'Order book',
     blurb: 'A live depth ladder — per-row colour, depth bars, realtime size flashes.',
     component: OrderBook,
+  },
+  {
+    id: 'correlation',
+    title: 'Correlation',
+    blurb: 'An N×N heatmap matrix with a pinned label column and dynamic columns.',
+    component: Correlation,
   },
   {
     id: 'bigdata',

@@ -9,8 +9,8 @@ A free alternative to the heavyweight grids that paywall these features.
 
 The demo is a small gallery — a realtime **Trading desk**, a grouped **Portfolio**
 with subtotals and pivot, a general-purpose editable **Spreadsheet**, a live
-**Order book** depth ladder, and a **1M-row** trade tape windowed from a synthetic
-source — switch between them with the tabs.
+**Order book** depth ladder, a **Correlation** heatmap matrix, and a **1M-row**
+trade tape windowed from a synthetic source — switch between them with the tabs.
 
 > **Status: v0.1 (early).** Working: config-driven columns, virtual scroll,
 > client sort + filter, multi-cell selection + live range aggregation, row
