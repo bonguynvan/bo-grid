@@ -886,6 +886,16 @@
         }
       }
     }
+    // Space toggles selection of the focused row (when the checkbox column is on),
+    // so keyboard users can tick rows without reaching for the mouse.
+    if (e.key === ' ' && rowSelection && sel.focus && !editing) {
+      const row = dataAt(sel.focus.r);
+      if (row) {
+        e.preventDefault();
+        toggleRow(getRowId(row));
+        return;
+      }
+    }
     if (mod && e.key.toLowerCase() === 'a') {
       e.preventDefault();
       sel.selectAll(rowCount, cols.length);

@@ -463,6 +463,20 @@ selAll.click();
 await wait(20);
 const selectedRows = document.querySelectorAll('.bo-grid .row.rowsel').length;
 if (selectedRows < 2) fail(`select-all did not select the visible rows (${selectedRows})`);
+// Keyboard row-selection: focus a cell, then Space toggles that row's checkbox.
+const kbRow = document.querySelector('.bo-grid .row');
+const wasSel = kbRow.classList.contains('rowsel');
+kbRow.querySelector('.c').dispatchEvent(
+  new window.MouseEvent('pointerdown', { button: 0, bubbles: true }),
+);
+window.dispatchEvent(new window.Event('pointerup'));
+await wait(20);
+document.querySelector('.bo-grid.grid').dispatchEvent(
+  new window.KeyboardEvent('keydown', { key: ' ', bubbles: true }),
+);
+await wait(20);
+if (document.querySelector('.bo-grid .row').classList.contains('rowsel') === wasSel)
+  fail('Space did not toggle row selection of the focused row');
 
 // onCellClick: clicking a cell reports its column + value to the toolbar.
 click(document.querySelector('.bo-grid .row .c'));

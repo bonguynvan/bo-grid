@@ -61,6 +61,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Row selection**: `rowSelection` adds a leading checkbox column (header
   select-all), keyed by `getRowId` (default `row.id`; override for string/
   composite keys) so it survives sort/filter; `onRowSelectionChange` reports ids.
+  Press <kbd>Space</kbd> to toggle the focused row from the keyboard.
 - **Column show/hide**: controlled `hiddenColumns` (column keys) — drive your own
   column-picker UI.
 - **Per-row styling**: `rowClass(row)` returns CSS class(es) per data row.
