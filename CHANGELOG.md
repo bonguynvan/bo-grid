@@ -47,7 +47,8 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   map; `darkTheme`/`lightTheme`/`GridTheme` exported.
 - **Accessibility**: full ARIA grid semantics — `aria-rowcount`/`aria-colcount`,
   per-row/cell `aria-rowindex`/`aria-colindex`, `aria-activedescendant`,
-  `aria-multiselectable`, and `aria-hidden` virtualization duplicates.
+  `aria-multiselectable`, an optional `ariaLabel` accessible name, and
+  `aria-hidden` virtualization duplicates.
 - **Custom cells**: `type: 'custom'` columns rendered by a `cell` snippet
   receiving `{ row, column, value }`.
 - **Pivot tables**: `pivot(rows, config)` transforms flat rows into pivot

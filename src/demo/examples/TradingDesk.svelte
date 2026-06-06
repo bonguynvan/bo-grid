@@ -192,6 +192,7 @@
     persistKey={pivotMode ? undefined : 'demo'}
     height={620}
     loading={loadingState}
+    ariaLabel="Market watchlist"
     onColumnResize={(key, w) => (lastResize = `${key} → ${Math.round(w)}px`)}
     onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}
     {cell}

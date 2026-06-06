@@ -199,6 +199,9 @@ const ariaRow = document.querySelector('.row[aria-rowindex]');
 if (!ariaRow || !ariaRow.querySelector('.c[aria-colindex]')) {
   fail('rows/cells missing aria-rowindex/aria-colindex');
 }
+if (document.querySelector('.bo-grid.grid')?.getAttribute('aria-label') !== 'Market watchlist') {
+  fail('grid ariaLabel not applied');
+}
 
 // Theming (Phase 5): switch to the light preset and assert the grid root carries
 // the --bo-grid-bg override, then restore dark.

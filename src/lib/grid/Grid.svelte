@@ -61,6 +61,7 @@
     onPageChange,
     onColumnReorder,
     onColumnResize,
+    ariaLabel,
     cell,
   }: {
     rows: GridRow[];
@@ -144,6 +145,8 @@
     onColumnReorder?: (keys: string[]) => void;
     /** Called with a column key + new width after a drag-resize. */
     onColumnResize?: (key: string, width: number) => void;
+    /** Accessible name for the grid (`aria-label` on the `role="grid"` root). */
+    ariaLabel?: string;
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -950,6 +953,7 @@
   role="grid"
   tabindex="0"
   id={gid}
+  aria-label={ariaLabel}
   aria-rowcount={rowCount + 1}
   aria-colcount={cols.length + leadCols}
   aria-multiselectable="true"
