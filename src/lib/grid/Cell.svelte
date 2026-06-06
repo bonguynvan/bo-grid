@@ -115,6 +115,7 @@
       onkeydown={onEditKey}
       onblur={onEditBlur}
       onpointerdown={(e) => e.stopPropagation()}
+      onclick={(e) => e.stopPropagation()}
       ondblclick={(e) => e.stopPropagation()}
     />
   {:else if col.type === 'custom'}

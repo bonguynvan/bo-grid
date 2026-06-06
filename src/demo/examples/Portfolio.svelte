@@ -79,6 +79,12 @@
   const totalPnl = $derived(rows.reduce((a, r) => a + r.pnl, 0));
   const fmtMoney = (n: number) =>
     n.toLocaleString('en-US', { maximumFractionDigits: 0, signDisplay: 'auto' });
+
+  // Click a position to inspect it (cleared when switching to pivot view).
+  let picked = $state<Position | null>(null);
+  $effect(() => {
+    if (pivotMode) picked = null;
+  });
 </script>
 
 <div class="controls">
@@ -89,6 +95,14 @@
     Pivot · value by exchange
   </button>
   <span class="spacer"></span>
+  {#if picked}
+    <span class="picked">
+      ▸ <strong>{picked.symbol}</strong> · {picked.shares} sh · ${fmtMoney(picked.marketValue)}
+      <span class:up={picked.pnl >= 0} class:down={picked.pnl < 0}>
+        {picked.pnl >= 0 ? '+' : ''}${fmtMoney(picked.pnl)}
+      </span>
+    </span>
+  {/if}
   <span class="stat">Book value <strong>${fmtMoney(totalValue)}</strong></span>
   <span class="stat" class:up={totalPnl >= 0} class:down={totalPnl < 0}>
     Unrealised P&L <strong>{totalPnl >= 0 ? '+' : ''}${fmtMoney(totalPnl)}</strong>
@@ -103,6 +117,7 @@
     theme="dark"
     persistKey="demo-portfolio"
     height={620}
+    onRowClick={(r) => !pivotMode && (picked = r as Position)}
   />
 </div>
 
@@ -150,6 +165,19 @@
     color: var(--up);
   }
   .stat.down strong {
+    color: var(--down);
+  }
+  .picked {
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .picked strong {
+    color: var(--text);
+  }
+  .picked .up {
+    color: var(--up);
+  }
+  .picked .down {
     color: var(--down);
   }
   .gridwrap {

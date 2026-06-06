@@ -300,6 +300,10 @@ await waitFor('.bo-grid .row', 'Portfolio example rendered no rows');
 await waitFor('.bo-grid .group', 'Portfolio example did not group by sector');
 const portfolioRows = document.querySelectorAll('.bo-grid .row').length;
 const portfolioGroups = document.querySelectorAll('.bo-grid .group').length;
+// onRowClick: clicking a position row surfaces it in the toolbar.
+click(document.querySelector('.bo-grid .row'));
+await wait(20);
+if (!document.querySelector('.picked')) fail('onRowClick did not surface the clicked position');
 
 const sheetTab = tab('Spreadsheet');
 if (!sheetTab) fail('Spreadsheet example tab not found');

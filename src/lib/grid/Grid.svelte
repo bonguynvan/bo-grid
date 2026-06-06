@@ -40,6 +40,7 @@
     onRowSelectionChange,
     hiddenColumns = [],
     rowClass,
+    onRowClick,
     cell,
   }: {
     rows: GridRow[];
@@ -64,6 +65,9 @@
     /** Return extra CSS class(es) for a data row (e.g. to colour by value).
         Style them via `:global(.your-class)` since rows live inside the grid. */
     rowClass?: (row: GridRow) => string | undefined;
+    /** Called when a data row is activated by click or Enter (open a detail
+        view, navigate, …). Edit-input and checkbox clicks are excluded. */
+    onRowClick?: (row: GridRow, event: MouseEvent | KeyboardEvent) => void;
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -593,6 +597,14 @@
         startEdit(f.r, f.c);
         return;
       }
+      if (onRowClick) {
+        const row = dataAt(f.r);
+        if (row) {
+          e.preventDefault();
+          onRowClick(row, e);
+          return;
+        }
+      }
     }
     if (mod && e.key.toLowerCase() === 'a') {
       e.preventDefault();
@@ -771,7 +783,9 @@
             {/each}
           </div>
         {:else}
-          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(item.row.id)} role="row" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(item.row.id) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
+          <!-- Row activation is keyboard-accessible at the grid level: Enter on the focused cell fires onRowClick (focus is via aria-activedescendant). -->
+          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(item.row.id)} class:clickable={!!onRowClick} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(item.row.id) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)}>
             {#if rowSelection}
               <span class="selcell" style={selCellStyle(false)}>
                 <input
@@ -992,6 +1006,9 @@
   }
   .row.rowsel {
     background: var(--bo-sel-fill);
+  }
+  .row.clickable {
+    cursor: pointer;
   }
 
   /* Leading checkbox column (row selection). */
