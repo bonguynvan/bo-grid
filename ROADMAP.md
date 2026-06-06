@@ -24,22 +24,29 @@ download a menu only when you open one.
 
 - [x] **M1 — Filter model + logic** (`filtering.ts`): a typed `ColumnFilter`
   (text / number / date operators + a set filter) with pure, unit-tested
-  matching (`matchesFilter`, `passesFilters`, `distinctValues`). `view` now
-  filters through it; the existing `filterRow` is migrated onto it,
-  behavior-preserved.
-- [ ] **M2 — Header filter menu** (lazy `FilterMenu.svelte`): click a header →
-  the right control for the column type (text contains/equals/starts/ends,
-  number `=, ≠, <, ≤, >, between`, date before/after/on/between).
-- [ ] **M3 — Set filter**: a searchable checkbox list of a column's distinct
-  values (select-all / clear) — the AG-Grid-signature filter.
-- [ ] **M4 — Column header menu** (lazy `ColumnMenu.svelte`): sort / pin /
-  hide / filter from one place.
-- [ ] **M5 — Quick filter**: an optional built-in global search input.
+  matching. `view` filters through it; the existing `filterRow` is migrated onto
+  it, behavior-preserved.
+- [x] **M2 — Header filter menu** (lazy `FilterMenu.svelte`): a per-column funnel
+  opens the right control for the column type — text (contains/equals/starts/
+  ends), number (`=, ≠, <, ≤, >, ≥, between`), date (before/after/on/between).
+  Enabled by `filterMenu`; override per column with `col.filter`.
+- [x] **M3 — Set filter**: `col.filter: 'set'` renders a searchable checkbox list
+  of a column's distinct values (All / None) — the AG-Grid-signature filter.
+- [x] **M5 — Quick filter**: a built-in `quickFilter` global search box.
 
-New (additive) API under consideration: `columnFilters` (enable header menus),
-per-column `filter?: false | 'text' | 'number' | 'date' | 'set'`, `columnMenu`,
-`quickFilter`, `onFilterChange` (controlled), and a structured `columnFilters`
-field on `RowSourceParams` for server-side filtering.
+Shipped API (all additive): `filterMenu`, `quickFilter`, per-column
+`filter?: false | 'text' | 'number' | 'date' | 'set'`.
+
+Deferred to a later version:
+
+- **M4 — Column header menu + columns tool panel**: a unified menu (sort / pin /
+  hide / filter) and a sidebar. Re-scoped out of 0.3 because a useful version
+  needs **runtime column management** (hide/unhide, runtime pin) — today
+  `hiddenColumns` is consumer-controlled and pinning is static config. That's a
+  coherent feature in its own right; sort + filter are already reachable via
+  header-click and the funnel, so a sort/filter-only menu adds little.
+- **`onFilterChange`** (controlled filtering) + a structured `columnFilters` field
+  on `RowSourceParams` for server-side filtering.
 
 ## Candidate themes for later versions
 

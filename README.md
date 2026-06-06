@@ -146,9 +146,9 @@ to opt out. Sorting is a snapshot — rows hold position while their values upda
 in place (trading-grid behaviour), so a realtime feed never reshuffles the view.
 
 Pass a `filter` string to quick-filter rows (matches across column values). Drive
-it from your own search input — the grid stays presentation-only. Set `filterRow`
-to add a row of **per-column filter inputs** under the header (rows must match
-every non-empty column filter; in-memory mode).
+it from your own search input — or set `quickFilter` for a **built-in search box**
+above the grid. Set `filterRow` to add a row of **per-column filter inputs** under
+the header (rows must match every non-empty column filter; in-memory mode).
 
 For richer filtering, set `filterMenu` to add a **funnel to each column header**.
 Clicking it opens a menu whose control matches the column type — text

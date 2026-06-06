@@ -487,6 +487,20 @@ const sheetLight = /--bo-grid-bg:\s*#fff/i.test(
 );
 if (sheetRows === 0) fail('Spreadsheet example rendered no rows');
 if (!sheetLight) fail('Spreadsheet example did not apply the light theme');
+// Quick filter (built-in search box): an impossible query empties the grid;
+// clearing it restores the rows (deterministic, no data knowledge needed).
+const quickBox = document.querySelector('.bo-grid .bo-quickfilter');
+if (!quickBox) fail('quick filter: search box did not render');
+quickBox.value = 'zzzqqqnomatch';
+quickBox.dispatchEvent(new window.Event('input', { bubbles: true }));
+await wait(30);
+if (document.querySelectorAll('.bo-grid .row').length !== 0)
+  fail('quick filter: an impossible query did not empty the grid');
+quickBox.value = '';
+quickBox.dispatchEvent(new window.Event('input', { bubbles: true }));
+await wait(30);
+if (document.querySelectorAll('.bo-grid .row').length !== sheetRows)
+  fail('quick filter: clearing the query did not restore the rows');
 
 // Select editor: the Role column edits via a <select> of options. Double-click a
 // role cell and assert a select (not a text input) appears, then commit a change.

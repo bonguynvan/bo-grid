@@ -60,6 +60,7 @@
     pinnedRows = [],
     filterRow = false,
     filterMenu = false,
+    quickFilter = false,
     emptyMessage = 'No matching rows',
     loading = false,
     rowMenu,
@@ -129,6 +130,10 @@
         type (text/number/date). Override or disable per column with `col.filter`.
         In-memory mode only. Default false. */
     filterMenu?: boolean;
+    /** Show a built-in quick-filter search box above the grid that matches across
+        all column values (ANDed with the `filter` prop). In-memory mode only.
+        Default false. */
+    quickFilter?: boolean;
     /** Message shown when there are no rows. Default 'No matching rows'. */
     emptyMessage?: string;
     /** Show a loading overlay over the grid (for consumer-driven async work in
@@ -250,6 +255,9 @@
   // Structured per-column filters from the header filter menu (v0.3), keyed by
   // column key. Menu filters take precedence over the filterRow text inputs.
   let columnFilters = $state<Record<string, ColumnFilter>>({});
+
+  // Built-in quick-filter text (global, matches across all columns).
+  let quickText = $state('');
 
   // Whole-row selection (opt-in), keyed by row id so it survives sort/filter.
   // Plain Set + a version counter for reactivity (same pattern as `collapsed`).
@@ -521,6 +529,7 @@
     const base = rows;
     const allCols = columns;
     const f = filter.trim().toLowerCase();
+    const q = quickText.trim().toLowerCase();
     const s = sorts;
     // Active per-column filters: menu-driven structured filters (columnFilters)
     // take precedence; filterRow text inputs (colFilters) fill in the rest as
@@ -533,6 +542,7 @@
     return untrack(() => {
       let r = base;
       if (f) r = r.filter((row) => allCols.some((c) => String(row[c.key] ?? '').toLowerCase().includes(f)));
+      if (q) r = r.filter((row) => allCols.some((c) => String(row[c.key] ?? '').toLowerCase().includes(q)));
       if (hasColFilters) {
         r = r.filter((row) => passesFilters(row, active));
       }
@@ -1087,6 +1097,17 @@
   bind:this={gridEl}
   onkeydown={onKeydown}
 >
+  {#if quickFilter}
+    <div class="bo-toolbar">
+      <input
+        class="bo-quickfilter"
+        type="search"
+        placeholder="Search…"
+        aria-label="Quick filter"
+        bind:value={quickText}
+      />
+    </div>
+  {/if}
   {#if headerGroups}
     <div class="head-groups" aria-hidden="true" bind:this={groupHeadEl} style={pinned ? 'overflow:hidden;' : ''}>
       {#if expandable}<span class="expandcell" style={expandCellStyle(true)}></span>{/if}
@@ -1436,6 +1457,27 @@
   }
   .grid:focus-visible {
     border-color: var(--bo-sel-border);
+  }
+  /* Built-in quick-filter toolbar (opt-in via `quickFilter`). */
+  .bo-toolbar {
+    display: flex;
+    padding: 6px;
+    border-bottom: 0.5px solid var(--bo-border);
+    background: var(--bo-header-bg);
+  }
+  .bo-quickfilter {
+    width: 100%;
+    max-width: 260px;
+    padding: 5px 9px;
+    font: inherit;
+    font-size: 12px;
+    color: var(--bo-text);
+    background: var(--bo-bg);
+    border: 0.5px solid var(--bo-border);
+    border-radius: 6px;
+  }
+  .bo-quickfilter::placeholder {
+    color: var(--bo-text-dim);
   }
 
   /* Spanning header groups (row above the column headers). */

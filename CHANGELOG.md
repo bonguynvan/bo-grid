@@ -17,6 +17,9 @@ Theme: **filtering & discoverability** (in progress — see [ROADMAP.md](./ROADM
   **lazy-loaded** on first open, so the core bundle is unaffected until used.
 - **Set filter**: `col.filter: 'set'` gives a column a searchable checkbox list
   of its distinct values (All / None), filtering to the checked ones.
+- **Quick filter**: a built-in `quickFilter` search box above the grid that
+  matches across all columns (a batteries-included alternative to the `filter`
+  prop).
 
 ### Internal
 

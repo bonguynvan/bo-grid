@@ -146,6 +146,7 @@
     filter={filterText}
     hiddenColumns={hidden}
     filterRow
+    quickFilter
     emptyMessage="No people match your filters"
     theme="light"
     persistKey="demo-sheet"
