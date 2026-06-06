@@ -544,6 +544,36 @@ if (!sharesOpt) fail('tool panel: Shares row not found');
 sharesOpt.querySelector('input[type=checkbox]').click(); // .click() toggles + fires change
 await wait(30);
 if (headLabels().includes('Shares')) fail('tool panel: unchecking a box did not hide the column');
+// Autosize (v0.7): the column menu's Autosize sets a content-fit width override.
+const avgHead = () =>
+  [...document.querySelectorAll('.bo-grid .head .h')].find(
+    (h) => h.querySelector('.label')?.textContent?.trim() === 'Avg Cost',
+  );
+const avgStyleBefore = avgHead()?.getAttribute('style') || '';
+avgHead().querySelector('.hmenu').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(20);
+[...document.querySelectorAll('.rowmenu .rowmenu-item')]
+  .find((b) => b.textContent.trim() === 'Autosize')
+  ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(20);
+const avgStyleAfter = avgHead()?.getAttribute('style') || '';
+if (avgStyleAfter === avgStyleBefore || !/width:\s*\d+px/.test(avgStyleAfter))
+  fail('autosize did not set a content-fit width on the column');
+// Column menu via keyboard (Alt+ArrowDown) at the focused column.
+document
+  .querySelector('.bo-grid .row .c')
+  .dispatchEvent(new window.MouseEvent('pointerdown', { button: 0, bubbles: true }));
+window.dispatchEvent(new window.Event('pointerup'));
+await wait(20);
+document
+  .querySelector('.bo-grid.grid')
+  .dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true }));
+await wait(20);
+if (!document.querySelector('.rowmenu')) fail('Alt+ArrowDown did not open the column menu');
+document
+  .querySelector('.bo-grid.grid')
+  .dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+await wait(20);
 
 const sheetTab = tab('Spreadsheet');
 if (!sheetTab) fail('Spreadsheet example tab not found');

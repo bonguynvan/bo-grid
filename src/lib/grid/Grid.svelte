@@ -1111,11 +1111,28 @@
     };
   });
 
-  // Column header menu (⋮): sort + hide actions. Reuses the floating RowMenu (a
-  // light action list — no lazy chunk needed, unlike the filter menu).
-  function openColumnMenu(col: ColumnDef, e: Event) {
-    e.stopPropagation();
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  // Autosize a column to its content (a character-count heuristic — no DOM
+  // measurement, so it's cheap and deterministic). Sets the same width override
+  // as a manual resize.
+  function autosizeColumn(col: ColumnDef): void {
+    const CHAR_PX = 7.5;
+    const PAD = 32; // cell padding + room for the header icons
+    let maxLen = col.header.length;
+    if (!source) {
+      for (const row of view.slice(0, 500)) {
+        const s = formatCell(col, row[col.key], row);
+        if (s.length > maxLen) maxLen = s.length;
+      }
+    }
+    const w = clampWidth(Math.round(maxLen * CHAR_PX) + PAD, col.minWidth, col.maxWidth);
+    widths = { ...widths, [col.key]: w };
+    persistWidths();
+    onColumnResize?.(col.key, w);
+  }
+
+  // Column header menu (⋮): sort / pin / autosize / hide. Reuses the floating
+  // RowMenu (a light action list — no lazy chunk, unlike the filter menu).
+  function columnMenuItems(col: ColumnDef): Array<{ label: string; onSelect: () => void }> {
     const items: Array<{ label: string; onSelect: () => void }> = [];
     if (isSortable(col)) {
       items.push({ label: 'Sort ascending', onSelect: () => setSorts([{ key: col.key, dir: 'asc' }]) });
@@ -1128,8 +1145,14 @@
     if (side !== 'left') items.push({ label: 'Pin left', onSelect: () => setPinOverride(col.key, 'left') });
     if (side !== 'right') items.push({ label: 'Pin right', onSelect: () => setPinOverride(col.key, 'right') });
     if (side) items.push({ label: 'Unpin', onSelect: () => setPinOverride(col.key, false) });
+    if (isResizable(col, resizable)) items.push({ label: 'Autosize', onSelect: () => autosizeColumn(col) });
     items.push({ label: 'Hide column', onSelect: () => hideColumn(col.key) });
-    menu = { x: rect.left, y: rect.bottom + 2, items };
+    return items;
+  }
+  function openColumnMenu(col: ColumnDef, e: Event) {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    menu = { x: rect.left, y: rect.bottom + 2, items: columnMenuItems(col) };
   }
 
   function onCellClicked(r: number, c: number, e: MouseEvent) {
@@ -1309,6 +1332,13 @@
         menu = { x: rect?.left ?? 0, y: rect?.bottom ?? 0, items };
         return;
       }
+    }
+    // Open the column menu from the keyboard (Alt+ArrowDown) at the focused column.
+    if (columnMenu && sel.focus && e.altKey && e.key === 'ArrowDown') {
+      e.preventDefault();
+      const rect = document.getElementById(activeId ?? '')?.getBoundingClientRect();
+      menu = { x: rect?.left ?? 0, y: rect?.bottom ?? 0, items: columnMenuItems(cols[sel.focus.c]) };
+      return;
     }
     // Tree nav: ArrowRight expands a collapsed node, ArrowLeft collapses an
     // expanded one (treegrid pattern); otherwise arrows move normally.

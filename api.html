@@ -187,7 +187,7 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>filterMenu</td><td><span class="type">boolean</span></td><td>Header filter menu (funnel per column) with type-aware controls (text/number/date) + set filter (<code>col.filter: 'set'</code>). Lazy-loaded on first open. In-memory mode only.</td></tr>
           <tr><td>quickFilter</td><td><span class="type">boolean</span></td><td>Built-in search box above the grid; matches across all columns (ANDed with <code>filter</code>). In-memory mode only.</td></tr>
           <tr><td>fillHandle</td><td><span class="type">boolean</span></td><td>Excel-style fill handle at the selection's corner; drag to copy the selected value(s) across (editable columns). In-memory mode only.</td></tr>
-          <tr><td>columnMenu</td><td><span class="type">boolean</span></td><td>Per-column header menu (⋮): sort, pin left/right/unpin (runtime), and hide (runtime).</td></tr>
+          <tr><td>columnMenu</td><td><span class="type">boolean</span></td><td>Per-column header menu (⋮ or <kbd>Alt</kbd>+<kbd>↓</kbd>): sort, pin, autosize, hide (all runtime).</td></tr>
           <tr><td>columnsPanel</td><td><span class="type">boolean</span></td><td>A "Columns" button opening a checklist panel to toggle column visibility (restore hidden columns). Lazy-loaded.</td></tr>
           <tr><td>onColumnVisibilityChange</td><td><span class="type">(hidden: string[]) =&gt; void</span></td><td>Called with all hidden column keys when the runtime set changes (column-menu hide/show).</td></tr>
           <tr><td>emptyMessage</td><td><span class="type">string</span></td><td>Text shown when there are no rows. Default <code>'No matching rows'</code>.</td></tr>
@@ -309,6 +309,7 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>C</kbd></td><td>Copy selection as TSV (Excel-pasteable).</td></tr>
           <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>V</kbd></td><td>Paste TSV into editable cells from the top-left of the selection.</td></tr>
           <tr><td><kbd>Ctrl/⌘</kbd> + <kbd>Z</kbd> / <kbd>Y</kbd></td><td>Undo / redo edits, paste and fill (a paste or fill is one step).</td></tr>
+          <tr><td><kbd>Alt</kbd> + <kbd>↓</kbd></td><td>Open the column menu at the focused column (with <code>columnMenu</code>).</td></tr>
           <tr><td><kbd>Enter</kbd> / type a character</td><td>Edit the focused cell (type-to-edit seeds the editor with the key), or activate <code>onRowClick</code>.</td></tr>
           <tr><td><kbd>Space</kbd></td><td>Toggle row selection for the focused row (with <code>rowSelection</code>).</td></tr>
           <tr><td><kbd>ContextMenu</kbd> / <kbd>Shift</kbd>+<kbd>F10</kbd></td><td>Open the row context menu (with <code>rowMenu</code>) at the focused cell.</td></tr>

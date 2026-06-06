@@ -53,15 +53,20 @@ than AG Grid; heavy UI stays lazy and excluded from the core count).
   history (survives sort/filter); paste/fill undo as one step.
 - [x] **M3 — Typed inline editors**: numeric columns edit with a number input,
   `date` columns with a native date picker (date columns are now editable).
-- [ ] **M4 — Autosize column to content** (deferred): double-click the header
-  border to fit. Needs DOM width measurement — verify in a real browser.
+- [x] **M4 — Autosize** — shipped in 0.7 (content heuristic, not DOM measurement).
 
-## In progress — 0.6 · Controlled & server-side filtering
+## 0.6 · Controlled & server-side filtering — done
 
 - [x] **M1 — Controlled filtering**: `columnFilters` prop + `onFilterChange`
   (mirrors controlled `sort`); `ColumnFilter`/`FilterKind` types exported.
 - [x] **M2 — Server-side filtering**: `RowSourceParams.columnFilters`; the filter
   menu works in source mode (text/number/date delegate to the `RowSource`).
+
+## 0.7 · Column sizing & keyboard polish — done
+
+- [x] **Autosize column to content** via the column menu (character-count
+  heuristic; respects min/max; persists like a manual resize).
+- [x] **Keyboard access to the column menu** (<kbd>Alt</kbd>+<kbd>↓</kbd>).
 
 ## Candidate themes for later versions
 
