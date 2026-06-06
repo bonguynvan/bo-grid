@@ -283,6 +283,9 @@ levels). Rows live inside the grid, so target the class with `:global(...)`:
 </style>
 ```
 
+`onRowClick(row, event)` fires when a row is activated by click or <kbd>Enter</kbd>
+on the focused cell — wire it to open a detail view or navigate.
+
 ## Inline editing
 
 Mark a column `editable: true`. Double-click a cell (or press <kbd>Enter</kbd> on
