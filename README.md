@@ -37,6 +37,11 @@ from a synthetic source — switch between them with the tabs.
 | Bundle | hundreds of KB | **~20 KB gzip** ([benchmarks](./BENCHMARKS.md)) |
 | Svelte | wrapper | native Svelte 5 |
 
+bo-grid ships most of AG Grid's **paid (Enterprise)** features — grouping, pivot,
+tree data, master-detail, range selection, Excel export, sparklines — for free.
+See the honest **[bo-grid vs AG Grid](./docs/vs-ag-grid.md)** comparison (including
+what it doesn't do) to decide.
+
 ## Install
 
 ```sh
