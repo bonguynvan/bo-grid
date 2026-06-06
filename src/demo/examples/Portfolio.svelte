@@ -1,0 +1,158 @@
+<script lang="ts">
+  import { untrack } from 'svelte';
+  import { Grid, pivot, type ColumnDef, type GridRow, type PivotConfig } from '../../lib';
+  import { generateTickers } from '../data/generate';
+
+  // A static "positions" book derived from the shared ticker seeds. No realtime
+  // feed here — this example is about grouping, subtotals, and pivoting.
+  interface Position extends GridRow {
+    symbol: string;
+    name: string;
+    sector: string;
+    exchange: string;
+    shares: number;
+    avgCost: number;
+    last: number;
+    marketValue: number;
+    pnl: number;
+    pnlPct: number;
+  }
+
+  function buildPositions(count: number): Position[] {
+    return generateTickers(count).map((s) => {
+      // Deterministic share count so reloads are stable (seed off the id).
+      const shares = 25 + ((s.id * 37) % 480);
+      const avgCost = s.dayOpen;
+      const last = s.price;
+      const marketValue = shares * last;
+      const costBasis = shares * avgCost;
+      const pnl = marketValue - costBasis;
+      return {
+        id: s.id,
+        flashSeq: 0,
+        flashDir: 'up',
+        symbol: s.symbol,
+        name: s.name,
+        sector: s.sector,
+        exchange: s.exchange,
+        shares,
+        avgCost,
+        last,
+        marketValue,
+        pnl,
+        pnlPct: (pnl / costBasis) * 100,
+      } satisfies Position;
+    });
+  }
+
+  const rows = $state<Position[]>(buildPositions(180));
+  const gridRows = $derived(rows as unknown as GridRow[]);
+
+  const columns: ColumnDef[] = [
+    { type: 'text', key: 'symbol', sub: 'sector', header: 'Symbol', width: 124, pinned: true },
+    { type: 'number', key: 'shares', header: 'Shares', width: 92, decimals: 0, groupAgg: 'sum' },
+    { type: 'price', key: 'avgCost', header: 'Avg Cost', width: 96 },
+    { type: 'price', key: 'last', header: 'Last', width: 92 },
+    { type: 'volume', key: 'marketValue', header: 'Mkt Value', width: 108, groupAgg: 'sum' },
+    { type: 'heatmap', key: 'pnlPct', header: 'P&L %', width: 84, min: -30, max: 30, groupAgg: 'avg' },
+    { type: 'number', key: 'pnl', header: 'P&L $', width: 116, decimals: 0, groupAgg: 'sum' },
+  ];
+
+  let grouped = $state(true);
+  let pivotMode = $state(false);
+
+  const pivotConfig: PivotConfig = {
+    rowFields: ['sector'],
+    columnField: 'exchange',
+    measure: 'marketValue',
+    agg: 'sum',
+    decimals: 0,
+  };
+  const pv = $derived(pivotMode ? untrack(() => pivot(gridRows, pivotConfig)) : null);
+
+  const effRows = $derived(pivotMode && pv ? pv.rows : gridRows);
+  const effColumns = $derived(pivotMode && pv ? pv.columns : columns);
+  const groupBy = $derived(pivotMode ? [] : grouped ? ['sector'] : []);
+
+  // Book-level totals for the summary strip.
+  const totalValue = $derived(rows.reduce((a, r) => a + r.marketValue, 0));
+  const totalPnl = $derived(rows.reduce((a, r) => a + r.pnl, 0));
+  const fmtMoney = (n: number) =>
+    n.toLocaleString('en-US', { maximumFractionDigits: 0, signDisplay: 'auto' });
+</script>
+
+<div class="controls">
+  <button class="pill" class:on={grouped} disabled={pivotMode} onclick={() => (grouped = !grouped)}>
+    Group by sector
+  </button>
+  <button class="pill" class:on={pivotMode} onclick={() => (pivotMode = !pivotMode)}>
+    Pivot · value by exchange
+  </button>
+  <span class="spacer"></span>
+  <span class="stat">Book value <strong>${fmtMoney(totalValue)}</strong></span>
+  <span class="stat" class:up={totalPnl >= 0} class:down={totalPnl < 0}>
+    Unrealised P&L <strong>{totalPnl >= 0 ? '+' : ''}${fmtMoney(totalPnl)}</strong>
+  </span>
+</div>
+
+<div class="gridwrap">
+  <Grid
+    rows={effRows}
+    columns={effColumns}
+    {groupBy}
+    theme="dark"
+    persistKey="demo-portfolio"
+    height={620}
+  />
+</div>
+
+<style>
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .spacer {
+    flex: 1;
+  }
+  .pill {
+    padding: 5px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    background: transparent;
+    border: 0.5px solid var(--border);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .pill.on {
+    color: #0a0a0a;
+    background: var(--up);
+    border-color: var(--up);
+  }
+  .pill:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .stat {
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .stat.up strong {
+    color: var(--up);
+  }
+  .stat.down strong {
+    color: var(--down);
+  }
+  .gridwrap {
+    max-width: 900px;
+  }
+</style>

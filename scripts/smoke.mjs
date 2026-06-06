@@ -257,12 +257,38 @@ if (!pivotHeaders.includes('Total') || !pivotHeaders.includes('sector')) {
   fail(`pivot did not produce expected columns (got ${pivotHeaders.join(',')})`);
 }
 
+// Examples gallery: switch tabs and assert each alternative example actually
+// mounts a populated grid (the default "Trading desk" was exercised above).
+const tab = (label) =>
+  [...document.querySelectorAll('[role="tab"]')].find((b) => b.textContent.trim() === label);
+
+const portfolioTab = tab('Portfolio');
+if (!portfolioTab) fail('Portfolio example tab not found');
+click(portfolioTab);
+await wait(80);
+const portfolioRows = document.querySelectorAll('.bo-grid .row').length;
+const portfolioGroups = document.querySelectorAll('.bo-grid .group').length;
+if (portfolioRows === 0) fail('Portfolio example rendered no rows');
+if (portfolioGroups === 0) fail('Portfolio example did not group by sector');
+
+const sheetTab = tab('Spreadsheet');
+if (!sheetTab) fail('Spreadsheet example tab not found');
+click(sheetTab);
+await wait(80);
+const sheetRows = document.querySelectorAll('.bo-grid .row').length;
+const sheetLight = /--bo-grid-bg:\s*#fff/i.test(
+  document.querySelector('.bo-grid.grid')?.getAttribute('style') || '',
+);
+if (sheetRows === 0) fail('Spreadsheet example rendered no rows');
+if (!sheetLight) fail('Spreadsheet example did not apply the light theme');
+
 console.log(
   `✓ smoke: grid mounted — ${rowCount} rows, ${canvases} sparklines; ` +
     `selection ${selCount} cells + agg bar; grouping ${groupHeaders} headers, ` +
     `edit committed; variable heights ${rowHeights.join('/')}; ` +
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
+    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups, sheet ${sheetRows} rows (light); ` +
     `a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

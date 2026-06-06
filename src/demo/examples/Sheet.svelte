@@ -1,0 +1,126 @@
+<script lang="ts">
+  import { Grid, type ColumnDef, type GridRow } from '../../lib';
+
+  // A plain, non-financial dataset — a team roster — to show the grid is a
+  // general-purpose data grid: inline edit, clipboard copy/paste, drag-to-resize,
+  // on a light theme.
+  interface Member extends GridRow {
+    name: string;
+    role: string;
+    team: string;
+    salary: number;
+    bonus: number;
+    rating: number;
+    startDate: number;
+  }
+
+  const FIRST = ['Ava', 'Liam', 'Mia', 'Noah', 'Zoe', 'Ravi', 'Yuki', 'Omar', 'Lena', 'Theo', 'Ines', 'Kai'];
+  const LAST = ['Chen', 'Patel', 'Kim', 'Garcia', 'Nguyen', 'Haddad', 'Rossi', 'Silva', 'Okafor', 'Novak'];
+  const ROLES = ['Engineer', 'Designer', 'PM', 'Analyst', 'Researcher', 'Writer'];
+  const TEAMS = ['Platform', 'Growth', 'Design', 'Data', 'Infra'];
+  const BASE = Date.UTC(2018, 0, 1);
+
+  function buildRoster(count: number): Member[] {
+    const out: Member[] = [];
+    for (let id = 0; id < count; id++) {
+      const name = `${FIRST[(id * 7) % FIRST.length]} ${LAST[(id * 13) % LAST.length]}`;
+      const salary = 80_000 + ((id * 2137) % 90) * 1_000;
+      out.push({
+        id,
+        flashSeq: 0,
+        flashDir: 'up',
+        name,
+        role: ROLES[(id * 5) % ROLES.length],
+        team: TEAMS[(id * 3) % TEAMS.length],
+        salary,
+        bonus: Math.round((salary * (5 + ((id * 11) % 20))) / 100),
+        rating: Math.round((3 + ((id * 17) % 20) / 10) * 10) / 10,
+        startDate: BASE + ((id * 53) % 2200) * 86_400_000,
+      });
+    }
+    return out;
+  }
+
+  const rows = $state<Member[]>(buildRoster(60));
+  const gridRows = $derived(rows as unknown as GridRow[]);
+
+  // Every column resizable (the default); salary/bonus/rating editable.
+  const columns: ColumnDef[] = [
+    { type: 'text', key: 'name', header: 'Name', width: 160 },
+    { type: 'text', key: 'role', header: 'Role', width: 130 },
+    { type: 'text', key: 'team', header: 'Team', width: 120 },
+    { type: 'number', key: 'salary', header: 'Salary', width: 116, decimals: 0, editable: true },
+    { type: 'number', key: 'bonus', header: 'Bonus', width: 108, decimals: 0, editable: true },
+    { type: 'number', key: 'rating', header: 'Rating', width: 92, decimals: 1, editable: true },
+    { type: 'date', key: 'startDate', header: 'Start date', width: 120, dateStyle: 'short' },
+  ];
+
+  let filterText = $state('');
+</script>
+
+<div class="controls">
+  <input
+    class="filter"
+    type="search"
+    placeholder="Filter people…"
+    bind:value={filterText}
+    aria-label="Filter rows"
+  />
+  <span class="hint">
+    Double-click a number to edit · drag a header edge to resize · <kbd>Ctrl/⌘+C</kbd> /
+    <kbd>V</kbd> to copy &amp; paste
+  </span>
+</div>
+
+<div class="gridwrap">
+  <Grid
+    rows={gridRows}
+    {columns}
+    filter={filterText}
+    theme="light"
+    persistKey="demo-sheet"
+    height={620}
+    onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}
+  />
+</div>
+
+<style>
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .filter {
+    width: 180px;
+    padding: 5px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #1a1a1a;
+    background: #fff;
+    border: 1px solid #d2d6dc;
+    border-radius: 999px;
+    outline: none;
+  }
+  .filter:focus {
+    border-color: #6366f1;
+  }
+  .hint {
+    color: var(--text-dim);
+  }
+  .hint kbd {
+    padding: 1px 5px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.06);
+    border: 0.5px solid var(--border);
+    border-radius: 4px;
+  }
+  .gridwrap {
+    max-width: 900px;
+  }
+</style>
