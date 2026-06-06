@@ -131,6 +131,7 @@
     sort={sortState}
     onSortChange={(s) => (sortState = s)}
     onRowClick={(r) => !pivotMode && (picked = r as Position)}
+    footer={!pivotMode}
   />
 </div>
 

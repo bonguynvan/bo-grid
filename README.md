@@ -152,6 +152,14 @@ realtime feed ticks. Choose which stats to show:
 <Grid {rows} {columns} aggregations={['sum', 'avg', 'count']} height={640} />
 ```
 
+Set `footer` for a **pinned totals row**: every column with a `groupAgg` shows
+that aggregate over all (filtered) rows, sticky to the bottom as you scroll
+(in-memory mode).
+
+```svelte
+<Grid {rows} {columns} height={640} footer />
+```
+
 ## Row selection
 
 Set `rowSelection` for a leading checkbox column — whole-row selection keyed by

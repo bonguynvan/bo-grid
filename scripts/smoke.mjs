@@ -311,6 +311,10 @@ if (!document.querySelector('.pill.clear')) fail('controlled sort (onSortChange)
 click(document.querySelector('.pill.clear'));
 await wait(20);
 if (document.querySelector('.pill.clear')) fail('clearing controlled sort did not take effect');
+// Footer totals row: a pinned row aggregating the columns with groupAgg.
+const footerEl = document.querySelector('.bo-grid .footer');
+if (!footerEl) fail('footer totals row did not render');
+if (!/\d/.test(footerEl.textContent || '')) fail('footer totals row showed no aggregated values');
 
 const sheetTab = tab('Spreadsheet');
 if (!sheetTab) fail('Spreadsheet example tab not found');

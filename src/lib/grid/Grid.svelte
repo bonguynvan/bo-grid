@@ -43,6 +43,7 @@
     onRowClick,
     sort,
     onSortChange,
+    footer = false,
     cell,
   }: {
     rows: GridRow[];
@@ -76,6 +77,9 @@
     sort?: SortState[];
     /** Called with the new sort order whenever a header is clicked. */
     onSortChange?: (sort: SortState[]) => void;
+    /** Show a pinned totals row: each column with a `groupAgg` shows that
+        aggregate over all (filtered) rows. In-memory mode only. Default false. */
+    footer?: boolean;
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -403,6 +407,24 @@
     selRowsVersion++;
     onRowSelectionChange?.([...selectedRows]);
   }
+
+  // Pinned totals row: per-column `groupAgg` over all (filtered) rows. Reads row
+  // values reactively so it stays live with the feed. In-memory mode only.
+  const footerCells = $derived.by<string[] | null>(() => {
+    if (!footer || source) return null;
+    const v = view;
+    return cols.map((col) => {
+      if (col.type === 'sparkline' || col.type === 'text' || col.type === 'custom' || !col.groupAgg) return '';
+      const vals: number[] = [];
+      for (const row of v) {
+        const n = Number(row[col.key]);
+        if (Number.isFinite(n)) vals.push(n);
+      }
+      const a = aggregate(vals);
+      if (!a) return '';
+      return col.groupAgg === 'count' ? String(a.count) : formatCell(col, a[col.groupAgg]);
+    });
+  });
 
   // Unified row count: from the source total or the flattened in-memory list.
   const rowCount = $derived(source ? (controller?.total ?? 0) : flat.length);
@@ -840,6 +862,16 @@
         {/if}
       {/each}
     </div>
+    {#if footerCells}
+      <div class="footer" role="row" style={pinned ? `width:${layout.totalWidth + selOffset * SEL_W}px;` : ''}>
+        {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
+        {#each cols as col, ci (ci)}
+          <span class="fcell" class:right={isNumeric(col)} style={cellWidthStyle(ci)}>
+            {ci === 0 && !footerCells[ci] ? 'Total' : footerCells[ci]}
+          </span>
+        {/each}
+      </div>
+    {/if}
   </div>
 
   <AggregationBar result={agg} kinds={aggregations} />
@@ -1023,6 +1055,34 @@
   }
   .row.clickable {
     cursor: pointer;
+  }
+
+  /* Pinned totals row: sticks to the bottom of the viewport. */
+  .footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    display: flex;
+    align-items: stretch;
+    min-width: 100%;
+    height: 32px;
+    background: var(--bo-header-bg);
+    border-top: 0.5px solid var(--bo-border);
+  }
+  .footer .fcell {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    font-family: var(--bo-mono);
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--bo-text);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .footer .fcell.right {
+    justify-content: flex-end;
   }
 
   /* Leading checkbox column (row selection). */
