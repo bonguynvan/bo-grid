@@ -90,6 +90,8 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
   formatter for display, tooltip, copy and formatted export.
 - **Custom sort comparator**: a column `compare(a, b)` sorts by custom logic
   (enum priority, natural sort) instead of the default value comparison.
+- **Master-detail**: a `detail` snippet renders an expandable panel under each
+  row (leading expand toggle, `detailHeight`); virtualized with the height model.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 - **Theming**: dark-first, self-contained CSS variables (`--bo-grid-*`), no CSS

@@ -51,6 +51,8 @@
     emptyMessage = 'No matching rows',
     loading = false,
     rowMenu,
+    detail,
+    detailHeight = 160,
     cell,
   }: {
     rows: GridRow[];
@@ -110,6 +112,11 @@
     /** Right-click row menu. Return the items for a row; an empty array shows no
         menu. Each item runs `onSelect` and closes the menu. */
     rowMenu?: (row: GridRow) => Array<{ label: string; onSelect: () => void }>;
+    /** Master-detail: render an expandable detail panel under a row. Adds a
+        leading expand-toggle column. In-memory mode only (overrides rowHeight). */
+    detail?: Snippet<[{ row: GridRow }]>;
+    /** Height (px) of the expanded detail panel. Default 160. */
+    detailHeight?: number;
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -192,9 +199,30 @@
   // Whole-row selection (opt-in), keyed by row id so it survives sort/filter.
   // Plain Set + a version counter for reactivity (same pattern as `collapsed`).
   const SEL_W = 40; // checkbox column width (px)
+  const EXP_W = 30; // master-detail expand column width (px)
   const selectedRows = new Set<string | number>();
   let selRowsVersion = $state(0);
+
+  // Master-detail expansion (opt-in via `detail`), keyed by row id.
+  const expandedRows = new Set<string | number>();
+  let expVersion = $state(0);
+  const expandable = $derived(!!detail && !source);
+
+  // Leading fixed columns: expand toggle (if any) then checkbox (if any).
   const selOffset = $derived(rowSelection ? 1 : 0);
+  const expOffset = $derived(expandable ? 1 : 0);
+  const leadCols = $derived(selOffset + expOffset); // count, for aria indices
+  const leadPx = $derived(selOffset * SEL_W + expOffset * EXP_W); // px, for sticky offsets
+
+  function isExpanded(id: string | number): boolean {
+    expVersion; // track
+    return expandedRows.has(id);
+  }
+  function toggleExpand(id: string | number): void {
+    if (expandedRows.has(id)) expandedRows.delete(id);
+    else expandedRows.add(id);
+    expVersion++;
+  }
 
   function isRowSelected(id: string | number): boolean {
     selRowsVersion; // track
@@ -253,7 +281,7 @@
   function pinStick(ci: number): string {
     const inf = layout.info[ci];
     if (inf.side === 'right') return `position:sticky;right:${inf.right}px;`;
-    return `position:sticky;left:${inf.left + selOffset * SEL_W}px;`;
+    return `position:sticky;left:${inf.left + leadPx}px;`;
   }
   function headStyle(ci: number): string {
     if (!pinned) return colStyle(cols[ci]);
@@ -269,10 +297,17 @@
     if (inf.pinned) s += `${pinStick(ci)}z-index:1;background:var(--bo-bg);`;
     return s;
   }
-  // The leading checkbox column: a fixed-width flex item, sticky-left when the
-  // grid scrolls horizontally (pinned mode).
+  // The leading checkbox column: a fixed-width flex item, sticky-left (past the
+  // expand column, if any) when the grid scrolls horizontally (pinned mode).
   function selCellStyle(header: boolean): string {
     let s = `flex:0 0 ${SEL_W}px;width:${SEL_W}px;`;
+    if (pinned)
+      s += `position:sticky;left:${expOffset * EXP_W}px;z-index:${header ? 6 : 2};background:var(--bo-${header ? 'header-bg' : 'bg'});`;
+    return s;
+  }
+  // The leading expand-toggle column (master-detail), sticky at the far left.
+  function expandCellStyle(header: boolean): string {
+    let s = `flex:0 0 ${EXP_W}px;width:${EXP_W}px;`;
     if (pinned)
       s += `position:sticky;left:0;z-index:${header ? 6 : 2};background:var(--bo-${header ? 'header-bg' : 'bg'});`;
     return s;
@@ -504,22 +539,32 @@
   // a prefix-sum model (in-memory only — source mode can't know unloaded heights).
   const baseH = $derived(typeof rowHeight === 'number' && rowHeight > 0 ? rowHeight : ROW_H);
   const variable = $derived(typeof rowHeight === 'function' && !source);
+  // Use a prefix-sum height model when row heights vary: a `rowHeight` function,
+  // or master-detail expansion (expanded rows are taller by `detailHeight`).
+  const useHeights = $derived(variable || expandable);
   const heights = $derived.by<number[] | null>(() => {
-    if (!variable) return null;
-    const fn = rowHeight as (row: GridRow, index: number) => number;
+    if (!useHeights) return null;
+    const fn = variable ? (rowHeight as (row: GridRow, index: number) => number) : null;
+    expVersion; // track expansion changes
     const arr = new Array<number>(flat.length);
     let di = 0;
     for (let i = 0; i < flat.length; i++) {
       const it = flat[i];
-      arr[i] = it.kind === 'data' ? Math.max(1, fn(it.row, di++)) : baseH;
+      if (it.kind !== 'data') {
+        arr[i] = baseH;
+        continue;
+      }
+      let h = fn ? Math.max(1, fn(it.row, di++)) : baseH;
+      if (expandable && expandedRows.has(getRowId(it.row))) h += detailHeight;
+      arr[i] = h;
     }
     return arr;
   });
-  const hm = $derived(variable && heights ? variableHeights(heights) : uniformHeights(rowCount, baseH));
+  const hm = $derived(useHeights && heights ? variableHeights(heights) : uniformHeights(rowCount, baseH));
 
   const total = $derived(hm.total);
   const rowWidthStyle = $derived(
-    pinned ? `width:${layout.totalWidth + selOffset * SEL_W}px;right:auto;` : '',
+    pinned ? `width:${layout.totalWidth + leadPx}px;right:auto;` : '',
   );
   const visibleCount = $derived(Math.ceil(height / baseH) + OVERSCAN * 2);
   const start = $derived(Math.max(0, hm.indexAt(scrollTop) - OVERSCAN));
@@ -822,7 +867,7 @@
   tabindex="0"
   id={gid}
   aria-rowcount={rowCount + 1}
-  aria-colcount={cols.length + selOffset}
+  aria-colcount={cols.length + leadCols}
   aria-multiselectable="true"
   aria-activedescendant={activeId}
   style={themeStyle}
@@ -831,6 +876,7 @@
 >
   {#if headerGroups}
     <div class="head-groups" aria-hidden="true" bind:this={groupHeadEl} style={pinned ? 'overflow:hidden;' : ''}>
+      {#if expandable}<span class="expandcell" style={expandCellStyle(true)}></span>{/if}
       {#if rowSelection}<span class="selcell" style={selCellStyle(true)}></span>{/if}
       {#each headerGroups as g, gi (gi)}
         <span class="hg" class:empty={!g.label} style="flex:0 0 {g.width}px;width:{g.width}px;">{g.label}</span>
@@ -838,8 +884,11 @@
     </div>
   {/if}
   <div class="head" role="row" aria-rowindex={1} bind:this={headEl} style={pinned ? 'overflow:hidden;' : ''}>
+    {#if expandable}
+      <span class="expandcell selhead" role="columnheader" aria-colindex={1} style={expandCellStyle(true)}></span>
+    {/if}
     {#if rowSelection}
-      <span class="selcell selhead" role="columnheader" aria-colindex={1} style={selCellStyle(true)}>
+      <span class="selcell selhead" role="columnheader" aria-colindex={1 + expOffset} style={selCellStyle(true)}>
         <input
           type="checkbox"
           class="rowcheck"
@@ -862,7 +911,7 @@
         style={headStyle(ci)}
         type="button"
         role="columnheader"
-        aria-colindex={ci + 1 + selOffset}
+        aria-colindex={ci + 1 + leadCols}
         draggable="true"
         aria-sort={isSortable(col) && sortInfo(col.key)
           ? sortInfo(col.key)?.dir === 'asc'
@@ -917,6 +966,7 @@
 
   {#if filterRow && !source}
     <div class="filter-row" role="row" bind:this={filterRowEl} style={pinned ? 'overflow:hidden;' : ''}>
+      {#if expandable}<span class="expandcell" style={expandCellStyle(false)}></span>{/if}
       {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
       {#each cols as col, ci (ci)}
         <span class="fr-cell" style={cellWidthStyle(ci)}>
@@ -945,6 +995,7 @@
       <div class="pinned-top">
         {#each pinnedRows as prow, pi (getRowId(prow))}
           <div class="row pinrow {rowClass?.(prow) ?? ''}" role="row" aria-hidden="true" style="height:{baseH}px;{rowWidthStyle}">
+            {#if expandable}<span class="expandcell" style={expandCellStyle(false)}></span>{/if}
             {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
             {#each cols as col, ci (ci)}
               <Cell
@@ -952,12 +1003,12 @@
                 row={prow}
                 r={-1 - pi}
                 c={ci}
-                colIndex={ci + 1 + selOffset}
+                colIndex={ci + 1 + leadCols}
                 cellId={`${gid}-pin${pi}-c${ci}`}
                 cellSnippet={cell}
                 pinned={pinned && layout.info[ci].pinned}
                 pinSide={layout.info[ci].side ?? 'left'}
-                pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right : layout.info[ci].left + selOffset * SEL_W}
+                pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right : layout.info[ci].left + leadPx}
                 width={pinned ? layout.info[ci].width : undefined}
               />
             {/each}
@@ -983,15 +1034,17 @@
         {/each}
       </div>
     {/if}
-    <div class="spacer" style="height:{total}px;{pinned ? `width:${layout.totalWidth + selOffset * SEL_W}px;` : ''}">
+    <div class="spacer" style="height:{total}px;{pinned ? `width:${layout.totalWidth + leadPx}px;` : ''}">
       {#each renderItems as item (item.vr)}
         {#if item.kind === 'group'}
           <div class="grouprow" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
+            {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
             {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
             <GroupRow group={item.group} columns={cols} onToggle={toggleGroup} rowIndex={item.vr + 2} />
           </div>
         {:else if item.kind === 'skeleton'}
           <div class="row skeleton" role="row" aria-rowindex={item.vr + 2} aria-hidden="true" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
+            {#if expandable}<span class="expandcell" style={expandCellStyle(false)}></span>{/if}
             {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
             {#each cols as col, ci (ci)}
               <span class="c" style={cellWidthStyle(ci)}><span class="skelbar"></span></span>
@@ -1000,7 +1053,24 @@
         {:else}
           <!-- Row activation is keyboard-accessible at the grid level: Enter on the focused cell fires onRowClick (focus is via aria-activedescendant). -->
           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:clickable={!!onRowClick} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)} oncontextmenu={(e) => openRowMenu(item.row, e)}>
+          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:clickable={!!onRowClick} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{expandable ? baseH : hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)} oncontextmenu={(e) => openRowMenu(item.row, e)}>
+            {#if expandable}
+              <span class="expandcell" style={expandCellStyle(false)}>
+                <button
+                  class="expand-toggle"
+                  type="button"
+                  aria-expanded={isExpanded(getRowId(item.row))}
+                  aria-label="Toggle detail"
+                  onpointerdown={(e) => e.stopPropagation()}
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    toggleExpand(getRowId(item.row));
+                  }}
+                >
+                  {isExpanded(getRowId(item.row)) ? '▾' : '▸'}
+                </button>
+              </span>
+            {/if}
             {#if rowSelection}
               <span class="selcell" style={selCellStyle(false)}>
                 <input
@@ -1020,14 +1090,14 @@
                 row={item.row}
                 r={item.vr}
                 c={ci}
-                colIndex={ci + 1 + selOffset}
+                colIndex={ci + 1 + leadCols}
                 cellId={`${gid}-r${item.vr}-c${ci}`}
                 cellSnippet={cell}
                 selected={sel.contains(item.vr, ci)}
                 focused={sel.isFocus(item.vr, ci)}
                 pinned={pinned && layout.info[ci].pinned}
                 pinSide={layout.info[ci].side ?? 'left'}
-                pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right : layout.info[ci].left + selOffset * SEL_W}
+                pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right : layout.info[ci].left + leadPx}
                 width={pinned ? layout.info[ci].width : undefined}
                 alt={item.vr % 2 === 1}
                 editing={editing?.r === item.vr && editing?.c === ci}
@@ -1040,11 +1110,17 @@
               />
             {/each}
           </div>
+          {#if expandable && detail && isExpanded(getRowId(item.row))}
+            <div class="row-detail" style="top:{hm.offsetOf(item.vr) + baseH}px;height:{detailHeight}px;{rowWidthStyle}">
+              {@render detail({ row: item.row })}
+            </div>
+          {/if}
         {/if}
       {/each}
     </div>
     {#if footerCells}
-      <div class="footer" role="row" style={pinned ? `width:${layout.totalWidth + selOffset * SEL_W}px;` : ''}>
+      <div class="footer" role="row" style={pinned ? `width:${layout.totalWidth + leadPx}px;` : ''}>
+        {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
         {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
         {#each cols as col, ci (ci)}
           <span class="fcell" class:right={isNumeric(col)} style={cellWidthStyle(ci)}>
@@ -1419,6 +1495,38 @@
   }
   .rowmenu-item:hover {
     background: var(--bo-row-hover);
+  }
+
+  /* Master-detail: leading expand-toggle column + detail panel. */
+  .expandcell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+  .expand-toggle {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    font-size: 11px;
+    line-height: 1;
+    color: var(--bo-text-dim);
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .expand-toggle:hover {
+    color: var(--bo-text);
+    background: var(--bo-row-hover);
+  }
+  .row-detail {
+    position: absolute;
+    left: 0;
+    overflow: auto;
+    background: var(--bo-row-a);
+    border-bottom: 0.5px solid var(--bo-border);
+    box-shadow: inset 0 1px 0 var(--bo-border);
   }
 
   /* Leading checkbox column (row selection). */

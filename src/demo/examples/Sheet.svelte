@@ -124,6 +124,17 @@
   {/if}
 </div>
 
+{#snippet detailPanel({ row }: { row: GridRow })}
+  <div class="detail">
+    <strong>{row.name}</strong> — {row.role}, {row.team}
+    <div class="detail-grid">
+      <span>Salary <b>${Number(row.salary).toLocaleString()}</b></span>
+      <span>Bonus <b>${Number(row.bonus).toLocaleString()}</b></span>
+      <span>Rating <b>{row.rating}</b></span>
+    </div>
+  </div>
+{/snippet}
+
 <div class="gridwrap">
   <Grid
     rows={gridRows}
@@ -140,6 +151,8 @@
     onRowSelectionChange={(ids) => (selectedCount = ids.length)}
     onCellClick={({ column, value }) => (lastCell = `${column.header} = ${value}`)}
     onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}
+    detail={detailPanel}
+    detailHeight={84}
   />
 </div>
 
@@ -243,5 +256,21 @@
   }
   .gridwrap {
     max-width: 900px;
+  }
+  .detail {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #1a1a1a;
+  }
+  .detail-grid {
+    display: flex;
+    gap: 24px;
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .detail-grid b {
+    color: #1a1a1a;
   }
 </style>
