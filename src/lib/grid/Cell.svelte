@@ -22,6 +22,7 @@
     cellSnippet,
     onCellDown,
     onCellEnter,
+    onCellClick,
     onCellDblClick,
     onEditCommit,
     onEditCancel,
@@ -43,6 +44,7 @@
     cellSnippet?: Snippet<[{ row: GridRow; column: ColumnDef; value: unknown }]>;
     onCellDown?: (r: number, c: number, e: PointerEvent) => void;
     onCellEnter?: (r: number, c: number, e: PointerEvent) => void;
+    onCellClick?: (r: number, c: number, e: MouseEvent) => void;
     onCellDblClick?: (r: number, c: number) => void;
     onEditCommit?: (raw: string) => void;
     onEditCancel?: () => void;
@@ -90,6 +92,8 @@
   }
 </script>
 
+<!-- Keyboard interaction is handled at the grid level (arrow nav via aria-activedescendant + Enter); this cell click is a pointer affordance. -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <span
   class="c {kind}"
   class:dim={col.type === 'volume'}
@@ -105,6 +109,7 @@
   aria-selected={selected}
   onpointerdown={(e) => onCellDown?.(r, c, e)}
   onpointerenter={(e) => onCellEnter?.(r, c, e)}
+  onclick={(e) => onCellClick?.(r, c, e)}
   ondblclick={() => onCellDblClick?.(r, c)}
 >
   {#if editing}

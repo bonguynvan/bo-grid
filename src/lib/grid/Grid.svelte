@@ -44,6 +44,7 @@
     sort,
     onSortChange,
     footer = false,
+    onCellClick,
     cell,
   }: {
     rows: GridRow[];
@@ -80,6 +81,12 @@
     /** Show a pinned totals row: each column with a `groupAgg` shows that
         aggregate over all (filtered) rows. In-memory mode only. Default false. */
     footer?: boolean;
+    /** Called when a cell is clicked, with its row, column and value. Fires in
+        addition to `onRowClick`; excluded for the edit input. */
+    onCellClick?: (
+      info: { row: GridRow; column: ColumnDef; value: unknown },
+      event: MouseEvent,
+    ) => void;
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -549,6 +556,14 @@
     if (dragging) sel.extendTo(r, c);
   }
 
+  function onCellClicked(r: number, c: number, e: MouseEvent) {
+    if (!onCellClick) return;
+    const row = dataAt(r);
+    if (!row) return;
+    const column = cols[c];
+    onCellClick({ row, column, value: row[column.key] }, e);
+  }
+
   function scrollFocusIntoView() {
     const f = sel.focus;
     if (!f || !viewportEl) return;
@@ -853,6 +868,7 @@
                 editing={editing?.r === item.vr && editing?.c === ci}
                 {onCellDown}
                 {onCellEnter}
+                onCellClick={onCellClick ? onCellClicked : undefined}
                 onCellDblClick={startEdit}
                 onEditCommit={(raw) => commitEdit(item.vr, ci, raw)}
                 onEditCancel={() => (editing = null)}

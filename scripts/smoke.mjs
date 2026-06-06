@@ -341,6 +341,11 @@ await wait(20);
 const selectedRows = document.querySelectorAll('.bo-grid .row.rowsel').length;
 if (selectedRows < 2) fail(`select-all did not select the visible rows (${selectedRows})`);
 
+// onCellClick: clicking a cell reports its column + value to the toolbar.
+click(document.querySelector('.bo-grid .row .c'));
+await wait(20);
+if (!document.querySelector('.lastcell')) fail('onCellClick did not report the clicked cell');
+
 // Column show/hide: open the picker and hide a column, assert a header drops.
 const colsBefore = document.querySelectorAll('.bo-grid .head .h').length;
 const colBtn = [...document.querySelectorAll('.colbtn')].find((b) => b.textContent.includes('Columns'));

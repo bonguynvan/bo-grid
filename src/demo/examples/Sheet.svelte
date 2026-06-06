@@ -57,6 +57,7 @@
 
   let filterText = $state('');
   let selectedCount = $state(0);
+  let lastCell = $state('');
 
   // Column show/hide: a controlled list of hidden keys + a little picker menu.
   let hidden = $state<string[]>([]);
@@ -118,6 +119,9 @@
   {#if selectedCount > 0}
     <span class="count">{selectedCount} selected</span>
   {/if}
+  {#if lastCell}
+    <span class="lastcell">clicked: {lastCell}</span>
+  {/if}
 </div>
 
 <div class="gridwrap">
@@ -131,6 +135,7 @@
     height={620}
     rowSelection
     onRowSelectionChange={(ids) => (selectedCount = ids.length)}
+    onCellClick={({ column, value }) => (lastCell = `${column.header} = ${value}`)}
     onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}
   />
 </div>
@@ -170,6 +175,11 @@
     color: #312e81;
     background: #e0e7ff;
     border-radius: 999px;
+  }
+  .lastcell {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
   }
   .colmenu {
     position: relative;
