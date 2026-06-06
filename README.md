@@ -1,11 +1,12 @@
 # bo-grid
 
 Tiny, fast **Svelte 5** data grid for fintech UIs — canvas sparklines, batched
-realtime cell updates, and virtual scrolling in a package that gzips to a few KB.
+realtime cell updates, and virtual scrolling in a package that gzips to ~20 KB.
 A free alternative to the heavyweight grids that paywall these features.
 
 **[Live demo](https://bonguynvan.github.io/bo-grid/)** ·
-**[API reference](https://bonguynvan.github.io/bo-grid/api.html)**
+**[API reference](https://bonguynvan.github.io/bo-grid/api.html)** ·
+**[Benchmarks](./BENCHMARKS.md)**
 
 The demo is a small gallery of nine grid types — a realtime **Trading desk**, a
 grouped **Portfolio** with subtotals and pivot, a general-purpose editable
@@ -14,14 +15,16 @@ matrix, a **Leaderboard** with rank medals and score bars, a **Tree** file
 explorer, a drag-to-reorder **Tasks** list, and a **1M-row** trade tape windowed
 from a synthetic source — switch between them with the tabs.
 
-> **Status: v0.1 (early).** Working: config-driven columns, virtual scroll,
-> client sort + filter, multi-cell selection + live range aggregation, row
-> grouping (nested, collapsible, sticky headers, live subtotals), a server-side
+> **Status: v0.2.** Working: config-driven columns, virtual scroll, client
+> single/multi/controlled sort + global & per-column filters, multi-cell selection
+> + live range aggregation, row grouping (nested, collapsible, sticky headers,
+> live subtotals), pivot tables, tree data, master-detail, a server-side
 > `RowSource` for huge datasets, CSV/Excel export, drag-to-reorder and
-> drag-to-resize columns, pinned columns, inline cell editing with clipboard
-> copy/paste, sparklines, realtime flash, heatmaps. Unit
-> tests (Vitest), type-check, a headless mount smoke-test, and library + demo
-> bundle-size budgets all run in CI. Feature-complete for v0; a formal WCAG audit
+> drag-to-resize columns, pinned columns (left/right), row selection, pagination,
+> inline editing with validation, type-to-edit, clipboard copy/paste, sparklines,
+> realtime flash, heatmaps, theming, and full keyboard a11y. **SSR/SvelteKit-safe.**
+> Unit tests (Vitest), type-check, a headless mount smoke-test, an SSR render
+> check, and library + demo bundle-size budgets all run in CI. A formal WCAG audit
 > is the main thing left — see the roadmap.
 
 ## Why
@@ -31,7 +34,7 @@ from a synthetic source — switch between them with the tabs.
 | Price | $$$ / dev / year | Free (MIT) |
 | Sparklines | paid tier | built in |
 | Realtime cell updates | DIY / complex | built-in primitive |
-| Bundle | ~500 KB | a few KB gzip |
+| Bundle | hundreds of KB | **~20 KB gzip** ([benchmarks](./BENCHMARKS.md)) |
 | Svelte | wrapper | native Svelte 5 |
 
 ## Install

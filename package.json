@@ -60,6 +60,7 @@
     "size:lib": "vite build --config vite.lib.config.ts && node scripts/size-lib.mjs",
     "smoke": "vite build --base=./ --outDir demo-dist && node scripts/smoke.mjs",
     "ssr": "node scripts/ssr.mjs",
+    "bench": "node scripts/bench.mjs",
     "test": "vitest run",
     "release": "node scripts/release.mjs",
     "release:dry": "node scripts/release.mjs --dry-run"
