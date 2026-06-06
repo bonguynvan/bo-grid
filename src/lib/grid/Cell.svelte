@@ -55,6 +55,9 @@
     node.focus();
     node.select();
   }
+  function focusEl(node: HTMLElement) {
+    node.focus();
+  }
   function onEditKey(e: KeyboardEvent) {
     e.stopPropagation(); // keep arrows/Enter in the input, not the grid
     if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur();
@@ -112,7 +115,21 @@
   onclick={(e) => onCellClick?.(r, c, e)}
   ondblclick={() => onCellDblClick?.(r, c)}
 >
-  {#if editing}
+  {#if editing && col.options && col.options.length > 0}
+    <select
+      class="bo-edit"
+      value={String(value ?? '')}
+      use:focusEl
+      onkeydown={onEditKey}
+      onblur={onEditBlur}
+      onpointerdown={(e) => e.stopPropagation()}
+      onclick={(e) => e.stopPropagation()}
+    >
+      {#each col.options as opt (opt)}
+        <option value={opt}>{opt}</option>
+      {/each}
+    </select>
+  {:else if editing}
     <input
       class="bo-edit"
       value={String(value ?? '')}

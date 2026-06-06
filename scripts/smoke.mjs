@@ -366,6 +366,19 @@ const sheetLight = /--bo-grid-bg:\s*#fff/i.test(
 if (sheetRows === 0) fail('Spreadsheet example rendered no rows');
 if (!sheetLight) fail('Spreadsheet example did not apply the light theme');
 
+// Select editor: the Role column edits via a <select> of options. Double-click a
+// role cell and assert a select (not a text input) appears, then commit a change.
+const roleCell = document.querySelectorAll('.bo-grid .row')[0].querySelectorAll('.c')[1];
+roleCell.dispatchEvent(new window.MouseEvent('dblclick', { bubbles: true }));
+await wait(40);
+const sel = document.querySelectorAll('.bo-grid .row')[0].querySelector('select.bo-edit');
+if (!sel) fail('select editor did not appear for an options column');
+sel.value = 'Designer';
+sel.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+await wait(40);
+const roleAfter = document.querySelectorAll('.bo-grid .row')[0].querySelectorAll('.c')[1].textContent.trim();
+if (roleAfter !== 'Designer') fail(`select edit did not commit (cell shows "${roleAfter}")`);
+
 // Row selection: tick one row, then select-all via the header checkbox.
 const firstCheck = document.querySelector('.bo-grid .row .rowcheck');
 if (!firstCheck) fail('row-selection checkbox did not render');
@@ -473,7 +486,7 @@ console.log(
     `edit committed + validate; variable heights ${rowHeights.join('/')}; ` +
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +
-    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups, sheet ${sheetRows} rows (light) + row-select + col-hide + col-filter, ` +
+    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter, ` +
     `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; a11y rowcount/activedescendant ok`,
 );

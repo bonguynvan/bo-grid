@@ -26,6 +26,9 @@ interface ColBase {
   /** Validate an edited value before it commits (inline edit or paste). Return
       false to reject and keep the old value. Receives the coerced value. */
   validate?: (value: string | number, row: GridRow) => boolean;
+  /** Editable choices: when set, editing renders a `<select>` of these options
+      instead of a text input (enum/status columns). */
+  options?: string[];
   /** Set false to disable drag-to-resize on this column (default on). */
   resizable?: boolean;
   /** Parent header label. Consecutive columns sharing a `group` render under a

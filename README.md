@@ -354,6 +354,14 @@ applies to paste too):
 { type: 'number', key: 'qty', header: 'Qty', editable: true, validate: (v) => v >= 0 }
 ```
 
+Give an editable column `options` to edit it via a dropdown instead of a text
+input (enum/status columns):
+
+```ts
+{ type: 'text', key: 'status', header: 'Status', editable: true,
+  options: ['New', 'Active', 'Closed'] }
+```
+
 ## Pinned columns
 
 Set `pinned: true` on a column to keep it visible while the rest scroll
