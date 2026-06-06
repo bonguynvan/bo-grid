@@ -103,6 +103,9 @@
     else feed.stop();
   }
 
+  // Observe column layout changes (e.g. to persist to a backend).
+  let lastResize = $state('');
+
   // Simulated reload to show the loading overlay.
   let loadingState = $state(false);
   function reload() {
@@ -164,6 +167,7 @@
   />
   <span class="metric {fpsClass}" title="frames per second">{meter.fps} fps</span>
   <span class="metric">{feed.applied.toLocaleString()} ticks</span>
+  {#if lastResize}<span class="metric resize-info">resized {lastResize}</span>{/if}
   <button class="live" onclick={reload}>⟳ Reload</button>
   <button class="live" class:on={pivotMode} onclick={() => (pivotMode = !pivotMode)}>Pivot</button>
   <button class="live" class:on={pinMode} onclick={() => (pinMode = !pinMode)}>Pin L</button>
@@ -188,6 +192,7 @@
     persistKey={pivotMode ? undefined : 'demo'}
     height={620}
     loading={loadingState}
+    onColumnResize={(key, w) => (lastResize = `${key} → ${Math.round(w)}px`)}
     onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}
     {cell}
   />

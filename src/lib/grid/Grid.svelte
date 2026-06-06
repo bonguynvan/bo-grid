@@ -54,6 +54,8 @@
     detail,
     detailHeight = 160,
     pageSize = 0,
+    onColumnReorder,
+    onColumnResize,
     cell,
   }: {
     rows: GridRow[];
@@ -121,6 +123,10 @@
     /** Rows per page. When > 0 (in-memory mode), shows a pager instead of one
         long scroll; rows still virtualize within a page. Default 0 (off). */
     pageSize?: number;
+    /** Called with the new column-key order after a header drag-reorder. */
+    onColumnReorder?: (keys: string[]) => void;
+    /** Called with a column key + new width after a drag-resize. */
+    onColumnResize?: (key: string, width: number) => void;
     filter?: string;
     groupBy?: string[];
     aggregations?: AggKind[];
@@ -358,6 +364,7 @@
         /* storage unavailable — order still applies this session */
       }
     }
+    onColumnReorder?.(next.map((i) => columns[i].key));
   }
 
   // ---- Column resizing -------------------------------------------------------
@@ -408,11 +415,13 @@
   }
   function onResizeUp() {
     if (!resize) return;
+    const { key } = resize;
     resize = null;
     justResized = true; // swallow the click that ends this drag (no sort toggle)
     window.removeEventListener('pointermove', onResizeMove);
     window.removeEventListener('pointerup', onResizeUp);
     persistWidths();
+    onColumnResize?.(key, widths[key]);
   }
   /** Double-click a resize grip to clear the override and restore the default. */
   function resetWidth(ci: number, e: MouseEvent) {

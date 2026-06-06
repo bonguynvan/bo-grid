@@ -163,6 +163,8 @@ const widthAfter = document.querySelectorAll('.h')[RESIZE_COL].getAttribute('sty
 if (!/150px/.test(widthAfter)) {
   fail(`column resize did not apply a 150px width (before="${widthBefore}" after="${widthAfter}")`);
 }
+// onColumnResize callback fired (the demo records it in the toolbar).
+if (!document.querySelector('.resize-info')) fail('onColumnResize callback did not fire');
 // Double-click the grip clears the override back to the default width.
 document.querySelectorAll('.h')[RESIZE_COL]
   .querySelector('.grip')
@@ -557,7 +559,7 @@ console.log(
   `✓ smoke: grid mounted — ${rowCount} rows, ${canvases} sparklines; ` +
     `multi-sort 2 keys; selection ${selCount} cells + agg bar; grouping ${groupHeaders} headers, ` +
     `edit committed + validate; variable heights ${rowHeights.join('/')}; ` +
-    `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
+    `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
     `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
