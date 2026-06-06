@@ -1,5 +1,5 @@
 import type { GridRow, SortState } from './column';
-import { compareRows } from './column';
+import { compareBySorts } from './column';
 
 export interface RowRange {
   /** First row index (inclusive). */
@@ -10,7 +10,11 @@ export interface RowRange {
 
 export interface RowSourceParams {
   range: RowRange;
+  /** Primary sort key, or null. Equals `sorts[0] ?? null`; kept for sources
+      that only support single-column sort. */
   sort: SortState | null;
+  /** Full sort order (primary first) for multi-column sort. May be empty. */
+  sorts?: SortState[];
   filter: string;
 }
 
@@ -52,9 +56,9 @@ export function createArraySource(all: readonly GridRow[], opts: ArraySourceOpti
     if (f && filterKeys && filterKeys.length > 0) {
       rows = rows.filter((r) => filterKeys.some((k) => String(r[k] ?? '').toLowerCase().includes(f)));
     }
-    if (params.sort) {
-      const s = params.sort;
-      rows = [...rows].sort((a, b) => compareRows(a, b, s));
+    const sorts = params.sorts?.length ? params.sorts : params.sort ? [params.sort] : [];
+    if (sorts.length > 0) {
+      rows = [...rows].sort((a, b) => compareBySorts(a, b, sorts));
     }
     const total = rows.length;
     return { rows: rows.slice(params.range.start, params.range.end), total };

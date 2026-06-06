@@ -25,12 +25,12 @@ export class RowSourceController {
     return this.cache.get(index) ?? null;
   }
 
-  private keyOf(sort: SortState | null, filter: string): string {
-    return `${sort?.key ?? ''}|${sort?.dir ?? ''}|${filter}`;
+  private keyOf(sorts: readonly SortState[], filter: string): string {
+    return `${sorts.map((s) => `${s.key}:${s.dir}`).join(',')}|${filter}`;
   }
 
-  async fetch(range: RowRange, sort: SortState | null, filter: string): Promise<void> {
-    const key = this.keyOf(sort, filter);
+  async fetch(range: RowRange, sorts: SortState[], filter: string): Promise<void> {
+    const key = this.keyOf(sorts, filter);
     if (key !== this.key) {
       this.key = key;
       this.cache.clear();
@@ -49,7 +49,7 @@ export class RowSourceController {
 
     const id = ++this.reqId;
     this.loading = true;
-    const res = await this.source.getRows({ range, sort, filter });
+    const res = await this.source.getRows({ range, sort: sorts[0] ?? null, sorts, filter });
     if (id !== this.reqId) return; // a newer request superseded this one
 
     this.total = res.total;

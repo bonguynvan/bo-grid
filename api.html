@@ -249,6 +249,7 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
   { type: <span class="tok-str">'volume'</span>,    key: <span class="tok-str">'volume'</span>, header: <span class="tok-str">'Volume'</span>, groupAgg: <span class="tok-str">'sum'</span> },
   { type: <span class="tok-str">'sparkline'</span>, key: <span class="tok-str">'candles'</span>, sparkKey: <span class="tok-str">'candles'</span>, header: <span class="tok-str">'Trend'</span>, flex: 1 },
 ];</code></pre>
+      <p>Click a header to sort (asc → desc → off); <kbd>Shift</kbd>+click more headers to sort by several columns at once. Drag a header to reorder, or its right-edge grip to resize (double-click the grip to reset).</p>
 
       <!-- ============ SELECTION ============ -->
       <h2 id="selection">Selection &amp; keyboard</h2>
@@ -277,7 +278,8 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
       <pre><code><span class="tok-key">interface</span> RowSource {
   getRows(p: {
     range: { start: number; end: number };  <span class="tok-com">// half-open window</span>
-    sort: SortState | <span class="tok-key">null</span>;
+    sort: SortState | <span class="tok-key">null</span>;       <span class="tok-com">// primary key (= sorts[0])</span>
+    sorts?: SortState[];           <span class="tok-com">// full multi-column order</span>
     filter: string;
   }): RowSourceResult | Promise&lt;RowSourceResult&gt;;
 }

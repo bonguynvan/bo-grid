@@ -113,10 +113,11 @@ O(log n). Source mode is uniform-only (unloaded row heights aren't known).
 
 ## Sort & filter
 
-Click a column header to sort (asc → desc → off). Sparkline columns aren't
-sortable; set `sortable: false` on any column to opt out. Sorting is a snapshot —
-rows hold position while their values update in place (trading-grid behaviour),
-so a realtime feed never reshuffles the view.
+Click a column header to sort (asc → desc → off). **Shift-click** additional
+headers to sort by multiple columns — each sorted header shows its position in
+the order. Sparkline columns aren't sortable; set `sortable: false` on any column
+to opt out. Sorting is a snapshot — rows hold position while their values update
+in place (trading-grid behaviour), so a realtime feed never reshuffles the view.
 
 Pass a `filter` string to quick-filter rows (matches across column values). Drive
 it from your own search input — the grid stays presentation-only.

@@ -6,8 +6,8 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import type { Snippet } from 'svelte';
-  import type { ColumnDef, GridRow, SortState, CellEditEvent } from './column';
-  import { colStyle, isNumeric, isSortable, isEditable, compareRows, formatCell } from './column';
+  import type { ColumnDef, GridRow, SortState, SortDir, CellEditEvent } from './column';
+  import { colStyle, isNumeric, isSortable, isEditable, compareBySorts, formatCell } from './column';
   import { arrangePinned } from './pin';
   import { uniformHeights, variableHeights } from './rowheight';
   import { themeVars, lightTheme, type GridTheme } from './theme';
@@ -68,7 +68,8 @@
   const gid = `bo-grid-${uid++}`;
 
   let scrollTop = $state(0);
-  let sortState = $state<SortState | null>(null);
+  // Sort order, primary first. Empty = unsorted. Multiple keys via Shift-click.
+  let sorts = $state<SortState[]>([]);
   let gridEl: HTMLDivElement;
   let viewportEl: HTMLDivElement;
   let headEl: HTMLDivElement;
@@ -258,15 +259,39 @@
     persistWidths();
   }
 
-  function toggleSort(col: ColumnDef) {
+  // Cycle one key: undefined → asc → desc → removed.
+  function nextDir(dir: SortDir | undefined): SortDir | null {
+    if (dir === undefined) return 'asc';
+    if (dir === 'asc') return 'desc';
+    return null; // was desc → drop the key
+  }
+
+  function toggleSort(col: ColumnDef, additive: boolean) {
     if (justResized) {
       justResized = false;
       return;
     }
     if (!isSortable(col)) return;
-    if (!sortState || sortState.key !== col.key) sortState = { key: col.key, dir: 'asc' };
-    else if (sortState.dir === 'asc') sortState = { key: col.key, dir: 'desc' };
-    else sortState = null;
+    const current = sorts.find((s) => s.key === col.key);
+    const dir = nextDir(current?.dir);
+
+    if (additive) {
+      // Shift-click: add/cycle this key while keeping the rest of the order.
+      const rest = sorts.filter((s) => s.key !== col.key);
+      sorts = dir ? [...rest, { key: col.key, dir }] : rest;
+      return;
+    }
+    // Plain click: sort by this column alone. If it's already the sole key,
+    // cycle its direction (asc → desc → off); otherwise start fresh ascending.
+    const soleAndSame = sorts.length === 1 && sorts[0].key === col.key;
+    if (soleAndSame) sorts = dir ? [{ key: col.key, dir }] : [];
+    else sorts = [{ key: col.key, dir: 'asc' }];
+  }
+
+  // Sort direction + 1-based position for a column, or null if unsorted.
+  function sortInfo(key: string): { dir: SortDir; pos: number } | null {
+    const i = sorts.findIndex((s) => s.key === key);
+    return i === -1 ? null : { dir: sorts[i].dir, pos: i + 1 };
   }
 
   // In-memory pipeline (skipped entirely in source mode).
@@ -275,11 +300,11 @@
     const base = rows;
     const allCols = columns;
     const f = filter.trim().toLowerCase();
-    const s = sortState;
+    const s = sorts;
     return untrack(() => {
       let r = base;
       if (f) r = r.filter((row) => allCols.some((c) => String(row[c.key] ?? '').toLowerCase().includes(f)));
-      if (s) r = [...r].sort((a, b) => compareRows(a, b, s));
+      if (s.length > 0) r = [...r].sort((a, b) => compareBySorts(a, b, s));
       return r;
     });
   });
@@ -357,7 +382,7 @@
     const ctrl = controller;
     if (!ctrl) return;
     const range = { start, end: start + visibleCount };
-    const s = sortState;
+    const s = sorts;
     const f = filter;
     void ctrl.fetch(range, s, f);
   });
@@ -539,7 +564,7 @@
   // Positional selection: clear it whenever the row order/contents shift.
   $effect(() => {
     filter;
-    sortState;
+    sorts;
     collapsedVersion;
     source;
     untrack(() => {
@@ -576,8 +601,12 @@
         role="columnheader"
         aria-colindex={ci + 1}
         draggable="true"
-        aria-sort={sortState?.key === col.key ? (sortState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
-        onclick={() => toggleSort(col)}
+        aria-sort={isSortable(col) && sortInfo(col.key)
+          ? sortInfo(col.key)?.dir === 'asc'
+            ? 'ascending'
+            : 'descending'
+          : 'none'}
+        onclick={(e) => toggleSort(col, e.shiftKey)}
         ondragstart={(e) => {
           dragSrc = ci;
           e.dataTransfer?.setData('text/plain', String(ci));
@@ -601,8 +630,11 @@
         }}
       >
         <span class="label">{col.header}</span>
-        {#if sortState?.key === col.key}
-          <span class="ind">{sortState.dir === 'asc' ? '▲' : '▼'}</span>
+        {#if isSortable(col) && sortInfo(col.key)}
+          {@const si = sortInfo(col.key)}
+          <span class="ind">
+            {si?.dir === 'asc' ? '▲' : '▼'}{#if sorts.length > 1}<span class="ord">{si?.pos}</span>{/if}
+          </span>
         {/if}
         {#if isResizable(col, resizable)}
           <span
@@ -790,8 +822,17 @@
     pointer-events: none;
   }
   .h .ind {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
     font-size: 9px;
     color: var(--bo-text);
+  }
+  .h .ind .ord {
+    font-size: 8px;
+    line-height: 1;
+    color: var(--bo-text-dim);
+    font-variant-numeric: tabular-nums;
   }
 
   .viewport {

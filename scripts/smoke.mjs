@@ -82,6 +82,27 @@ const click = (el) => el.dispatchEvent(new window.MouseEvent('click', { button: 
 // Custom cell renderer (snippet): the Signal column renders a pill.
 if (!document.querySelector('.signal')) fail('custom cell snippet did not render');
 
+// Multi-column sort: a plain header click sorts by one column; Shift-click adds
+// a secondary key. Both sorted headers then show an order badge.
+const headers = [...document.querySelectorAll('.bo-grid .head .h')];
+const clickHdr = (i, shift) =>
+  headers[i].dispatchEvent(new window.MouseEvent('click', { button: 0, shiftKey: !!shift, bubbles: true }));
+// Use columns with unique keys (price, volume); the demo reuses 'changePct'
+// across the percent/heatmap/Signal columns.
+clickHdr(1, false); // price — primary, ascending
+clickHdr(5, true); // volume — secondary, ascending (additive)
+await wait(20);
+const sortBadges = document.querySelectorAll('.bo-grid .head .ind .ord').length;
+const ascHeaders = headers.filter((h) => h.getAttribute('aria-sort') === 'ascending').length;
+if (sortBadges !== 2) fail(`multi-sort should show 2 order badges (got ${sortBadges})`);
+if (ascHeaders < 2) fail(`multi-sort should mark 2 headers ascending (got ${ascHeaders})`);
+// Reset to unsorted (sole asc → desc → off) so later assertions see natural order.
+clickHdr(1, false);
+clickHdr(1, false);
+clickHdr(1, false);
+await wait(20);
+if (document.querySelectorAll('.bo-grid .head .ind').length !== 0) fail('sort did not reset to unsorted');
+
 // Inline editing (Phase 5): double-click the editable Target cell, type a value,
 // press Enter, and assert it commits.
 const TARGET_COL = 6;
@@ -314,7 +335,7 @@ if (bigRows === 0) fail('1M-rows example loaded no windowed rows');
 
 console.log(
   `✓ smoke: grid mounted — ${rowCount} rows, ${canvases} sparklines; ` +
-    `selection ${selCount} cells + agg bar; grouping ${groupHeaders} headers, ` +
+    `multi-sort 2 keys; selection ${selCount} cells + agg bar; grouping ${groupHeaders} headers, ` +
     `edit committed; variable heights ${rowHeights.join('/')}; ` +
     `paste + resize committed; collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns; pivot ${pivotHeaders.length} cols; ` +

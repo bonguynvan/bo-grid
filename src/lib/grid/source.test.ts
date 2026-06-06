@@ -52,7 +52,7 @@ describe('createArraySource', () => {
 describe('RowSourceController', () => {
   it('fetches a window, sets total, and caches rows by index', async () => {
     const ctrl = new RowSourceController(createArraySource(makeRows(50)));
-    await ctrl.fetch({ start: 5, end: 10 }, null, '');
+    await ctrl.fetch({ start: 5, end: 10 }, [], '');
     expect(ctrl.total).toBe(50);
     expect(ctrl.rowAt(5)?.id).toBe(5);
     expect(ctrl.rowAt(9)?.id).toBe(9);
@@ -61,9 +61,9 @@ describe('RowSourceController', () => {
 
   it('drops the cache when sort/filter changes', async () => {
     const ctrl = new RowSourceController(createArraySource(makeRows(50)));
-    await ctrl.fetch({ start: 0, end: 5 }, null, '');
+    await ctrl.fetch({ start: 0, end: 5 }, [], '');
     expect(ctrl.rowAt(0)?.n).toBe(50);
-    await ctrl.fetch({ start: 0, end: 5 }, { key: 'n', dir: 'asc' }, '');
+    await ctrl.fetch({ start: 0, end: 5 }, [{ key: 'n', dir: 'asc' }], '');
     expect(ctrl.rowAt(0)?.n).toBe(1); // re-fetched under the new sort
   });
 });

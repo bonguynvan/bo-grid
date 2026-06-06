@@ -103,6 +103,18 @@ export function compareRows(a: GridRow, b: GridRow, sort: SortState): number {
   return sort.dir === 'asc' ? d : -d;
 }
 
+/**
+ * Multi-key comparison: apply each sort in order, returning the first that
+ * separates the rows. An empty list leaves rows in their original order.
+ */
+export function compareBySorts(a: GridRow, b: GridRow, sorts: readonly SortState[]): number {
+  for (const sort of sorts) {
+    const d = compareRows(a, b, sort);
+    if (d !== 0) return d;
+  }
+  return 0;
+}
+
 export function colStyle(col: ColumnDef): string {
   if (col.flex) return `flex:${col.flex} 1 0;min-width:0;`;
   return `flex:0 0 ${col.width ?? 96}px;`;
