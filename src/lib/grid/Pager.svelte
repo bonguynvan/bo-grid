@@ -46,6 +46,10 @@
     background: var(--bo-row-hover);
     border-color: var(--bo-sel-border);
   }
+  .pg:focus-visible {
+    outline: 2px solid var(--bo-sel-border);
+    outline-offset: 1px;
+  }
   .pg:disabled {
     opacity: 0.4;
     cursor: not-allowed;

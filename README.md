@@ -691,11 +691,14 @@ the real dimensions and positions so assistive tech isn't misled:
 - `aria-activedescendant` tracks the focused cell for screen readers.
 - Sparkline cells carry a text `aria-label`; sticky/skeleton duplicates are
   `aria-hidden`; the aggregation bar is an `aria-live` status region.
-- Fully keyboard-operable (see [Selection & keyboard](#selection--keyboard) and
-  inline editing) and respects `prefers-reduced-motion`.
+- Fully keyboard-operable: one tab stop with arrow-key navigation, APG-pattern
+  menus (focus moves in, arrow-navigable, returns focus on close), a keyboard path
+  to filtering (column menu → **Filter…**), and visible `:focus-visible` rings on
+  every reachable control. Respects `prefers-reduced-motion`.
 
-A formal WCAG 2.1 AA audit is on the roadmap; the above is a deliberate pass, not
-a certification.
+bo-grid targets **WCAG 2.1 AA**. See **[ACCESSIBILITY.md](./ACCESSIBILITY.md)** for
+the full keyboard map, roles, measured contrast ratios, and conformance notes from
+the audit.
 
 ## Develop
 

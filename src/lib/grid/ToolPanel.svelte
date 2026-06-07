@@ -84,6 +84,11 @@
   .bo-tp-link:hover {
     text-decoration: underline;
   }
+  .bo-tp-link:focus-visible {
+    outline: 2px solid var(--bo-sel-border);
+    outline-offset: 1px;
+    border-radius: 4px;
+  }
   .bo-tp-search {
     width: 100%;
     padding: 5px 7px;

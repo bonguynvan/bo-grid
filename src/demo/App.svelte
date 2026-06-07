@@ -449,6 +449,15 @@
     color: #0a0a0a;
     background: var(--up);
   }
+  /* Visible keyboard focus (WCAG 2.4.7) for the landing-page controls. */
+  .tabs button:focus-visible,
+  .lp-theme:focus-visible,
+  .lp-copy:focus-visible,
+  .lp-cta:focus-visible,
+  .lp-foot-links a:focus-visible {
+    outline: 2px solid var(--up);
+    outline-offset: 2px;
+  }
   .lp-demo {
     border: 0.5px solid var(--border);
     border-radius: 14px;

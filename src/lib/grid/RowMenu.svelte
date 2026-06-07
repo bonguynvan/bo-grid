@@ -1,6 +1,8 @@
 <script lang="ts">
-  // Floating right-click row menu. Presentation-only: the parent owns open/close
-  // state and positions it via x/y.
+  // Floating action menu (row context menu + column header menu). Presentation +
+  // its own keyboard semantics (APG menu pattern): focus moves into the menu on
+  // open, Arrow/Home/End move between items, Enter/Space activate, Esc/Tab close.
+  // The parent owns open/close state and positions it via x/y.
   let {
     x,
     y,
@@ -12,14 +14,69 @@
     items: Array<{ label: string; onSelect: () => void }>;
     onClose: () => void;
   } = $props();
+
+  let menuEl: HTMLDivElement;
+
+  const buttons = (): HTMLButtonElement[] =>
+    menuEl ? [...menuEl.querySelectorAll<HTMLButtonElement>('.rowmenu-item')] : [];
+
+  function focusAt(i: number): void {
+    const b = buttons();
+    if (b.length === 0) return;
+    b[((i % b.length) + b.length) % b.length].focus();
+  }
+
+  // Move focus into the menu on open; restore it to the opener on close.
+  $effect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    focusAt(0);
+    return () => opener?.focus?.();
+  });
+
+  function onKeydown(e: KeyboardEvent): void {
+    const b = buttons();
+    const i = b.indexOf(document.activeElement as HTMLButtonElement);
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        e.stopPropagation();
+        focusAt(i + 1);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        e.stopPropagation();
+        focusAt(i - 1);
+        break;
+      case 'Home':
+        e.preventDefault();
+        e.stopPropagation();
+        focusAt(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        e.stopPropagation();
+        focusAt(b.length - 1);
+        break;
+      case 'Escape':
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+        break;
+      case 'Tab':
+        onClose(); // close and let focus return to the opener
+        break;
+    }
+  }
 </script>
 
 <div
   class="rowmenu"
   role="menu"
   tabindex="-1"
+  bind:this={menuEl}
   style="left:{x}px;top:{y}px;"
   onpointerdown={(e) => e.stopPropagation()}
+  onkeydown={onKeydown}
 >
   {#each items as item (item.label)}
     <button
@@ -62,5 +119,11 @@
   }
   .rowmenu-item:hover {
     background: var(--bo-row-hover);
+  }
+  /* Visible keyboard focus (WCAG 2.4.7) — the menu is arrow-navigable. */
+  .rowmenu-item:focus-visible {
+    background: var(--bo-row-hover);
+    outline: 2px solid var(--bo-sel-border);
+    outline-offset: -2px;
   }
 </style>

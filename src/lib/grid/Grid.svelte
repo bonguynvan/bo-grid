@@ -1110,17 +1110,14 @@
   function filterKindFor(col: ColumnDef): FilterKind {
     return typeof col.filter === 'string' ? col.filter : defaultFilterKind(col);
   }
-  async function openFilterMenu(col: ColumnDef, e: Event) {
-    e.stopPropagation();
-    // Read the anchor rect now — after the await, the event's currentTarget is null.
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  async function openFilterMenu(col: ColumnDef, anchor: { left: number; bottom: number }) {
     let kind = filterKindFor(col);
     // A set filter needs distinct values; in source mode they can't be
     // enumerated, so fall back to the column's typed filter.
     if (source && kind === 'set') kind = defaultFilterKind(col);
     const values = !source && kind === 'set' ? distinctValues(rows, col.key, valueOf) : [];
     if (!FilterMenuComp) FilterMenuComp = (await import('./FilterMenu.svelte')).default;
-    filterUi = { key: col.key, kind, header: col.header, values, x: rect.left, y: rect.bottom + 2 };
+    filterUi = { key: col.key, kind, header: col.header, values, x: anchor.left, y: anchor.bottom + 2 };
   }
   function applyColumnFilter(key: string, f: ColumnFilter | null): void {
     const next = { ...activeColumnFilters };
@@ -1164,7 +1161,11 @@
 
   // Column header menu (⋮): sort / pin / autosize / hide. Reuses the floating
   // RowMenu (a light action list — no lazy chunk, unlike the filter menu).
-  function columnMenuItems(col: ColumnDef): Array<{ label: string; onSelect: () => void }> {
+  // `anchor` positions the (keyboard-reachable) Filter submenu at the column.
+  function columnMenuItems(
+    col: ColumnDef,
+    anchor: { left: number; bottom: number },
+  ): Array<{ label: string; onSelect: () => void }> {
     const items: Array<{ label: string; onSelect: () => void }> = [];
     if (isSortable(col)) {
       items.push({ label: 'Sort ascending', onSelect: () => setSorts([{ key: col.key, dir: 'asc' }]) });
@@ -1172,6 +1173,10 @@
       if (sortInfo(col.key)) {
         items.push({ label: 'Clear sort', onSelect: () => setSorts(sorts.filter((s) => s.key !== col.key)) });
       }
+    }
+    // Keyboard path to filtering (the header funnel is pointer-only by design).
+    if (filterMenu && col.type !== 'sparkline' && col.filter !== false) {
+      items.push({ label: 'Filter…', onSelect: () => void openFilterMenu(col, anchor) });
     }
     const side = pinSideOf(col);
     if (side !== 'left') items.push({ label: 'Pin left', onSelect: () => setPinOverride(col.key, 'left') });
@@ -1184,7 +1189,8 @@
   function openColumnMenu(col: ColumnDef, e: Event) {
     e.stopPropagation();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    menu = { x: rect.left, y: rect.bottom + 2, items: columnMenuItems(col) };
+    const anchor = { left: rect.left, bottom: rect.bottom };
+    menu = { x: rect.left, y: rect.bottom + 2, items: columnMenuItems(col, anchor) };
   }
 
   function onCellClicked(r: number, c: number, e: MouseEvent) {
@@ -1369,7 +1375,8 @@
     if (columnMenu && sel.focus && e.altKey && e.key === 'ArrowDown') {
       e.preventDefault();
       const rect = document.getElementById(activeId ?? '')?.getBoundingClientRect();
-      menu = { x: rect?.left ?? 0, y: rect?.bottom ?? 0, items: columnMenuItems(cols[sel.focus.c]) };
+      const anchor = { left: rect?.left ?? 0, bottom: rect?.bottom ?? 0 };
+      menu = { x: anchor.left, y: anchor.bottom, items: columnMenuItems(cols[sel.focus.c], anchor) };
       return;
     }
     // Tree nav: ArrowRight expands a collapsed node, ArrowLeft collapses an
@@ -1544,6 +1551,9 @@
           </span>
         {/if}
         {#if filterMenu && col.type !== 'sparkline' && col.filter !== false}
+          <!-- Pointer affordance only (tabindex=-1, APG grid pattern): keyboard
+               users reach filtering via the column menu's "Filter…" item. -->
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
           <span
             class="funnel"
             class:on={isFilterActive(activeColumnFilters[col.key])}
@@ -1551,9 +1561,9 @@
             tabindex="-1"
             aria-label="Filter {col.header}"
             title="Filter {col.header}"
-            onclick={(e) => openFilterMenu(col, e)}
-            onkeydown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') openFilterMenu(col, e);
+            onclick={(e) => {
+              e.stopPropagation();
+              openFilterMenu(col, (e.currentTarget as HTMLElement).getBoundingClientRect());
             }}
             ondragstart={(e) => e.preventDefault()}
             draggable="false"
@@ -1945,6 +1955,15 @@
     background: transparent;
     border: 0;
     cursor: grab;
+  }
+  /* Visible keyboard focus (WCAG 2.4.7) for the grid's tabbable controls. */
+  .h:focus-visible,
+  .bo-cols-toggle:focus-visible,
+  .expand-toggle:focus-visible,
+  .bo-quickfilter:focus-visible {
+    outline: 2px solid var(--bo-sel-border);
+    outline-offset: -2px;
+    color: var(--bo-text);
   }
   /* Drag-to-resize grip: a thin hit-target straddling the column's right edge. */
   .h .grip {

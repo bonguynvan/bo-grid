@@ -124,12 +124,21 @@ Completes the conditional-formatting trio (data bars + icon sets + colour scales
   core**. Themeable via props or `--boc-*` vars; geometry helpers exported. New
   **Dashboard** demo (KPI cards + charts inside grid cells).
 
+## 0.15 · Accessibility (WCAG 2.1 AA) — done
+
+- [x] Audit + fixes: keyboard-navigable menus (APG pattern, focus return), a
+  keyboard path to filtering (column-menu **Filter…**), visible `:focus-visible`
+  rings on every reachable control. Verified ARIA grid/treegrid semantics,
+  reduced-motion guards, `aria-live` loading, and AA contrast (no token changes
+  needed). New **ACCESSIBILITY.md**.
+
 ## Candidate themes for later versions
 
 Scaling to more domains (analytics, dashboards, general business):
 
 - **Scale & server** — lazy group/tree server loading, 100+ column virtualization.
-- **Trust & polish** — a formal WCAG 2.1 AA audit, more theme presets, more demos.
+- **More theme presets / demos** — additional built-in palettes; a screen-reader
+  + axe-core pass for a specific deployment.
 - **More charts** — stacked/grouped bars, a legend/tooltip layer (still in the
   companion, never the core).
 

@@ -533,6 +533,13 @@
     color: var(--bo-text);
     background: var(--bo-row-hover);
   }
+  /* Visible keyboard focus (WCAG 2.4.7). */
+  .tree-toggle:focus-visible,
+  .bo-link:focus-visible {
+    outline: 2px solid var(--bo-sel-border);
+    outline-offset: -1px;
+    border-radius: 3px;
+  }
   .tree-leaf {
     display: inline-block;
     width: 18px;

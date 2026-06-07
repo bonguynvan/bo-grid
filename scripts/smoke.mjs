@@ -443,6 +443,15 @@ await wait(20);
 const kbMenu = document.querySelector('.rowmenu');
 if (!kbMenu || kbMenu.querySelectorAll('.rowmenu-item').length === 0)
   fail('ContextMenu key did not open the row menu from the keyboard');
+// a11y (v0.15): opening via keyboard moves focus into the menu (APG menu pattern).
+if (!document.activeElement?.classList?.contains('rowmenu-item'))
+  fail('keyboard-opened menu did not move focus to its first item');
+// ArrowDown navigates between items (dispatched on the focused item → bubbles to menu).
+const kbFirst = document.activeElement;
+kbFirst.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+await wait(10);
+if (document.activeElement === kbFirst || !document.activeElement?.classList?.contains('rowmenu-item'))
+  fail('ArrowDown did not move focus within the keyboard menu');
 document.querySelector('.bo-grid.grid').dispatchEvent(
   new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
 );
@@ -513,6 +522,10 @@ lastMenuBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 await wait(20);
 const colMenu = document.querySelector('.rowmenu');
 if (!colMenu) fail('column menu did not open');
+// a11y (v0.15): the column menu carries a keyboard path to filtering (the header
+// funnel is pointer-only by APG grid design).
+if (![...colMenu.querySelectorAll('.rowmenu-item')].some((b) => b.textContent.trim() === 'Filter…'))
+  fail('column menu: keyboard "Filter…" item did not render on a filterable column');
 [...colMenu.querySelectorAll('.rowmenu-item')]
   .find((b) => b.textContent.trim() === 'Hide column')
   ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));

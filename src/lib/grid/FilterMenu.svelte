@@ -255,6 +255,13 @@
   .bo-fm-btn:hover {
     color: var(--bo-text);
   }
+  /* Visible keyboard focus (WCAG 2.4.7) for the menu's custom buttons. */
+  .bo-fm-btn:focus-visible,
+  .bo-fm-link:focus-visible {
+    outline: 2px solid var(--bo-sel-border);
+    outline-offset: 1px;
+    border-radius: 5px;
+  }
   .bo-fm-apply {
     color: #0a0a0a;
     background: var(--bo-up);

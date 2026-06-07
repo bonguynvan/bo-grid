@@ -3,6 +3,35 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.15.0] — Unreleased
+
+Theme: **accessibility (WCAG 2.1 AA audit)** — trust & polish. See
+[ACCESSIBILITY.md](./ACCESSIBILITY.md).
+
+### Added
+
+- **Keyboard-navigable menus** (APG menu pattern): the row/column menus now move
+  focus into the menu on open, navigate with <kbd>↑ ↓ Home End</kbd>, activate with
+  <kbd>Enter</kbd>, close on <kbd>Esc</kbd>/<kbd>Tab</kbd>, and **return focus** to
+  the opener.
+- **Keyboard path to filtering**: a **Filter…** item in the column menu
+  (<kbd>Alt</kbd>+<kbd>↓</kbd>) opens the filter menu without the mouse.
+- **ACCESSIBILITY.md** — documents roles, the keyboard model, focus handling,
+  measured contrast ratios, and motion/status-message conformance.
+
+### Fixed
+
+- **Visible focus indicators** (WCAG 2.4.7) on every keyboard-reachable control —
+  headers, menu items, pager, filter & columns panels, tree/expand toggles, links,
+  the quick-filter box and the column tool toggle (plus the demo's tabs and theme
+  toggle). Native controls keep their themed platform rings.
+
+### Notes
+
+- Verified: ARIA grid/treegrid semantics, `aria-sort`, `aria-activedescendant`,
+  reduced-motion guards (flash/spinner/shimmer), `aria-live` loading, and AA
+  contrast on both presets — all already in place; no token changes were needed.
+
 ## [0.14.0] — Unreleased
 
 Theme: **`bo-grid/charts` companion** — tiny dashboard charts, kept out of the
@@ -355,6 +384,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.15.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.15.0
 [0.14.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.14.0
 [0.13.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.13.0
 [0.12.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.12.0
