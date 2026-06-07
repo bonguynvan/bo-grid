@@ -9,12 +9,11 @@ A free alternative to the heavyweight grids that paywall these features.
 **[Benchmarks](./BENCHMARKS.md)** ·
 **[Roadmap](./ROADMAP.md)**
 
-The demo is a small gallery of nine grid types — a realtime **Trading desk**, a
-grouped **Portfolio** with subtotals and pivot, a general-purpose editable
-**Spreadsheet**, a live **Order book** depth ladder, a **Correlation** heatmap
-matrix, a **Leaderboard** with rank medals and score bars, a **Tree** file
-explorer, a drag-to-reorder **Tasks** list, and a **1M-row** trade tape windowed
-from a synthetic source — switch between them with the tabs.
+The demo is a gallery of grid types — a realtime **Trading desk**, a grouped
+**Portfolio** with subtotals and pivot, an editable **Spreadsheet**, a live
+**Order book**, a **Correlation** heatmap, a **Dashboard** with in-cell charts, a
+**Wide** 60-column grid, a server-backed **Lazy tree**, and more — switch between
+them with the tabs.
 
 > **Status: actively developed.** Working: config-driven columns, virtual scroll,
 > sort (single / multi / controlled), filtering (global, per-column row, header
@@ -40,10 +39,9 @@ from a synthetic source — switch between them with the tabs.
 | Bundle | hundreds of KB | **~20 KB gzip** ([benchmarks](./BENCHMARKS.md)) |
 | Svelte | wrapper | native Svelte 5 |
 
-bo-grid ships most of AG Grid's **paid (Enterprise)** features — grouping, pivot,
-tree data, master-detail, range selection, Excel export, sparklines — for free.
-See the honest **[bo-grid vs AG Grid](./docs/vs-ag-grid.md)** comparison (including
-what it doesn't do) to decide.
+bo-grid ships most of the features other grids put behind a **paid (Enterprise)**
+tier — grouping, pivot, tree data, master-detail, range selection, Excel export,
+sparklines — for free, and runs in any framework via a [custom element](./docs/frameworks.md).
 
 ## Install
 

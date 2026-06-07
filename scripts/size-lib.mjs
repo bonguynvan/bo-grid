@@ -15,8 +15,8 @@ const DIR = 'lib-dist';
 // tree), 24 → 28 (filtering, column management, spreadsheet power), then 28 → 32
 // for the analytics + scale wave (conditional formatting, computed columns, more
 // rich types, column virtualization). At ~28 KB gzip it is still ~15× smaller than
-// AG Grid (~500 KB) — the "tiny" claim holds. Heavy optional UI (filter menu, tool
-// panel) stays lazy and is excluded below, so this is the always-loaded core.
+// typical heavyweight grids (~500 KB) — the "tiny" claim holds. Heavy optional UI
+// (filter menu, tool panel) stays lazy and is excluded below — the always-loaded core.
 // The grid core (`js`) is the always-loaded promise. The optional charts
 // companion (`bo-grid/charts`) is a separate entry a consumer only pays for if
 // they import it — budgeted on its own so it also stays tiny.

@@ -14,7 +14,7 @@
   const REPO = 'https://github.com/bonguynvan/bo-grid';
   const NPM = 'https://www.npmjs.com/package/bo-grid';
 
-  // Features AG Grid puts behind its Enterprise paywall — free in bo-grid.
+  // Features other grids put behind a paywall — free in bo-grid.
   const FREE = [
     'Grouping + aggregation',
     'Pivot tables',
@@ -41,7 +41,7 @@
   <div class="lp-nav-links">
     <a href="#examples">Examples</a>
     <a href="./api.html">API</a>
-    <a href="{REPO}/blob/main/docs/vs-ag-grid.md">vs AG Grid</a>
+    <a href="{REPO}/blob/main/docs/frameworks.md">Frameworks</a>
     <a class="lp-nav-cta" href={NPM} target="_blank" rel="noreferrer">npm ↗</a>
     <a class="lp-nav-cta" href={REPO} target="_blank" rel="noreferrer">GitHub ↗</a>
     <button
@@ -142,7 +142,7 @@
     <nav class="lp-foot-links" aria-label="Documentation">
       <a href="./api.html">API reference</a>
       <a href="{REPO}/blob/main/BENCHMARKS.md">Benchmarks</a>
-      <a href="{REPO}/blob/main/docs/vs-ag-grid.md">vs AG Grid</a>
+      <a href="{REPO}/blob/main/docs/frameworks.md">Frameworks</a>
       <a href="{REPO}/blob/main/docs/sveltekit.md">SvelteKit guide</a>
       <a href={NPM} target="_blank" rel="noreferrer">npm</a>
       <a href={REPO} target="_blank" rel="noreferrer">GitHub</a>

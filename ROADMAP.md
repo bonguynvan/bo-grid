@@ -31,7 +31,7 @@ download a menu only when you open one.
 
 ## 0.4 · Column management & discoverability — done
 
-Runtime column management — the part AG Grid does that needs real capability.
+Runtime column management — the part heavyweight grids do that needs real capability.
 Heavy UI (the tool panel) is lazy-loaded; the light column menu reuses the
 in-core action menu.
 
@@ -45,7 +45,7 @@ Shipped API (all additive): `columnMenu`, `columnsPanel`,
 ## 0.5 · Spreadsheet power — done
 
 Excel-grade editing. Lib budget recalibrated 24 → 28 KB (still ~15–20× smaller
-than AG Grid; heavy UI stays lazy and excluded from the core count).
+than heavyweight grids; heavy UI stays lazy and excluded from the core count).
 
 - [x] **M1 — Fill handle** (`fillHandle`): drag the selection's corner to copy
   the selected value(s) across the extended range (editable columns; tiles).
@@ -199,7 +199,7 @@ CSV round-trip. Remaining ideas are polish or demand-driven:
   missing.
 
 Note: the eager grid core is ~97% of its 28 KB budget; the next sizable *core*
-feature should recalibrate it (still ~15× smaller than AG Grid). The charts
+feature should recalibrate it (still ~15× smaller than heavyweight grids). The charts
 companion (its own 8 KB budget) is the model for keeping the core tiny.
 
 Out of scope by design (they fight the "tiny" positioning): a heavyweight

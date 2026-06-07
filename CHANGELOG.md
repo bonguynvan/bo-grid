@@ -165,8 +165,8 @@ Theme: **scale — column (horizontal) virtualization** for very wide grids. See
 - **Library size budget recalibrated 28 → 32 KB** (gzip, eager core). The analytics
   + scale wave (conditional formatting, computed columns, more rich types, column
   virtualization) grew the always-loaded core to ~28 KB — still ~15× smaller than
-  AG Grid (~500 KB). The charts companion keeps its own 8 KB budget; heavy menu UI
-  stays lazy and excluded.
+  typical heavyweight grids (~500 KB). The charts companion keeps its own 8 KB
+  budget; heavy menu UI stays lazy and excluded.
 
 ## [0.15.0] — Unreleased
 
