@@ -23,6 +23,16 @@ for (const k of Object.getOwnPropertyNames(window)) {
 }
 globalThis.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), 16);
 globalThis.cancelAnimationFrame = (id) => clearTimeout(id);
+// Svelte's bind:clientWidth (used by column virtualization) needs ResizeObserver;
+// jsdom has none. A no-op keeps mount from throwing — clientWidth stays 0, so
+// virtualization falls back to rendering all columns (the math is unit-tested).
+if (!globalThis.ResizeObserver) {
+  globalThis.ResizeObserver = window.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
 window.requestAnimationFrame = globalThis.requestAnimationFrame;
 window.cancelAnimationFrame = globalThis.cancelAnimationFrame;
 window.devicePixelRatio = 2;
@@ -886,6 +896,27 @@ if (dashArcs === 0) fail('Dashboard: donut chart did not render');
 // >1 line = the KPI card line + one LineChart per grid row (charts inside cells).
 if (dashLines < 2) fail(`Dashboard: in-cell line charts did not render (${dashLines} line charts)`);
 
+// Wide grid (v0.16): 60+ columns in fixed-width horizontal-scroll mode with a
+// pinned label column. (Column windowing needs real layout + ResizeObserver,
+// which jsdom lacks, so it renders all columns here — windowing is unit-tested
+// in colvirt.test.ts. This asserts the wide layout mounts and pins correctly.)
+const wideTab = tab('Wide');
+if (!wideTab) fail('Wide example tab not found');
+click(wideTab);
+// Poll until the Wide grid's own columns render (the lazy chunk loads after the
+// previous example tears down — avoid matching a transitional grid).
+let wideHeaders = 0;
+for (let i = 0; i < 80; i++) {
+  wideHeaders = document.querySelectorAll('.bo-grid .head .h').length;
+  if (wideHeaders >= 60) break;
+  await wait(25);
+}
+if (wideHeaders < 60) fail(`wide grid: expected 60+ columns in the header (got ${wideHeaders})`);
+const widePinned = [...document.querySelectorAll('.bo-grid .head .h')].filter((h) =>
+  /position:\s*sticky/.test(h.getAttribute('style') || ''),
+).length;
+if (widePinned === 0) fail('wide grid: pinned Account column not sticky in horizontal-scroll mode');
+
 // Tree data: roots render collapsed; expanding a folder reveals children.
 const treeTab = tab('Tree');
 if (!treeTab) fail('Tree example tab not found');
@@ -955,7 +986,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale + computed-col, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut (charts companion), tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

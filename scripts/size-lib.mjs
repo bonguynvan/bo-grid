@@ -12,14 +12,15 @@ import { gzipSync } from 'node:zlib';
 const DIR = 'lib-dist';
 // Recalibrated as the library matured from a minimal Phase-0 core into a full
 // grid: 16 → 20 (sort/selection/footer/…), 20 → 24 (master-detail, pagination,
-// tree), then 24 → 28 (filtering, column management, spreadsheet power). At
-// ~28 KB gzip it is still ~15–20× smaller than AG Grid (~500 KB) — the "tiny"
-// claim holds. Heavy optional UI (filter menu, tool panel) stays lazy and is
-// excluded below, so this is genuinely the always-loaded core.
+// tree), 24 → 28 (filtering, column management, spreadsheet power), then 28 → 32
+// for the analytics + scale wave (conditional formatting, computed columns, more
+// rich types, column virtualization). At ~28 KB gzip it is still ~15× smaller than
+// AG Grid (~500 KB) — the "tiny" claim holds. Heavy optional UI (filter menu, tool
+// panel) stays lazy and is excluded below, so this is the always-loaded core.
 // The grid core (`js`) is the always-loaded promise. The optional charts
 // companion (`bo-grid/charts`) is a separate entry a consumer only pays for if
 // they import it — budgeted on its own so it also stays tiny.
-const BUDGET_KB = { js: 28, css: 6, charts: 8 }; // gzipped, Svelte excluded
+const BUDGET_KB = { js: 32, css: 6, charts: 8 }; // gzipped, Svelte excluded
 
 const gzipKb = (path) => gzipSync(readFileSync(path)).length / 1024;
 const jsFiles = readdirSync(DIR).filter((f) => f.endsWith('.js'));

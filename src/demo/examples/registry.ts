@@ -66,6 +66,12 @@ export const EXAMPLES: Example[] = [
     load: () => import('./Dashboard.svelte'),
   },
   {
+    id: 'wide',
+    title: 'Wide',
+    blurb: '60+ columns with horizontal column virtualization and a pinned label column.',
+    load: () => import('./WideGrid.svelte'),
+  },
+  {
     id: 'tree',
     title: 'Tree',
     blurb: 'A file-explorer tree — expandable folders, indented rows (tree data).',

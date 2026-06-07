@@ -9,6 +9,7 @@
   import type { ColumnDef, GridRow, SortState, SortDir, CellEditEvent } from './column';
   import { colStyle, isNumeric, isSortable, isEditable, compareBySorts, formatCell, cellValue } from './column';
   import { arrangePinned } from './pin';
+  import { columnWindow, columnOffsets } from './colvirt';
   import { uniformHeights, variableHeights } from './rowheight';
   import { themeVars, lightTheme, type GridTheme } from './theme';
   import { Selection } from './selection.svelte';
@@ -53,6 +54,7 @@
     onColumnVisibilityChange,
     columnMenu = false,
     columnsPanel = false,
+    virtualizeColumns = false,
     rowClass,
     getRowId = (r: GridRow) => r.id,
     onRowClick,
@@ -112,6 +114,10 @@
         (the place to restore columns hidden via the menu). Lazy-loaded. Default
         false. */
     columnsPanel?: boolean;
+    /** Render only the columns within the horizontal scroll window (+ overscan)
+        for very wide grids (100+ columns). Forces fixed-width horizontal scroll;
+        pinned columns always render. Default false (fit-to-width). */
+    virtualizeColumns?: boolean;
     /** Return extra CSS class(es) for a data row (e.g. to colour by value).
         Style them via `:global(.your-class)` since rows live inside the grid. */
     rowClass?: (row: GridRow) => string | undefined;
@@ -413,6 +419,33 @@
   const layout = $derived(arrangePinned(pinnedSized));
   const cols = $derived(layout.columns);
   const pinned = $derived(layout.anyPinned);
+  // Fixed-width horizontal-scroll mode: when columns are pinned OR column
+  // virtualization is on. Drives the same layout (explicit widths, overflow-x,
+  // scroll-synced header) that pinning already uses.
+  const hScroll = $derived(pinned || virtualizeColumns);
+
+  // Column virtualization: render only the columns whose x-range intersects the
+  // horizontal viewport (+ overscan); pinned columns always render. Off-window
+  // runs of columns collapse into a single spacer so widths/positions are exact.
+  const COL_OVERSCAN = 320; // px
+  let scrollLeft = $state(0);
+  let viewW = $state(0);
+  type ColItem = { kind: 'cell'; ci: number; key: string } | { kind: 'spacer'; w: number; key: string };
+  const colItems = $derived.by<ColItem[]>(() => {
+    const n = cols.length;
+    // Off, or before the viewport width is measured: render every column.
+    if (!virtualizeColumns || !viewW) {
+      return Array.from({ length: n }, (_, ci) => ({ kind: 'cell', ci, key: 'c' + ci }) as ColItem);
+    }
+    const widths = layout.info.map((inf) => inf.width);
+    const pins = layout.info.map((inf) => inf.pinned);
+    let sp = 0;
+    return columnWindow(columnOffsets(widths), widths, pins, scrollLeft, viewW, COL_OVERSCAN).map((it) =>
+      it.kind === 'cell'
+        ? ({ kind: 'cell', ci: it.ci, key: 'c' + it.ci } as ColItem)
+        : ({ kind: 'spacer', w: it.w, key: 's' + sp++ } as ColItem),
+    );
+  });
 
   // Spanning header groups: consecutive columns sharing a `group` label merge
   // into one parent header cell (width = sum of child widths). null when unused.
@@ -448,14 +481,14 @@
     return `position:sticky;left:${inf.left + leadPx}px;`;
   }
   function headStyle(ci: number): string {
-    if (!pinned) return colStyle(cols[ci]);
+    if (!hScroll) return colStyle(cols[ci]);
     const inf = layout.info[ci];
     let s = `flex:0 0 ${inf.width}px;width:${inf.width}px;`;
     if (inf.pinned) s += `${pinStick(ci)}z-index:5;background:var(--bo-header-bg);`;
     return s;
   }
   function cellWidthStyle(ci: number): string {
-    if (!pinned) return colStyle(cols[ci]);
+    if (!hScroll) return colStyle(cols[ci]);
     const inf = layout.info[ci];
     let s = `flex:0 0 ${inf.width}px;width:${inf.width}px;`;
     if (inf.pinned) s += `${pinStick(ci)}z-index:1;background:var(--bo-bg);`;
@@ -465,14 +498,14 @@
   // expand column, if any) when the grid scrolls horizontally (pinned mode).
   function selCellStyle(header: boolean): string {
     let s = `flex:0 0 ${SEL_W}px;width:${SEL_W}px;`;
-    if (pinned)
+    if (hScroll)
       s += `position:sticky;left:${expOffset * EXP_W}px;z-index:${header ? 6 : 2};background:var(--bo-${header ? 'header-bg' : 'bg'});`;
     return s;
   }
   // The leading expand-toggle column (master-detail), sticky at the far left.
   function expandCellStyle(header: boolean): string {
     let s = `flex:0 0 ${EXP_W}px;width:${EXP_W}px;`;
-    if (pinned)
+    if (hScroll)
       s += `position:sticky;left:0;z-index:${header ? 6 : 2};background:var(--bo-${header ? 'header-bg' : 'bg'});`;
     return s;
   }
@@ -922,7 +955,7 @@
 
   const total = $derived(hm.total);
   const rowWidthStyle = $derived(
-    pinned ? `width:${layout.totalWidth + leadPx}px;right:auto;` : '',
+    hScroll ? `width:${layout.totalWidth + leadPx}px;right:auto;` : '',
   );
   const visibleCount = $derived(Math.ceil(height / baseH) + OVERSCAN * 2);
   const start = $derived(Math.max(0, hm.indexAt(scrollTop) - OVERSCAN));
@@ -998,9 +1031,10 @@
   function onScroll(e: Event) {
     const el = e.currentTarget as HTMLElement;
     scrollTop = el.scrollTop;
-    if (pinned && headEl) headEl.scrollLeft = el.scrollLeft; // keep header in sync
-    if (pinned && filterRowEl) filterRowEl.scrollLeft = el.scrollLeft; // and the filter row
-    if (pinned && groupHeadEl) groupHeadEl.scrollLeft = el.scrollLeft; // and group headers
+    if (hScroll) scrollLeft = el.scrollLeft; // drives column virtualization
+    if (hScroll && headEl) headEl.scrollLeft = el.scrollLeft; // keep header in sync
+    if (hScroll && filterRowEl) filterRowEl.scrollLeft = el.scrollLeft; // and the filter row
+    if (hScroll && groupHeadEl) groupHeadEl.scrollLeft = el.scrollLeft; // and group headers
   }
 
   function toggleGroup(path: string) {
@@ -1477,7 +1511,7 @@
     </div>
   {/if}
   {#if headerGroups}
-    <div class="head-groups" aria-hidden="true" bind:this={groupHeadEl} style={pinned ? 'overflow:hidden;' : ''}>
+    <div class="head-groups" aria-hidden="true" bind:this={groupHeadEl} style={hScroll ? 'overflow:hidden;' : ''}>
       {#if expandable}<span class="expandcell" style={expandCellStyle(true)}></span>{/if}
       {#if rowSelection}<span class="selcell" style={selCellStyle(true)}></span>{/if}
       {#each headerGroups as g, gi (gi)}
@@ -1485,7 +1519,7 @@
       {/each}
     </div>
   {/if}
-  <div class="head" role="row" aria-rowindex={1} bind:this={headEl} style={pinned ? 'overflow:hidden;' : ''}>
+  <div class="head" role="row" aria-rowindex={1} bind:this={headEl} style={hScroll ? 'overflow:hidden;' : ''}>
     {#if expandable}
       <span class="expandcell selhead" role="columnheader" aria-colindex={1} style={expandCellStyle(true)}></span>
     {/if}
@@ -1604,7 +1638,7 @@
   </div>
 
   {#if filterRow && !source}
-    <div class="filter-row" role="row" bind:this={filterRowEl} style={pinned ? 'overflow:hidden;' : ''}>
+    <div class="filter-row" role="row" bind:this={filterRowEl} style={hScroll ? 'overflow:hidden;' : ''}>
       {#if expandable}<span class="expandcell" style={expandCellStyle(false)}></span>{/if}
       {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
       {#each cols as col, ci (ci)}
@@ -1626,8 +1660,9 @@
 
   <div
     class="viewport"
-    style="height:{height}px;{pinned ? 'overflow-x:auto;' : ''}"
+    style="height:{height}px;{hScroll ? 'overflow-x:auto;' : ''}"
     bind:this={viewportEl}
+    bind:clientWidth={viewW}
     onscroll={onScroll}
   >
     {#if pinnedRows.length > 0}
@@ -1648,7 +1683,7 @@
                 pinned={pinned && layout.info[ci].pinned}
                 pinSide={layout.info[ci].side ?? 'left'}
                 pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right : layout.info[ci].left + leadPx}
-                width={pinned ? layout.info[ci].width : undefined}
+                width={hScroll ? layout.info[ci].width : undefined}
               />
             {/each}
           </div>
@@ -1673,7 +1708,7 @@
         {/each}
       </div>
     {/if}
-    <div class="spacer" style="height:{total}px;{pinned ? `width:${layout.totalWidth + leadPx}px;` : ''}">
+    <div class="spacer" style="height:{total}px;{hScroll ? `width:${layout.totalWidth + leadPx}px;` : ''}">
       {#each renderItems as item (item.vr)}
         {#if item.kind === 'group'}
           <div class="grouprow" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
@@ -1723,49 +1758,55 @@
                 />
               </span>
             {/if}
-            {#each cols as col, ci (ci)}
-              <Cell
-                {col}
-                row={item.row}
-                r={item.vr}
-                c={ci}
-                colIndex={ci + 1 + leadCols}
-                cellId={`${gid}-r${item.vr}-c${ci}`}
-                cellSnippet={cell}
-                selected={sel.contains(item.vr, ci)}
-                focused={sel.isFocus(item.vr, ci)}
-                pinned={pinned && layout.info[ci].pinned}
-                pinSide={layout.info[ci].side ?? 'left'}
-                pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right : layout.info[ci].left + leadPx}
-                width={pinned ? layout.info[ci].width : undefined}
-                alt={item.vr % 2 === 1}
-                editing={editing?.r === item.vr && editing?.c === ci}
-                seed={editing?.r === item.vr && editing?.c === ci ? editSeed : null}
-                fillCorner={fillHandle && !!sel.bounds && item.vr === sel.bounds.r1 && ci === sel.bounds.c1}
-                fillpreview={inFillPreview(item.vr, ci)}
-                cfRange={col.dataBar || col.colorScale ? cfRanges[col.key] : null}
-                {onFillStart}
-                tree={treeData && ci === 0
-                  ? {
-                      depth: item.depth ?? 0,
-                      hasChildren: item.hasChildren ?? false,
-                      expanded: isExpanded(getRowId(item.row)),
-                      onToggle: () => toggleExpand(getRowId(item.row)),
-                    }
-                  : undefined}
-                dragHandle={reorderable && ci === 0
-                  ? { onStart: () => (dragRowVr = item.vr), onEnd: () => (dragRowVr = -1) }
-                  : undefined}
-                {onCellDown}
-                {onCellEnter}
-                onCellClick={onCellClick ? onCellClicked : undefined}
-                onCellDblClick={startEdit}
-                onEditCommit={(raw) => commitEdit(item.vr, ci, raw)}
-                onEditCancel={() => {
-                  editing = null;
-                  editSeed = null;
-                }}
-              />
+            {#each colItems as it (it.key)}
+              {#if it.kind === 'cell'}
+                {@const ci = it.ci}
+                {@const col = cols[ci]}
+                <Cell
+                  {col}
+                  row={item.row}
+                  r={item.vr}
+                  c={ci}
+                  colIndex={ci + 1 + leadCols}
+                  cellId={`${gid}-r${item.vr}-c${ci}`}
+                  cellSnippet={cell}
+                  selected={sel.contains(item.vr, ci)}
+                  focused={sel.isFocus(item.vr, ci)}
+                  pinned={pinned && layout.info[ci].pinned}
+                  pinSide={layout.info[ci].side ?? 'left'}
+                  pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right : layout.info[ci].left + leadPx}
+                  width={hScroll ? layout.info[ci].width : undefined}
+                  alt={item.vr % 2 === 1}
+                  editing={editing?.r === item.vr && editing?.c === ci}
+                  seed={editing?.r === item.vr && editing?.c === ci ? editSeed : null}
+                  fillCorner={fillHandle && !!sel.bounds && item.vr === sel.bounds.r1 && ci === sel.bounds.c1}
+                  fillpreview={inFillPreview(item.vr, ci)}
+                  cfRange={col.dataBar || col.colorScale ? cfRanges[col.key] : null}
+                  {onFillStart}
+                  tree={treeData && ci === 0
+                    ? {
+                        depth: item.depth ?? 0,
+                        hasChildren: item.hasChildren ?? false,
+                        expanded: isExpanded(getRowId(item.row)),
+                        onToggle: () => toggleExpand(getRowId(item.row)),
+                      }
+                    : undefined}
+                  dragHandle={reorderable && ci === 0
+                    ? { onStart: () => (dragRowVr = item.vr), onEnd: () => (dragRowVr = -1) }
+                    : undefined}
+                  {onCellDown}
+                  {onCellEnter}
+                  onCellClick={onCellClick ? onCellClicked : undefined}
+                  onCellDblClick={startEdit}
+                  onEditCommit={(raw) => commitEdit(item.vr, ci, raw)}
+                  onEditCancel={() => {
+                    editing = null;
+                    editSeed = null;
+                  }}
+                />
+              {:else}
+                <span class="colspacer" aria-hidden="true" style="flex:0 0 {it.w}px;width:{it.w}px;"></span>
+              {/if}
             {/each}
           </div>
           {#if expandable && detail && isExpanded(getRowId(item.row))}
@@ -1777,7 +1818,7 @@
       {/each}
     </div>
     {#if footerCells}
-      <div class="footer" role="row" style={pinned ? `width:${layout.totalWidth + leadPx}px;` : ''}>
+      <div class="footer" role="row" style={hScroll ? `width:${layout.totalWidth + leadPx}px;` : ''}>
         {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
         {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
         {#each cols as col, ci (ci)}

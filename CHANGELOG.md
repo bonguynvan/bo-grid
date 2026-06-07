@@ -3,6 +3,29 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.16.0] — Unreleased
+
+Theme: **scale — column (horizontal) virtualization** for very wide grids. See
+[ROADMAP.md](./ROADMAP.md).
+
+### Added
+
+- **Column virtualization** (`virtualizeColumns`): for wide grids (100+ columns),
+  render only the columns within the horizontal scroll window (+ overscan). A
+  60-column grid then costs about the same as a handful of columns. Off-window runs
+  collapse into a single spacer so widths and positions stay exact; **pinned
+  columns always render**. Opt-in; forces fixed-width horizontal scroll (the same
+  layout pinning already uses). New **Wide** demo (60+ columns + pinned label).
+- The windowing math is a pure, unit-tested module (`colvirt.ts`).
+
+### Changed
+
+- **Library size budget recalibrated 28 → 32 KB** (gzip, eager core). The analytics
+  + scale wave (conditional formatting, computed columns, more rich types, column
+  virtualization) grew the always-loaded core to ~28 KB — still ~15× smaller than
+  AG Grid (~500 KB). The charts companion keeps its own 8 KB budget; heavy menu UI
+  stays lazy and excluded.
+
 ## [0.15.0] — Unreleased
 
 Theme: **accessibility (WCAG 2.1 AA audit)** — trust & polish. See
@@ -384,6 +407,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.16.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.16.0
 [0.15.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.15.0
 [0.14.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.14.0
 [0.13.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.13.0

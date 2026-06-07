@@ -450,6 +450,18 @@ render as skeletons.
 the same interface (handy for testing the path or client-side data). Grouping is
 client-only, so it's not applied in source mode.
 
+### Wide grids (column virtualization)
+
+Rows are virtualized vertically by default. For very wide grids (100+ columns),
+add **`virtualizeColumns`** to also virtualize horizontally — only the columns in
+the scroll window (+ overscan) render, so a 60-column grid costs about the same as
+a handful. It switches the grid to fixed-width horizontal scroll; **pinned columns
+always render**. See the **Wide** example.
+
+```svelte
+<Grid {rows} {columns} virtualizeColumns height={520} />
+```
+
 ## Column reorder
 
 Pass `onRowReorder(from, to)` to enable **drag-to-reorder rows** via a handle in

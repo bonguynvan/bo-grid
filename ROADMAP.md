@@ -132,11 +132,19 @@ Completes the conditional-formatting trio (data bars + icon sets + colour scales
   reduced-motion guards, `aria-live` loading, and AA contrast (no token changes
   needed). New **ACCESSIBILITY.md**.
 
+## 0.16 · Scale — column virtualization — done
+
+- [x] **Column (horizontal) virtualization** (`virtualizeColumns`): render only the
+  columns in the horizontal window (+ overscan) for 100+ column grids; off-window
+  runs collapse into spacers; pinned columns always render. Pure windowing math in
+  `colvirt.ts`. New **Wide** demo. Core budget recalibrated 28 → 32 KB.
+
 ## Candidate themes for later versions
 
 Scaling to more domains (analytics, dashboards, general business):
 
-- **Scale & server** — lazy group/tree server loading, 100+ column virtualization.
+- **Server-side group/tree loading** — lazy-load group/tree children on expand
+  (the remaining "server" half of scale; client tree/group is in-memory today).
 - **More theme presets / demos** — additional built-in palettes; a screen-reader
   + axe-core pass for a specific deployment.
 - **More charts** — stacked/grouped bars, a legend/tooltip layer (still in the
