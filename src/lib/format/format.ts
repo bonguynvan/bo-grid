@@ -26,3 +26,43 @@ export function fmtDate(ms: number, style: DateStyle = 'medium'): string {
       : { month: 'short', day: 'numeric', year: 'numeric' };
   return new Date(ms).toLocaleDateString('en-US', opts);
 }
+
+/** Localized currency (e.g. `$1,234.50`). Falls back to a fixed-decimal number
+    if the ISO `currency` code is unsupported. */
+export function fmtCurrency(v: number, currency = 'USD', locale = 'en-US', decimals?: number): string {
+  if (!Number.isFinite(v)) return '';
+  const fd = decimals != null ? { minimumFractionDigits: decimals, maximumFractionDigits: decimals } : {};
+  try {
+    return new Intl.NumberFormat(locale, { style: 'currency', currency, ...fd }).format(v);
+  } catch {
+    return v.toFixed(decimals ?? 2);
+  }
+}
+
+// Coarse relative-time thresholds (seconds → unit divisor + label).
+const RT: [number, number, string][] = [
+  [3600, 60, 'min'],
+  [86_400, 3600, 'hour'],
+  [604_800, 86_400, 'day'],
+  [2_629_800, 604_800, 'week'],
+  [31_557_600, 2_629_800, 'month'],
+  [Infinity, 31_557_600, 'year'],
+];
+
+/** Human relative time vs `now` (default: real now) — e.g. `3 hours ago`,
+    `in 2 days`. `ms` is an epoch timestamp. Deterministic when `now` is passed. */
+export function relativeTime(ms: number, now = Date.now()): string {
+  if (!Number.isFinite(ms)) return '';
+  const secs = Math.round((now - ms) / 1000); // >0 = past
+  const past = secs >= 0;
+  const a = Math.abs(secs);
+  if (a < 45) return past ? 'just now' : 'soon';
+  for (const [ceil, div, unit] of RT) {
+    if (a < ceil) {
+      const n = Math.floor(a / div);
+      const label = `${n} ${unit}${n === 1 ? '' : 's'}`;
+      return past ? `${label} ago` : `in ${label}`;
+    }
+  }
+  return '';
+}

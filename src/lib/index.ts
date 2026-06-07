@@ -28,7 +28,7 @@ export type { AggKind, AggResult } from './grid/aggregate';
 export type { ColumnFilter, FilterKind, TextOp, NumberOp, DateOp } from './grid/filtering';
 
 // Value formatters (handy when building custom cell content)
-export { fmtPrice, fmtPercent, fmtVolume, fmtDate } from './format/format';
+export { fmtPrice, fmtPercent, fmtVolume, fmtDate, fmtCurrency, relativeTime } from './format/format';
 export type { DateStyle } from './format/format';
 
 // Standalone helpers

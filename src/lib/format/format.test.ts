@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fmtPrice, fmtPercent, fmtVolume, fmtDate } from './format';
+import { fmtPrice, fmtPercent, fmtVolume, fmtDate, fmtCurrency, relativeTime } from './format';
 
 describe('fmtPrice', () => {
   it('always shows two fraction digits with thousands separators', () => {
@@ -52,5 +52,51 @@ describe('fmtDate', () => {
 
   it('formats short style as M/D/YY', () => {
     expect(fmtDate(ms, 'short')).toMatch(/^\d{1,2}\/\d{1,2}\/\d{2}$/);
+  });
+});
+
+describe('fmtCurrency', () => {
+  it('formats USD with a symbol and grouping by default', () => {
+    expect(fmtCurrency(1234.5)).toBe('$1,234.50');
+    expect(fmtCurrency(0)).toBe('$0.00');
+  });
+
+  it('honours an explicit decimals override', () => {
+    expect(fmtCurrency(1234.5, 'USD', 'en-US', 0)).toBe('$1,235');
+  });
+
+  it('returns empty for non-finite input', () => {
+    expect(fmtCurrency(NaN)).toBe('');
+  });
+
+  it('falls back to a fixed-decimal number for an unknown currency code', () => {
+    expect(fmtCurrency(12.5, 'NOTACODE')).toBe('12.50');
+  });
+});
+
+describe('relativeTime', () => {
+  const now = Date.UTC(2024, 0, 15, 12);
+  const ago = (sec: number) => relativeTime(now - sec * 1000, now);
+
+  it('reports recent times as "just now"', () => {
+    expect(ago(10)).toBe('just now');
+  });
+
+  it('scales through minutes/hours/days with correct pluralization', () => {
+    expect(ago(60)).toBe('1 min ago');
+    expect(ago(120)).toBe('2 mins ago');
+    expect(ago(3600)).toBe('1 hour ago');
+    expect(ago(7200)).toBe('2 hours ago');
+    expect(ago(86_400)).toBe('1 day ago');
+    expect(ago(2 * 86_400)).toBe('2 days ago');
+  });
+
+  it('handles future times with an "in" prefix', () => {
+    expect(relativeTime(now + 3600 * 1000, now)).toBe('in 1 hour');
+    expect(relativeTime(now + 5 * 1000, now)).toBe('soon');
+  });
+
+  it('returns empty for non-finite input', () => {
+    expect(relativeTime(NaN, now)).toBe('');
   });
 });

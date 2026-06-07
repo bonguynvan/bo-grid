@@ -1,5 +1,5 @@
 import type { Candle } from '../types';
-import { fmtPrice, fmtPercent, fmtVolume, fmtDate, type DateStyle } from '../format/format';
+import { fmtPrice, fmtPercent, fmtVolume, fmtDate, fmtCurrency, relativeTime, type DateStyle } from '../format/format';
 import type { AggKind } from './aggregate';
 import type { FilterKind } from './filtering';
 
@@ -142,6 +142,8 @@ export type ColumnDef =
   | (ColBase & { type: 'volume' })
   | (ColBase & { type: 'number'; decimals?: number })
   | (ColBase & { type: 'date'; dateStyle?: DateStyle })
+  | (ColBase & { type: 'currency'; currency?: string; locale?: string; decimals?: number })
+  | (ColBase & { type: 'relative' }) // value: epoch ms → "3 hours ago"
   | (ColBase & { type: 'heatmap'; min: number; max: number; decimals?: number })
   | (ColBase & { type: 'sparkline'; sparkKey: string })
   // Rich cell types (any business domain) — value renders as the named widget.
@@ -151,6 +153,7 @@ export type ColumnDef =
   | (ColBase & { type: 'badge'; tones?: Record<string, BadgeTone> })
   | (ColBase & { type: 'boolean'; trueLabel?: string; falseLabel?: string })
   | (ColBase & { type: 'avatar'; sub?: string }) // value: display name
+  | (ColBase & { type: 'link'; href?: (row: GridRow) => string; newTab?: boolean }) // value: text
   // Rendered by the consumer's `cell` snippet on <Grid>.
   | (ColBase & { type: 'custom' });
 
@@ -195,6 +198,10 @@ export function formatCell(col: ColumnDef, value: unknown, row?: GridRow): strin
       return n.toFixed(col.decimals ?? 2);
     case 'date':
       return fmtDate(n, col.dateStyle);
+    case 'currency':
+      return fmtCurrency(n, col.currency, col.locale, col.decimals);
+    case 'relative':
+      return relativeTime(n);
     case 'heatmap':
       return n.toFixed(col.decimals ?? 2);
     case 'rating':
@@ -214,7 +221,7 @@ export function isSortable(col: ColumnDef): boolean {
 }
 
 // Rich display widgets aren't text-editable (they render structured/visual data).
-const DISPLAY_ONLY = ['sparkline', 'custom', 'tags', 'badge', 'boolean', 'avatar', 'progress', 'rating'];
+const DISPLAY_ONLY = ['sparkline', 'custom', 'tags', 'badge', 'boolean', 'avatar', 'progress', 'rating', 'link', 'relative'];
 
 export function isEditable(col: ColumnDef): boolean {
   // Computed columns have no underlying field to write back to.
@@ -264,7 +271,7 @@ export function colWidth(col: ColumnDef): number {
 
 export function isNumeric(col: ColumnDef): boolean {
   // Non-numeric (text-aligned / structured) types; everything else is a number.
-  return !['text', 'sparkline', 'custom', 'tags', 'badge', 'boolean', 'avatar'].includes(col.type);
+  return !['text', 'sparkline', 'custom', 'tags', 'badge', 'boolean', 'avatar', 'link'].includes(col.type);
 }
 
 export function candlesOf(row: GridRow, key: string): Candle[] {
@@ -355,6 +362,17 @@ export function pickIcon(value: unknown, rules: readonly IconRule[]): IconRule |
     if (n >= rule.at && (pick === null || rule.at >= pick.at)) pick = rule;
   }
   return pick;
+}
+
+/** Sanitize a `link` column's href: block the XSS-prone url schemes
+    (javascript:/data:/vbscript:), pass everything else (http(s)/mailto/tel/
+    relative). Returns undefined for an empty or unsafe href (renders as text). */
+export function safeHref(url: string): string | undefined {
+  const u = url.trim();
+  if (!u) return undefined;
+  // eslint-disable-next-line no-script-url
+  if (/^(javascript|data|vbscript):/i.test(u)) return undefined;
+  return u;
 }
 
 /** Semantic tone → grid theme colour var (shared by badges + icon sets). */

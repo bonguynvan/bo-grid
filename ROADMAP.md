@@ -111,15 +111,24 @@ Completes the conditional-formatting trio (data bars + icon sets + colour scales
   group/footer aggregation, conditional formatting, export and copy. Not editable;
   in-memory mode. **Portfolio** adds a derived Cost Basis column.
 
+## 0.13 · More rich types — done
+
+- [x] **`link`** (anchor, `href(row)`, `newTab`, sanitized), **`relative`**
+  (epoch ms → "3 hours ago"), **`currency`** (localized via `Intl.NumberFormat`).
+  Exported `relativeTime` / `fmtCurrency`. **Team** demo shows all three.
+
 ## Candidate themes for later versions
 
 Scaling to more domains (analytics, dashboards, general business):
 
-- **More rich types** — `link`, `relative-time`, `currency`/`unit`.
 - **Charts companion** — an optional `bo-grid/charts` package (tiny bar/line/area/
-  donut) for dashboards, kept out of the core.
+  donut) for dashboards, kept out of the core. (Sidesteps the core size budget,
+  now at ~97%.)
 - **Scale & server** — lazy group/tree server loading, 100+ column virtualization.
 - **Trust & polish** — a formal WCAG 2.1 AA audit, more theme presets, more demos.
+
+Note: the eager core is ~97% of its 28 KB budget; the next sizable core feature
+should recalibrate it (still ~15× smaller than AG Grid).
 
 Out of scope by design (they fight the "tiny" positioning): a heavyweight
 integrated-charting engine in the core (the companion package is the answer),

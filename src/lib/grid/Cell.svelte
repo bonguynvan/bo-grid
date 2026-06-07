@@ -11,6 +11,7 @@
     colorScaleBackground,
     pickIcon,
     toneColor,
+    safeHref,
   } from './column';
   import { heatColor } from './heatmap';
   import Sparkline from '../sparkline/Sparkline.svelte';
@@ -298,6 +299,15 @@
   {:else if col.type === 'avatar'}
     <span class="bo-avatar" aria-hidden="true">{initials(String(value ?? ''))}</span>
     <span class="bo-avatar-name">{value ?? ''}{#if col.sub}<em>{row[col.sub]}</em>{/if}</span>
+  {:else if col.type === 'link'}
+    {@const href = safeHref(col.href ? col.href(row) : String(value ?? ''))}
+    {#if href}<a
+        class="bo-link"
+        {href}
+        target={col.newTab ? '_blank' : undefined}
+        rel={col.newTab ? 'noopener noreferrer' : undefined}
+        onpointerdown={(e) => e.stopPropagation()}
+        onclick={(e) => e.stopPropagation()}>{value ?? ''}</a>{:else}{value ?? ''}{/if}
   {:else if col.type === 'text'}
     <strong>{formatCell(col, value, row)}</strong>{#if col.sub}<em>{row[col.sub]}</em>{/if}
   {:else if hasCf}
@@ -420,6 +430,15 @@
   .bo-badge-neutral {
     color: var(--bo-text-dim);
     background: var(--bo-row-hover);
+  }
+  .bo-link {
+    color: var(--bo-sel-border);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .bo-link:hover {
+    text-decoration: underline;
   }
   .bo-bool-yes {
     color: var(--bo-up);

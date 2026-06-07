@@ -11,6 +11,7 @@ import {
   colorScaleBackground,
   pickIcon,
   toneColor,
+  safeHref,
   type ColumnDef,
   type GridRow,
   type IconRule,
@@ -41,15 +42,38 @@ describe('formatCell', () => {
     const col: ColumnDef = { type: 'number', key: 'salary', header: 'Salary', format: (v) => `$${v}` };
     expect(formatCell(col, 100, row({ salary: 100 }))).toBe('$100');
   });
+
+  it('formats currency and relative-time columns (v0.13)', () => {
+    expect(formatCell({ type: 'currency', key: 'c', header: 'C' }, 1234.5)).toBe('$1,234.50');
+    // epoch 0 is decades in the past → always a "… ago" string.
+    expect(formatCell({ type: 'relative', key: 't', header: 'T' }, 0)).toContain('ago');
+  });
+});
+
+describe('safeHref', () => {
+  it('passes safe schemes and relative urls', () => {
+    expect(safeHref('https://example.com')).toBe('https://example.com');
+    expect(safeHref('mailto:a@b.io')).toBe('mailto:a@b.io');
+    expect(safeHref('/path?q=1')).toBe('/path?q=1');
+  });
+  it('blocks XSS-prone schemes', () => {
+    expect(safeHref('javascript:alert(1)')).toBeUndefined();
+    expect(safeHref('  JavaScript:alert(1)')).toBeUndefined(); // trimmed + case-insensitive
+    expect(safeHref('data:text/html,<script>')).toBeUndefined();
+    expect(safeHref('')).toBeUndefined();
+  });
 });
 
 describe('isNumeric', () => {
-  it('is false for text/sparkline/custom, true for value types', () => {
+  it('is false for text/sparkline/custom/link, true for value types', () => {
     expect(isNumeric({ type: 'text', key: 'a', header: 'A' })).toBe(false);
     expect(isNumeric({ type: 'sparkline', key: 'c', header: 'C', sparkKey: 'c' })).toBe(false);
     expect(isNumeric({ type: 'custom', key: 'x', header: 'X' })).toBe(false);
+    expect(isNumeric({ type: 'link', key: 'l', header: 'L' })).toBe(false);
     expect(isNumeric({ type: 'price', key: 'p', header: 'P' })).toBe(true);
     expect(isNumeric({ type: 'number', key: 'n', header: 'N' })).toBe(true);
+    expect(isNumeric({ type: 'currency', key: 'c', header: 'C' })).toBe(true);
+    expect(isNumeric({ type: 'relative', key: 'r', header: 'R' })).toBe(true);
   });
 });
 
@@ -64,6 +88,12 @@ describe('isEditable', () => {
 
   it('never edits a computed column (no field to write back)', () => {
     expect(isEditable({ type: 'number', key: 'r', header: 'R', editable: true, value: (row) => row.a })).toBe(false);
+  });
+
+  it('excludes display-only link/relative; currency stays editable', () => {
+    expect(isEditable({ type: 'link', key: 'l', header: 'L', editable: true })).toBe(false);
+    expect(isEditable({ type: 'relative', key: 't', header: 'T', editable: true })).toBe(false);
+    expect(isEditable({ type: 'currency', key: 'c', header: 'C', editable: true })).toBe(true);
   });
 });
 

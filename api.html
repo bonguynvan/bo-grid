@@ -285,6 +285,8 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>'volume'</td><td>—</td><td>K/M/B suffix.</td></tr>
           <tr><td>'number'</td><td><span class="type">decimals?: number</span></td><td>Fixed-decimal number.</td></tr>
           <tr><td>'date'</td><td><span class="type">dateStyle?: 'short'|'medium'</span></td><td>Formatted date (value is epoch ms).</td></tr>
+          <tr><td>'currency'</td><td><span class="type">currency?; locale?; decimals?</span></td><td>Localized currency via <code>Intl.NumberFormat</code> (default USD/en-US).</td></tr>
+          <tr><td>'relative'</td><td>—</td><td>Epoch ms rendered as relative time (e.g. <code>3 hours ago</code>).</td></tr>
           <tr><td>'heatmap'</td><td><span class="type">min: number; max: number</span></td><td>Diverging red→green background ramp.</td></tr>
           <tr><td>'sparkline'</td><td><span class="type">sparkKey: string</span></td><td>Canvas candlesticks from a <code>Candle[]</code> field.</td></tr>
           <tr><td>'progress'</td><td><span class="type">min?: number; max?: number</span></td><td>In-cell progress bar (value mapped to min..max).</td></tr>
@@ -293,6 +295,7 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>'badge'</td><td><span class="type">tones?: Record&lt;string, BadgeTone&gt;</span></td><td>Status pill; colour per value via <code>tones</code> (up/down/amber/info/neutral).</td></tr>
           <tr><td>'boolean'</td><td><span class="type">trueLabel?; falseLabel?: string</span></td><td>✓ / ✕ with optional labels.</td></tr>
           <tr><td>'avatar'</td><td><span class="type">sub?: string</span></td><td>Initials circle + name (optional secondary <code>sub</code> field).</td></tr>
+          <tr><td>'link'</td><td><span class="type">href?: (row) =&gt; string; newTab?</span></td><td>Anchor; <code>href</code> defaults to the value. URLs sanitized (<code>javascript:</code>/<code>data:</code> blocked).</td></tr>
         </tbody>
       </table>
       <pre><code><span class="tok-key">const</span> columns: ColumnDef[] = [

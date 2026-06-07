@@ -3,6 +3,26 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.13.0] — Unreleased
+
+Theme: **more rich cell types** — `link`, `relative` (relative time) and
+`currency`. See [ROADMAP.md](./ROADMAP.md).
+
+### Added
+
+- **`link` columns** (`type: 'link'`): render the value as an anchor. `href(row)`
+  builds the target (defaults to the value); `newTab` opens in a new tab (with
+  `rel="noopener noreferrer"`). URLs are sanitized — `javascript:`/`data:`/
+  `vbscript:` are blocked and render as plain text (`safeHref`).
+- **`relative` columns** (`type: 'relative'`): format an epoch-ms value as human
+  relative time (`3 hours ago`, `in 2 days`). New `relativeTime(ms, now?)`
+  formatter (exported).
+- **`currency` columns** (`type: 'currency'`): localized currency via
+  `Intl.NumberFormat` (`currency` ISO code, `locale`, `decimals`); falls back to a
+  fixed-decimal number for an unknown code. New `fmtCurrency` formatter (exported).
+- The **Team** demo now shows all three (email link, last-active relative time,
+  hourly rate currency) with the Member column pinned.
+
 ## [0.12.0] — Unreleased
 
 Theme: **computed columns** — derive a column from the whole row (KPIs, ratios,
@@ -312,6 +332,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.13.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.13.0
 [0.12.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.12.0
 [0.11.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.11.0
 [0.10.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.10.0

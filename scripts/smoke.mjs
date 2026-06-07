@@ -846,9 +846,17 @@ for (const [sel, label] of [
   ['.bo-grid .bo-rating', 'rating'],
   ['.bo-grid .bo-tag', 'tags'],
   ['.bo-grid .bo-bool', 'boolean'],
+  ['.bo-grid .bo-link', 'link'],
 ]) {
   if (document.querySelectorAll(sel).length === 0) fail(`Team: ${label} cell type did not render`);
 }
+// link safety: the email column produces mailto: anchors (safeHref passed it).
+const teamLink = document.querySelector('.bo-grid .bo-link');
+if (!/^mailto:/.test(teamLink?.getAttribute('href') || '')) fail('Team: link href not applied (safeHref)');
+// relative-time + currency render as formatted text (v0.13).
+const teamText = document.querySelector('.bo-grid')?.textContent || '';
+if (!/ ago|just now|^in |\bin \d/.test(teamText)) fail('Team: relative-time column did not render');
+if (!/\$\d/.test(teamText)) fail('Team: currency column did not render');
 
 // Tree data: roots render collapsed; expanding a folder reveals children.
 const treeTab = tab('Tree');

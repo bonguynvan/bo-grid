@@ -100,9 +100,9 @@ keep frames smooth.
 
 ## Column types
 
-**Data:** `text` · `price` · `percent` · `volume` · `number` · `date` · `heatmap` ·
-`sparkline`
-**Rich:** `progress` · `rating` · `tags` · `badge` · `boolean` · `avatar`
+**Data:** `text` · `price` · `percent` · `volume` · `number` · `date` · `currency` ·
+`relative` · `heatmap` · `sparkline`
+**Rich:** `progress` · `rating` · `tags` · `badge` · `boolean` · `avatar` · `link`
 **Escape hatch:** `custom`
 
 Rich types render value as a widget — handy well beyond fintech (CRM, projects,
@@ -117,8 +117,14 @@ const columns: ColumnDef[] = [
   { type: 'rating',  key: 'score',  header: 'Rating', max: 5 },
   { type: 'tags',    key: 'skills', header: 'Skills' },        // value: string[]
   { type: 'boolean', key: 'remote', header: 'Remote', trueLabel: 'Remote', falseLabel: 'Office' },
+  { type: 'link',     key: 'email',  header: 'Email', href: (r) => `mailto:${r.email}` },
+  { type: 'relative', key: 'seen',   header: 'Last seen' },     // value: epoch ms → "3h ago"
+  { type: 'currency', key: 'rate',   header: 'Rate', currency: 'USD' },
 ];
 ```
+
+`link` sanitizes its href (`javascript:`/`data:` are blocked); `relative` formats
+an epoch-ms value as relative time; `currency` localizes via `Intl.NumberFormat`.
 
 Sizing: `width` (px) or `flex` (grow weight). See `ColumnDef` for per-type options.
 
