@@ -40,7 +40,10 @@
   aria-label={ariaLabel}
 >
   {#each arcs as a (a.index)}
-    <path d={a.d} fill={colorOf(a.index)} fill-rule="evenodd" />
+    {@const d = data[a.index]}
+    <path d={a.d} fill={colorOf(a.index)} fill-rule="evenodd">
+      <title>{typeof d !== 'number' && d.label ? `${d.label}: ` : ''}{a.value}</title>
+    </path>
   {/each}
 </svg>
 

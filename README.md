@@ -204,18 +204,24 @@ and pure — it's called during sort and filter.
 ## Charts (companion)
 
 For dashboards, `bo-grid/charts` ships tiny, dependency-free SVG charts —
-`LineChart`, `BarChart`, `DonutChart`. They're a **separate import**, so they add
-nothing to the grid core (~2 KB gzip on their own). Use them standalone, or inside
-a grid cell via a `custom` column.
+`LineChart`, `BarChart`, `DonutChart`, `StackedBarChart` (stacked or `grouped`
+multi-series), and a `Legend`. They're a **separate import**, so they add nothing
+to the grid core (~3 KB gzip on their own). Use them standalone, or inside a grid
+cell via a `custom` column. Bar/stacked/donut elements carry an SVG `<title>`, so
+hovering shows the value (accessible, zero-JS).
 
 ```svelte
 <script>
-  import { LineChart, BarChart, DonutChart } from 'bo-grid/charts';
+  import { LineChart, BarChart, DonutChart, StackedBarChart, Legend } from 'bo-grid/charts';
 </script>
 
 <LineChart data={[3, 5, 4, 8, 6, 9]} width={160} height={40} area />
 <BarChart data={[4, 8, 6, 9, 7]} color="var(--up)" />
 <DonutChart data={[{ value: 5, label: 'A' }, { value: 3, label: 'B' }]} />
+
+<!-- data[series][category]; stacked by default, `grouped` for side-by-side -->
+<StackedBarChart data={[[3, 5, 2], [4, 1, 6]]} seriesLabels={['Q1', 'Q2']} />
+<Legend items={[{ label: 'Q1' }, { label: 'Q2' }]} />
 ```
 
 Theme them with `color` / `colors` props, or by setting `--boc-color` and

@@ -116,6 +116,84 @@ function fullRing(cx: number, cy: number, r: number, ir: number): string {
   );
 }
 
+/** One bar segment of a multi-series (stacked/grouped) chart. */
+export interface BarSeg extends Rect {
+  series: number;
+  category: number;
+  value: number;
+}
+
+const nCategories = (series: readonly (readonly number[])[]): number =>
+  series.reduce((m, s) => Math.max(m, s.length), 0);
+
+/**
+ * Stacked bars: `series[s][c]` is series `s`'s value in category `c`. Each
+ * category is a vertical stack scaled to the largest category total. Non-positive
+ * values are clamped to 0 (stacking).
+ */
+export function stackedBars(
+  series: readonly (readonly number[])[],
+  w: number,
+  h: number,
+  gap = 2,
+  pad = 1,
+): BarSeg[] {
+  const nCat = nCategories(series);
+  if (nCat === 0) return [];
+  const totals = Array.from({ length: nCat }, (_, c) =>
+    series.reduce((a, s) => a + Math.max(0, s[c] ?? 0), 0),
+  );
+  const max = Math.max(1, ...totals);
+  const iw = w - pad * 2;
+  const ih = h - pad * 2;
+  const bw = Math.max(0, (iw - gap * (nCat - 1)) / nCat);
+  const segs: BarSeg[] = [];
+  for (let c = 0; c < nCat; c++) {
+    const x = pad + c * (bw + gap);
+    let yBottom = pad + ih;
+    for (let s = 0; s < series.length; s++) {
+      const v = Math.max(0, series[s][c] ?? 0);
+      const segH = (v / max) * ih;
+      yBottom -= segH;
+      segs.push({ x: round(x), y: round(yBottom), w: round(bw), h: round(segH), series: s, category: c, value: series[s][c] ?? 0 });
+    }
+  }
+  return segs;
+}
+
+/**
+ * Grouped bars: same data shape as `stackedBars`, but each category's series are
+ * drawn side by side, scaled to the largest single value.
+ */
+export function groupedBars(
+  series: readonly (readonly number[])[],
+  w: number,
+  h: number,
+  gap = 4,
+  innerGap = 1,
+  pad = 1,
+): BarSeg[] {
+  const nCat = nCategories(series);
+  const nSer = series.length;
+  if (nCat === 0) return [];
+  let max = 1;
+  for (const s of series) for (const v of s) max = Math.max(max, v);
+  const iw = w - pad * 2;
+  const ih = h - pad * 2;
+  const groupW = (iw - gap * (nCat - 1)) / nCat;
+  const bw = Math.max(0, (groupW - innerGap * (nSer - 1)) / nSer);
+  const segs: BarSeg[] = [];
+  for (let c = 0; c < nCat; c++) {
+    const gx = pad + c * (groupW + gap);
+    for (let s = 0; s < nSer; s++) {
+      const v = Math.max(0, series[s][c] ?? 0);
+      const segH = (v / max) * ih;
+      segs.push({ x: round(gx + s * (bw + innerGap)), y: round(pad + ih - segH), w: round(bw), h: round(segH), series: s, category: c, value: series[s][c] ?? 0 });
+    }
+  }
+  return segs;
+}
+
 /** Donut/pie arc paths. `thickness >= size/2` gives a full pie. Slices start at
     12 o'clock and run clockwise; non-positive values are skipped. */
 export function donutArcs(values: readonly number[], size: number, thickness: number): Arc[] {

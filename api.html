@@ -340,8 +340,11 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>LineChart</td><td><span class="type">data: number[]; area?; color?</span></td><td>Line (optional filled area).</td></tr>
           <tr><td>BarChart</td><td><span class="type">data: number[]; gap?; color?</span></td><td>Bars from a zero axis (signed-aware).</td></tr>
           <tr><td>DonutChart</td><td><span class="type">data: number[] | {value,color?}[]; thickness?</span></td><td>Donut, or pie when <code>thickness ≥ size/2</code>.</td></tr>
+          <tr><td>StackedBarChart</td><td><span class="type">data: number[][]; grouped?; seriesLabels?</span></td><td>Multi-series bars (<code>data[series][category]</code>) — stacked, or <code>grouped</code> side-by-side.</td></tr>
+          <tr><td>Legend</td><td><span class="type">items: {label, color?}[]</span></td><td>Swatch + label list, palette-aware.</td></tr>
         </tbody>
       </table>
+      <p>Bar / stacked / donut elements carry an SVG <code>&lt;title&gt;</code> for native hover tooltips (the value, plus a label when set).</p>
       <pre><code><span class="tok-key">import</span> { LineChart, BarChart, DonutChart } <span class="tok-key">from</span> <span class="tok-str">'bo-grid/charts'</span>;
 
 &lt;LineChart data={[3, 5, 4, 8, 6, 9]} area /&gt;

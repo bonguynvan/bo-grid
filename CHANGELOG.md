@@ -3,6 +3,25 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.19.0] — Unreleased
+
+Theme: **more charts** — multi-series bars, a legend, and tooltips, all in the
+`bo-grid/charts` companion (the grid core is untouched). See [ROADMAP.md](./ROADMAP.md).
+
+### Added
+
+- **`StackedBarChart`**: multi-series bars from `data: number[][]` (`data[series]
+  [category]`) — stacked by default, or `grouped` for side-by-side. `seriesLabels`
+  feed the hover tooltips.
+- **`Legend`**: a small swatch+label list (`items`), palette-aware — for donut /
+  stacked series.
+- **Hover tooltips**: every `BarChart`, `StackedBarChart` and `DonutChart` element
+  now carries an SVG `<title>` (the value, plus the series/slice label when set) —
+  native, accessible, zero-JS.
+- Exposed `stackedBars` / `groupedBars` geometry helpers and the `BarSeg` type.
+- The **Dashboard** demo gains a stacked "Top regions · quarterly" card with a
+  legend.
+
 ## [0.18.0] — Unreleased
 
 Theme: **more theme presets** — polish. See [ROADMAP.md](./ROADMAP.md).
@@ -440,6 +459,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.19.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.19.0
 [0.18.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.18.0
 [0.17.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.17.0
 [0.16.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.16.0

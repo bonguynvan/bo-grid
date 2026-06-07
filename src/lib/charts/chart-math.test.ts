@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extent, linePoints, linePath, areaPath, barRects, donutArcs } from './chart-math';
+import { extent, linePoints, linePath, areaPath, barRects, stackedBars, groupedBars, donutArcs } from './chart-math';
 
 describe('extent', () => {
   it('guards empty and flat series', () => {
@@ -49,6 +49,45 @@ describe('barRects', () => {
   it('draws negative bars below the zero axis', () => {
     const [pos, neg] = barRects([10, -10], 100, 40, 0, 0);
     expect(pos.y + pos.h).toBeCloseTo(neg.y, 1); // they meet at the zero axis
+  });
+});
+
+describe('stackedBars', () => {
+  // 2 series × 2 categories. Category totals: [3, 7]; max = 7.
+  const series = [
+    [1, 3],
+    [2, 4],
+  ];
+  it('emits one segment per series per category', () => {
+    expect(stackedBars(series, 100, 70, 0).length).toBe(4);
+  });
+  it('stacks segments to the category total (tallest category fills the height)', () => {
+    const segs = stackedBars(series, 100, 70, 0, 0);
+    // Category 1 total (7) is the max → its stack spans the full height (70).
+    const cat1 = segs.filter((s) => s.category === 1);
+    const stackH = cat1.reduce((a, s) => a + s.h, 0);
+    expect(stackH).toBeCloseTo(70, 1);
+    // Segments in a category share an x and don't overlap (stacked vertically).
+    expect(cat1[0].x).toBe(cat1[1].x);
+  });
+  it('carries series/category/value metadata for tooltips', () => {
+    const segs = stackedBars(series, 100, 70, 0, 0);
+    expect(segs[0]).toMatchObject({ series: 0, category: 0, value: 1 });
+  });
+});
+
+describe('groupedBars', () => {
+  const series = [
+    [1, 3],
+    [2, 4],
+  ];
+  it('places series side by side within each category (distinct x, scaled to global max)', () => {
+    const segs = groupedBars(series, 100, 70, 0, 0, 0);
+    expect(segs.length).toBe(4);
+    const cat0 = segs.filter((s) => s.category === 0);
+    expect(cat0[0].x).not.toBe(cat0[1].x); // side by side
+    // The global max value (4) fills the full height.
+    expect(Math.max(...segs.map((s) => s.h))).toBeCloseTo(70, 1);
   });
 });
 

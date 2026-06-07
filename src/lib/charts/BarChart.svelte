@@ -38,7 +38,7 @@
   aria-label={ariaLabel}
 >
   {#each bars as b, i (i)}
-    <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={radius} fill={color} />
+    <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={radius} fill={color}><title>{data[i]}</title></rect>
   {/each}
 </svg>
 

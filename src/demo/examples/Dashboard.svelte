@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Grid, type ColumnDef, type GridRow } from '../../lib';
-  import { BarChart, LineChart, DonutChart } from '../../lib/charts';
+  import { BarChart, LineChart, DonutChart, StackedBarChart, Legend } from '../../lib/charts';
   import { ui } from '../theme.svelte';
 
   // An analytics dashboard — the charts companion used both standalone (KPI
@@ -49,6 +49,9 @@
     Array.from({ length: 12 }, (_, m) => rows.reduce((a, r) => a + r.trend[m], 0)),
   );
   const donutData = $derived(rows.map((r) => ({ value: r.revenue, label: r.region })));
+  // Top-3 regions, quarterly (sample every other month) — a stacked series.
+  const topRegions = $derived(rows.slice(0, 3));
+  const stackData = $derived(topRegions.map((r) => r.trend.filter((_, i) => i % 2 === 0)));
   const fmtUsd = (n: number) => `$${(n / 1000).toLocaleString('en-US', { maximumFractionDigits: 0 })}k`;
 
   const columns: ColumnDef[] = [
@@ -79,6 +82,17 @@
         <li><span class="dot" style="background:var(--boc-{i + 1})"></span>{r.region}</li>
       {/each}
     </ul>
+  </div>
+  <div class="card">
+    <span class="k">Top regions · quarterly</span>
+    <StackedBarChart
+      data={stackData}
+      width={220}
+      height={48}
+      seriesLabels={topRegions.map((r) => r.region)}
+      class="card-chart"
+    />
+    <Legend items={topRegions.map((r) => ({ label: r.region }))} />
   </div>
 </div>
 

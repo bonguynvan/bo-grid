@@ -891,8 +891,14 @@ await waitFor('.boc-line', 'Dashboard charts did not render (lazy chunk)');
 const dashLines = document.querySelectorAll('.boc-line').length;
 const dashBars = document.querySelectorAll('.boc-bar rect').length;
 const dashArcs = document.querySelectorAll('.boc-donut path').length;
+const dashStacked = document.querySelectorAll('.boc-stacked rect').length;
+const dashLegend = document.querySelectorAll('.boc-legend li').length;
 if (dashBars === 0) fail('Dashboard: bar chart did not render');
 if (dashArcs === 0) fail('Dashboard: donut chart did not render');
+if (dashStacked === 0) fail('Dashboard: stacked bar chart did not render (v0.19)');
+if (dashLegend === 0) fail('Dashboard: legend did not render (v0.19)');
+// Hover tooltips: chart elements carry a <title> (the value).
+if (!document.querySelector('.boc-bar rect title')) fail('Dashboard: bar chart tooltips (<title>) missing');
 // >1 line = the KPI card line + one LineChart per grid row (charts inside cells).
 if (dashLines < 2) fail(`Dashboard: in-cell line charts did not render (${dashLines} line charts)`);
 
@@ -1033,7 +1039,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale + computed-col, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut/${dashStacked} stacked/${dashLegend} legend (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

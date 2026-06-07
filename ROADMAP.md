@@ -151,14 +151,18 @@ Completes the conditional-formatting trio (data bars + icon sets + colour scales
 - [x] Four new presets — `highContrastDark`/`highContrastLight` (a11y), `midnight`,
   `terminal` — plus `themePresets` map + `ThemePreset` type. New **Themes** demo.
 
+## 0.19 · More charts — done
+
+- [x] **`StackedBarChart`** (stacked/grouped multi-series), **`Legend`**, and SVG
+  `<title>` **hover tooltips** on bar/stacked/donut — all in the companion (core
+  untouched; charts ~3 KB). New stacked card in the **Dashboard** demo.
+
 ## Candidate themes for later versions
 
 Scaling to more domains (analytics, dashboards, general business):
 
 - **Server-side group loading** — lazy group expansion against a `RowSource`
   (grouping is client-only today; lazy trees landed in 0.17).
-- **More charts** — stacked/grouped bars, a legend/tooltip layer (still in the
-  companion, never the core).
 - **Polish** — a screen-reader + axe-core pass for a specific deployment; more demos.
 
 Note: the eager grid core is ~97% of its 28 KB budget; the next sizable *core*
