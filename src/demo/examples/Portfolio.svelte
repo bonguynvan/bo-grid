@@ -65,7 +65,8 @@
     { type: 'price', key: 'last', header: 'Last', width: 92, group: 'Pricing' },
     // Data bar (proportional, anchored at 0): in-cell magnitude of each holding.
     { type: 'volume', key: 'marketValue', header: 'Mkt Value', width: 132, groupAgg: 'sum', group: 'Valuation', dataBar: { min: 0 } },
-    { type: 'heatmap', key: 'pnlPct', header: 'P&L %', width: 84, min: -30, max: 30, groupAgg: 'avg', group: 'P&L' },
+    // Colour scale (diverging around 0, auto-ranged): a soft, theme-tinted heat ramp.
+    { type: 'number', key: 'pnlPct', header: 'P&L %', width: 92, decimals: 1, groupAgg: 'avg', group: 'P&L', colorScale: { mid: 0 } },
     // Data bar (diverging around zero) + an icon set keyed by sign.
     {
       type: 'number', key: 'pnl', header: 'P&L $', width: 140, decimals: 0, groupAgg: 'sum', group: 'P&L',

@@ -69,6 +69,11 @@ interface ColBase {
       highest threshold `at` that is ≤ the cell value (e.g. ▲ ● ▼ by sign or band).
       Numeric columns only. */
   icons?: IconRule[];
+  /** Conditional formatting — tint the cell background across the column's value
+      range (a soft heat ramp). Auto-ranged over the current view unless `min`/
+      `max` are given; pass `mid` for a 3-stop diverging scale (e.g. `mid: 0`).
+      Numeric columns only. */
+  colorScale?: ColorScaleConfig;
 }
 
 /** Conditional-formatting data-bar config (see `ColBase.dataBar`). */
@@ -79,6 +84,18 @@ export interface DataBarConfig {
   color?: string;
   /** Bar colour for values < 0 (default `--bo-down`). */
   negative?: string;
+}
+
+/** Conditional-formatting colour-scale config (see `ColBase.colorScale`). */
+export interface ColorScaleConfig {
+  min?: number;
+  /** Midpoint for a 3-stop diverging scale (e.g. `0`). Omit for a 2-stop scale. */
+  mid?: number;
+  max?: number;
+  /** Stop colours — `[low, high]` (2-stop) or `[low, mid, high]` (3-stop). Any
+      CSS colour or var. Defaults to a soft, translucent theme ramp (up tint for
+      high; down→up diverging when `mid` is set). */
+  colors?: [string, string] | [string, string, string];
 }
 
 /** A single icon-set threshold rule (see `ColBase.icons`). */
@@ -245,16 +262,63 @@ function numericOrNaN(value: unknown): number {
 /**
  * Conditional formatting — data-bar geometry. Maps `value` onto a 0..1 range,
  * anchored at the zero baseline so signed columns diverge left/right around zero
- * (left-anchored when the range doesn't cross zero). Returns null for
- * non-numeric values (no bar). Pure; unit-tested.
+ * (left-anchored when the range doesn't cross zero). `range` is the data extent;
+ * `cfg.min`/`cfg.max` override it (e.g. `min: 0` for absolute bars). Returns null
+ * for non-numeric values (no bar). Pure; unit-tested.
  */
-export function dataBarGeometry(value: unknown, range: { min: number; max: number }): DataBarGeom | null {
+export function dataBarGeometry(
+  value: unknown,
+  range: { min: number; max: number },
+  cfg: { min?: number; max?: number } = {},
+): DataBarGeom | null {
   const n = numericOrNaN(value);
   if (!Number.isFinite(n)) return null;
-  const span = range.max - range.min || 1;
-  const zero = clamp01((0 - range.min) / span);
-  const v = clamp01((n - range.min) / span);
+  const min = cfg.min ?? range.min;
+  const max = cfg.max ?? range.max;
+  const span = max - min || 1;
+  const zero = clamp01((0 - min) / span);
+  const v = clamp01((n - min) / span);
   return { left: Math.min(zero, v), width: Math.abs(v - zero), negative: n < 0 };
+}
+
+// Default colour-scale stops — soft, translucent theme tints so row striping
+// shows through and text stays readable (mixed in sRGB to keep clean alpha).
+const SCALE_SEQ: [string, string] = ['transparent', 'color-mix(in srgb, var(--bo-up) 32%, transparent)'];
+const SCALE_DIV: [string, string, string] = [
+  'color-mix(in srgb, var(--bo-down) 34%, transparent)',
+  'transparent',
+  'color-mix(in srgb, var(--bo-up) 34%, transparent)',
+];
+
+const mixColor = (a: string, b: string, t: number): string =>
+  `color-mix(in srgb, ${b} ${(clamp01(t) * 100).toFixed(1)}%, ${a})`;
+
+/**
+ * Conditional formatting — colour-scale background for a value across the range.
+ * Two-stop (low→high) by default; pass `cfg.mid` (or 3 `colors`) for a diverging
+ * scale. `range` is the data extent; `cfg.min`/`cfg.max` override it. Returns null
+ * for non-numeric values (no tint). Pure; unit-tested.
+ */
+export function colorScaleBackground(
+  value: unknown,
+  range: { min: number; max: number },
+  cfg: ColorScaleConfig = {},
+): string | null {
+  const n = numericOrNaN(value);
+  if (!Number.isFinite(n)) return null;
+  const min = cfg.min ?? range.min;
+  const max = cfg.max ?? range.max;
+  const span = max - min || 1;
+  const t = clamp01((n - min) / span);
+  if (cfg.mid != null || cfg.colors?.length === 3) {
+    const [lo, md, hi] = (cfg.colors as [string, string, string]) ?? SCALE_DIV;
+    const mt = clamp01(((cfg.mid ?? (min + max) / 2) - min) / span);
+    return t <= mt
+      ? mixColor(lo, md, mt === 0 ? 1 : t / mt)
+      : mixColor(md, hi, mt === 1 ? 1 : (t - mt) / (1 - mt));
+  }
+  const [lo, hi] = (cfg.colors as [string, string]) ?? SCALE_SEQ;
+  return mixColor(lo, hi, t);
 }
 
 /**

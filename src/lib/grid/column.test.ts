@@ -6,6 +6,7 @@ import {
   isSortable,
   colWidth,
   dataBarGeometry,
+  colorScaleBackground,
   pickIcon,
   toneColor,
   type ColumnDef,
@@ -105,6 +106,61 @@ describe('dataBarGeometry', () => {
 
   it('does not divide by zero on a degenerate (min === max) range', () => {
     expect(dataBarGeometry(5, { min: 5, max: 5 })).toEqual({ left: 0, width: 0, negative: false });
+  });
+
+  it('lets cfg.min/max override the data range (e.g. min:0 for absolute bars)', () => {
+    // Data range [50,100] would left-anchor at 50; min:0 makes bars proportional.
+    expect(dataBarGeometry(50, { min: 50, max: 100 }, { min: 0 })).toEqual({
+      left: 0,
+      width: 0.5,
+      negative: false,
+    });
+    expect(dataBarGeometry(100, { min: 50, max: 100 }, { min: 0 })).toEqual({
+      left: 0,
+      width: 1,
+      negative: false,
+    });
+  });
+});
+
+describe('colorScaleBackground', () => {
+  it('interpolates a 2-stop scale across the range (low → high)', () => {
+    const r = { min: 0, max: 100 };
+    expect(colorScaleBackground(0, r)).toContain('0.0%'); // all low stop
+    expect(colorScaleBackground(100, r)).toContain('100.0%'); // all high stop
+    expect(colorScaleBackground(50, r)).toContain('50.0%');
+    expect(colorScaleBackground(50, r)).toContain('color-mix');
+  });
+
+  it('uses custom 2-stop colours when given', () => {
+    const css = colorScaleBackground(100, { min: 0, max: 100 }, { colors: ['white', 'black'] });
+    expect(css).toBe('color-mix(in srgb, black 100.0%, white)');
+  });
+
+  it('splits a 3-stop diverging scale at the midpoint', () => {
+    const r = { min: -100, max: 100 };
+    const cfg = { mid: 0, colors: ['red', 'white', 'green'] as [string, string, string] };
+    // Below mid interpolates red→white; above interpolates white→green.
+    expect(colorScaleBackground(-100, r, cfg)).toBe('color-mix(in srgb, white 0.0%, red)');
+    expect(colorScaleBackground(0, r, cfg)).toBe('color-mix(in srgb, white 100.0%, red)'); // mid → full white
+    expect(colorScaleBackground(100, r, cfg)).toBe('color-mix(in srgb, green 100.0%, white)');
+    expect(colorScaleBackground(50, r, cfg)).toBe('color-mix(in srgb, green 50.0%, white)');
+  });
+
+  it('treats 3 colours as diverging even without an explicit mid', () => {
+    const css = colorScaleBackground(0, { min: -10, max: 10 }, { colors: ['red', 'white', 'green'] });
+    expect(css).toContain('color-mix'); // mid defaults to the range centre (0)
+  });
+
+  it('applies cfg.min/max overrides', () => {
+    // Clamp the scale to [0,50]: value 50 saturates the high stop.
+    expect(colorScaleBackground(50, { min: 0, max: 1000 }, { max: 50 })).toContain('100.0%');
+  });
+
+  it('returns null for non-numeric values (no tint)', () => {
+    expect(colorScaleBackground('x', { min: 0, max: 10 })).toBeNull();
+    expect(colorScaleBackground(null, { min: 0, max: 10 })).toBeNull();
+    expect(colorScaleBackground(undefined, { min: 0, max: 10 })).toBeNull();
   });
 });
 

@@ -1,7 +1,16 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { ColumnDef, GridRow } from './column';
-  import { formatCell, colStyle, candlesOf, isNumeric, dataBarGeometry, pickIcon, toneColor } from './column';
+  import {
+    formatCell,
+    colStyle,
+    candlesOf,
+    isNumeric,
+    dataBarGeometry,
+    colorScaleBackground,
+    pickIcon,
+    toneColor,
+  } from './column';
   import { heatColor } from './heatmap';
   import Sparkline from '../sparkline/Sparkline.svelte';
 
@@ -21,7 +30,7 @@
     seed = null,
     fillCorner = false,
     fillpreview = false,
-    barRange = null,
+    cfRange = null,
     colIndex,
     cellId,
     cellSnippet,
@@ -55,9 +64,9 @@
     fillCorner?: boolean;
     /** This cell is inside the in-progress fill drag's preview range. */
     fillpreview?: boolean;
-    /** Conditional-formatting data-bar scale (min/max over the view) for this
-        column; null when the column has no `dataBar`. */
-    barRange?: { min: number; max: number } | null;
+    /** Conditional-formatting data extent (min/max over the view) for this
+        column; null when the column has no `dataBar`/`colorScale`. */
+    cfRange?: { min: number; max: number } | null;
     colIndex?: number;
     cellId?: string;
     cellSnippet?: Snippet<[{ row: GridRow; column: ColumnDef; value: unknown }]>;
@@ -146,8 +155,8 @@
   // it to CSS (left/width %, tone → colour).
   const hasCf = $derived(!!col.dataBar || !!col.icons);
   const bar = $derived.by(() => {
-    if (!col.dataBar || !barRange) return null;
-    const g = dataBarGeometry(value, barRange);
+    if (!col.dataBar || !cfRange) return null;
+    const g = dataBarGeometry(value, cfRange, col.dataBar);
     if (!g) return null;
     const color = g.negative ? (col.dataBar.negative ?? 'var(--bo-down)') : (col.dataBar.color ?? 'var(--bo-up)');
     return { left: `${g.left * 100}%`, width: `${g.width * 100}%`, color };
@@ -156,15 +165,21 @@
     const pick = col.icons ? pickIcon(value, col.icons) : null;
     return pick ? { icon: pick.icon, color: toneColor(pick.tone) } : null;
   });
+  // Colour-scale cell tint (applied as a cell background in cellStyle).
+  const scaleBg = $derived(col.colorScale && cfRange ? colorScaleBackground(value, cfRange, col.colorScale) : null);
 
   function cellStyle(): string {
     let s = width != null ? `flex:0 0 ${width}px;width:${width}px;` : colStyle(col);
-    if (col.type === 'heatmap') s += `background:${heatColor(Number(value), col.min, col.max)};`;
+    // Conditional background: heatmap type, else a colour-scale tint (both translucent).
+    const bg = col.type === 'heatmap' ? heatColor(Number(value), col.min, col.max) : scaleBg;
     if (pinned) {
       s += `position:sticky;${pinSide}:${pinOffset}px;z-index:1;`;
-      // Pinned cells must be opaque to cover scrolled content. Heatmap already
-      // set a background; otherwise match the (alternating) row colour.
-      if (col.type !== 'heatmap') s += `background:var(${alt ? '--bo-row-a' : '--bo-row-b'});`;
+      // Pinned cells must be opaque to cover scrolled content — layer any
+      // translucent tint over the (alternating) row colour.
+      const rowBg = `var(${alt ? '--bo-row-a' : '--bo-row-b'})`;
+      s += bg ? `background:linear-gradient(${bg},${bg}),${rowBg};` : `background:${rowBg};`;
+    } else if (bg) {
+      s += `background:${bg};`;
     }
     return s;
   }

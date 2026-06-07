@@ -15,9 +15,10 @@ const DIR = 'demo-dist/assets';
 // Demo entry chunk: Svelte runtime + the landing page (hero/nav/footer) + the
 // eager default example + the library + demo data. The shipped-library promise is
 // the tight one and lives in size:lib; this is a looser anti-bloat ceiling for
-// the demo. Bumped 40→45 when the GitHub Pages landing page was added (markup,
-// not shipped to npm consumers).
-const BUDGET_KB = { js: 45, css: 8 }; // gzipped
+// the demo. Bumped 40→45 when the GitHub Pages landing page was added, then 45→47
+// for the conditional-formatting work (v0.10/0.11: data bars + icon sets + colour
+// scales in the core, plus demo wiring) — all demo markup, not shipped to npm.
+const BUDGET_KB = { js: 47, css: 8 }; // gzipped
 
 function gzipKb(path) {
   return gzipSync(readFileSync(path)).length / 1024;

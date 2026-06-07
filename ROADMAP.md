@@ -94,14 +94,23 @@ adding nothing to the core for grids that don't opt in.
 - [x] **Icon sets** (`col.icons`): threshold-driven icon beside the value, each
   rule with a semantic `tone`. **Portfolio** demo shows both on Mkt Value / P&L.
 
+## 0.11 · Colour scales — done
+
+Completes the conditional-formatting trio (data bars + icon sets + colour scales).
+
+- [x] **Colour scales** (`col.colorScale`): cell-background heat ramp across the
+  value range, auto-ranged over the view (or explicit `min`/`max`); 2-stop, or
+  3-stop diverging via `mid`; `colors` overrides the stops. Soft/translucent by
+  default; works on any numeric column (complements the fixed `heatmap` type).
+  **Portfolio** P&L % now uses an auto-ranged diverging scale.
+
 ## Candidate themes for later versions
 
 Scaling to more domains (analytics, dashboards, general business):
 
-- **More rich types** — `link`, `relative-time`, `currency`/`unit`, plus
-  **computed columns** (`value: (row) => …`).
-- **More conditional formatting** — colour scales (cell background gradients) and
-  rule-based whole-row styling, building on 0.10's data bars + icon sets.
+- **Computed columns** — `value: (row) => …` derives a cell's value from the whole
+  row (KPIs, ratios, deltas) so sort/filter/format/export all flow through it.
+- **More rich types** — `link`, `relative-time`, `currency`/`unit`.
 - **Charts companion** — an optional `bo-grid/charts` package (tiny bar/line/area/
   donut) for dashboards, kept out of the core.
 - **Scale & server** — lazy group/tree server loading, 100+ column virtualization.

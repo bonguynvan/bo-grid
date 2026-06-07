@@ -149,6 +149,11 @@ up/down theme colours.
 `at` that is ≤ the value. Each rule carries a semantic `tone` (`up` · `down` ·
 `amber` · `info` · `neutral`) for its colour.
 
+**Colour scales** (`colorScale`): tint the cell background across the value range —
+a soft, themed heat ramp. Auto-ranges over the view (or set `min`/`max`); pass
+`mid` for a 3-stop diverging scale; `colors` overrides the stops. Works on any
+numeric column (the fixed `heatmap` type still exists for an absolute ramp).
+
 ```ts
 const columns: ColumnDef[] = [
   // Proportional bar from zero:
@@ -160,11 +165,14 @@ const columns: ColumnDef[] = [
       { at: -Infinity, icon: '▼', tone: 'down' },
       { at: 0,         icon: '▲', tone: 'up' },
     ] },
+  // Diverging colour scale around zero (auto-ranged):
+  { type: 'number', key: 'pnlPct', header: 'P&L %', decimals: 1, colorScale: { mid: 0 } },
 ];
 ```
 
-Both compose with flashing/live cells and add nothing to the core for grids that
-don't use them. (In-memory auto-ranging; pass explicit `min`/`max` in source mode.)
+All three compose with flashing/live cells and add nothing to the core for grids
+that don't use them. (In-memory auto-ranging; pass explicit `min`/`max` in source
+mode.)
 
 ## Row height
 

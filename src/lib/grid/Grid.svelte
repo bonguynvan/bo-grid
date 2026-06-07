@@ -754,23 +754,22 @@
     });
   });
 
-  // Conditional-formatting data-bar scales: for each `dataBar` column, the
-  // {min,max} the bars are drawn against — taken from explicit min/max, else
-  // auto-ranged over the current view (in-memory). Keyed by column key.
-  const dataBarRanges = $derived.by<Record<string, { min: number; max: number }>>(() => {
+  // Conditional-formatting ranges: the data extent (min/max over the current
+  // view) for each column with a data bar or colour scale. Per-column `min`/`max`
+  // config overrides are applied later, in the cell. Keyed by column key.
+  const cfRanges = $derived.by<Record<string, { min: number; max: number }>>(() => {
     const out: Record<string, { min: number; max: number }> = {};
     for (const col of columns) {
-      if (!col.dataBar) continue;
-      const { min, max } = col.dataBar;
-      let lo = min ?? Infinity;
-      let hi = max ?? -Infinity;
-      if (min == null || max == null) {
-        for (const row of view) {
-          const n = Number(row[col.key]);
-          if (!Number.isFinite(n)) continue;
-          if (min == null && n < lo) lo = n;
-          if (max == null && n > hi) hi = n;
-        }
+      if (!col.dataBar && !col.colorScale) continue;
+      let lo = Infinity;
+      let hi = -Infinity;
+      for (const row of view) {
+        const raw = row[col.key];
+        if (raw === null || raw === undefined || raw === '') continue; // blanks aren't 0
+        const n = Number(raw);
+        if (!Number.isFinite(n)) continue;
+        if (n < lo) lo = n;
+        if (n > hi) hi = n;
       }
       if (!Number.isFinite(lo)) lo = 0;
       if (!Number.isFinite(hi)) hi = lo + 1;
@@ -1726,7 +1725,7 @@
                 seed={editing?.r === item.vr && editing?.c === ci ? editSeed : null}
                 fillCorner={fillHandle && !!sel.bounds && item.vr === sel.bounds.r1 && ci === sel.bounds.c1}
                 fillpreview={inFillPreview(item.vr, ci)}
-                barRange={col.dataBar ? dataBarRanges[col.key] : null}
+                cfRange={col.dataBar || col.colorScale ? cfRanges[col.key] : null}
                 {onFillStart}
                 tree={treeData && ci === 0
                   ? {

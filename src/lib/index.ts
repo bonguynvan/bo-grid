@@ -20,6 +20,7 @@ export type {
   BadgeTone,
   DataBarConfig,
   IconRule,
+  ColorScaleConfig,
 } from './grid/column';
 export type { AggKind, AggResult } from './grid/aggregate';
 

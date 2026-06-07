@@ -270,6 +270,7 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>format</td><td><span class="type">(value, row?) =&gt; string</span></td><td>Custom display formatter (overrides the type formatter; applies to copy/export too).</td></tr>
           <tr><td>dataBar</td><td><span class="type">{ min?; max?; color?; negative? }</span></td><td>Conditional formatting: in-cell bar behind the value, auto-ranged over the view (or explicit <code>min</code>/<code>max</code>); diverges around zero for signed columns.</td></tr>
           <tr><td>icons</td><td><span class="type">{ at: number; icon: string; tone? }[]</span></td><td>Conditional formatting: icon beside the value, chosen by the highest threshold <code>at</code> ≤ the value; <code>tone</code> sets its colour.</td></tr>
+          <tr><td>colorScale</td><td><span class="type">{ min?; mid?; max?; colors? }</span></td><td>Conditional formatting: tint the cell background across the value range (auto-ranged over the view); <code>mid</code> gives a 3-stop diverging scale.</td></tr>
         </tbody>
       </table>
 
@@ -304,7 +305,7 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
       <p>Click a header to sort (asc → desc → off); <kbd>Shift</kbd>+click more headers to sort by several columns at once. Drag a header to reorder, or its right-edge grip to resize (double-click the grip to reset).</p>
 
       <h3>Conditional formatting</h3>
-      <p><strong>Data bars</strong> and <strong>icon sets</strong> paint analytics cues into numeric cells. Data bars auto-range over the current view (or set <code>min</code>/<code>max</code>; <code>min: 0</code> for absolute bars) and diverge around a zero baseline for signed columns. Icon sets pick the rule whose <code>at</code> threshold is the greatest one ≤ the value. Both compose with flashing cells and add nothing to the core when unused.</p>
+      <p><strong>Data bars</strong>, <strong>icon sets</strong> and <strong>colour scales</strong> paint analytics cues into numeric cells. Data bars auto-range over the current view (or set <code>min</code>/<code>max</code>; <code>min: 0</code> for absolute bars) and diverge around a zero baseline for signed columns. Icon sets pick the rule whose <code>at</code> threshold is the greatest one ≤ the value. Colour scales tint the cell background across the range (a soft heat ramp; <code>mid</code> makes it diverging). All compose with flashing cells and add nothing to the core when unused.</p>
       <pre><code><span class="tok-key">const</span> columns: ColumnDef[] = [
   { type: <span class="tok-str">'volume'</span>, key: <span class="tok-str">'marketValue'</span>, header: <span class="tok-str">'Mkt Value'</span>, dataBar: { min: 0 } },
   { type: <span class="tok-str">'number'</span>, key: <span class="tok-str">'pnl'</span>, header: <span class="tok-str">'P&amp;L'</span>, decimals: 0,
@@ -313,6 +314,8 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
       { at: -Infinity, icon: <span class="tok-str">'▼'</span>, tone: <span class="tok-str">'down'</span> },
       { at: 0,         icon: <span class="tok-str">'▲'</span>, tone: <span class="tok-str">'up'</span> },
     ] },
+  { type: <span class="tok-str">'number'</span>, key: <span class="tok-str">'pnlPct'</span>, header: <span class="tok-str">'P&amp;L %'</span>, decimals: 1,
+    colorScale: { mid: 0 } },                      <span class="tok-com">// diverging tint around 0</span>
 ];</code></pre>
 
       <!-- ============ SELECTION ============ -->

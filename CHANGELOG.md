@@ -3,6 +3,30 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.11.0] — Unreleased
+
+Theme: **colour scales** — completes the conditional-formatting trio (data bars +
+icon sets + colour scales). See [ROADMAP.md](./ROADMAP.md).
+
+### Added
+
+- **Colour scales** (`col.colorScale`): tint a numeric column's cell backgrounds
+  across its value range — a soft, themed heat ramp. Auto-ranges over the current
+  view (or set `min`/`max`); pass `mid` (e.g. `mid: 0`) for a 3-stop diverging
+  scale (down → neutral → up). `colors` overrides the stops (`[low, high]` or
+  `[low, mid, high]`). Translucent by default so row striping shows through and
+  text stays readable; works on any numeric column (unlike the fixed `heatmap`
+  type, which it complements). Exported `ColorScaleConfig`. The **Portfolio** demo
+  now uses an auto-ranged diverging scale on P&L %.
+
+### Changed
+
+- Data-bar `min`/`max` resolution moved into the (now shared) range pipeline —
+  identical behaviour, but data bars and colour scales now share one per-column
+  data-extent pass. Pinned cells with a heat/scale tint now layer it over the row
+  colour so they stay opaque during horizontal scroll (also fixes pinned heatmap
+  cells).
+
 ## [0.10.0] — Unreleased
 
 Theme: **conditional formatting** — the analytics & reporting layer (see
@@ -272,6 +296,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.11.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.11.0
 [0.10.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.10.0
 [0.9.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.9.0
 [0.8.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.8.0
