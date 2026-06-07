@@ -164,13 +164,20 @@ Completes the conditional-formatting trio (data bars + icon sets + colour scales
   cache), reusing the lazy-tree machinery. `buildLazyGroupRows` pure + tested.
   New **Server groups** demo.
 
+## 0.21 · Framework-agnostic custom element — done
+
+- [x] **`bo-grid/element`**: a `<bo-grid>` Web Component (Svelte compiled to a
+  custom element, styles auto-injected, whole API via a `config` property) usable
+  from **React, Vue, Angular and vanilla** — see [docs/frameworks.md](./docs/frameworks.md).
+  `wc-smoke` gate verifies it registers + renders + reacts.
+
 ## Candidate themes for later versions
 
-The roadmap's planned features are all shipped. Remaining ideas are polish or
-demand-driven:
+The roadmap's planned features are all shipped, plus cross-framework support.
+Remaining ideas are polish or demand-driven:
 
-- **Polish** — a live screen-reader + axe-core pass for a specific deployment;
-  more demos; multi-level lazy groups.
+- **Polish** — a live screen-reader + axe-core pass; framework starter repos;
+  multi-level lazy groups; custom-cell bridging for the Web Component.
 - Driven by real-world usage once published — open an issue with what's missing.
 
 Note: the eager grid core is ~97% of its 28 KB budget; the next sizable *core*

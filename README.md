@@ -98,6 +98,24 @@ Only on-screen rows render DOM, so off-screen updates cost nothing until they
 scroll into view. Batch bursty feeds into a `requestAnimationFrame` flush to
 keep frames smooth.
 
+### React, Vue, Angular & vanilla
+
+bo-grid also ships a framework-agnostic **custom element**. Import it and drive
+the whole API through a `config` property:
+
+```js
+import 'bo-grid/element'; // registers <bo-grid>, injects styles
+
+const el = document.querySelector('bo-grid');
+el.config = { columns, rows, theme: 'dark', height: 520 };
+```
+
+It works in React, Vue, Angular and plain HTML — see
+**[docs/frameworks.md](./docs/frameworks.md)** for per-framework recipes. (Custom
+`cell`/`detail` snippets are Svelte-only; use built-in types, `format`, or computed
+`value` from other frameworks. Native Svelte users should import `Grid` directly —
+smaller, and snippets work.)
+
 ## Column types
 
 **Data:** `text` · `price` · `percent` · `volume` · `number` · `date` · `currency` ·

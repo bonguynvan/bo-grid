@@ -40,6 +40,7 @@ run('pnpm test');
 run('pnpm ssr');
 run('pnpm package');
 run('pnpm smoke');
+run('pnpm smoke:wc');
 run('pnpm size');
 run('pnpm size:lib');
 

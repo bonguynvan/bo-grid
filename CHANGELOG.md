@@ -3,6 +3,29 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.21.0] — Unreleased
+
+Theme: **framework-agnostic custom element** — use bo-grid in React, Vue, Angular
+or vanilla. See [docs/frameworks.md](./docs/frameworks.md).
+
+### Added
+
+- **`bo-grid/element`** — a `<bo-grid>` custom element (Web Component). Import it
+  (`import 'bo-grid/element'`) and drive the whole grid API through a single
+  `config` property; styles inject automatically (light DOM, so `--bo-grid-*`
+  variables still apply). Self-contained (Svelte bundled in, ~60 KB gzip).
+  Integration recipes for React / Vue / Angular / vanilla in
+  [docs/frameworks.md](./docs/frameworks.md).
+- A `wc-smoke` gate registers `<bo-grid>` and asserts it renders + reacts to
+  `config` updates.
+
+### Notes
+
+- The `cell` / `detail` snippets (custom cell rendering) are Svelte-only and can't
+  cross the custom-element JS boundary — use built-in types, `format`, or computed
+  `value`. Svelte users should import the component directly for full features +
+  much smaller size.
+
 ## [0.20.0] — Unreleased
 
 Theme: **server-side (lazy) grouping** — group totals up front, rows on expand.
@@ -475,6 +498,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.21.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.21.0
 [0.20.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.20.0
 [0.19.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.19.0
 [0.18.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.18.0

@@ -1,6 +1,6 @@
 {
   "name": "bo-grid",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "type": "module",
   "license": "MIT",
   "description": "Tiny, fast Svelte 5 data grid: canvas sparklines, batched realtime cell updates, and virtual scrolling. A free, fintech-focused alternative to heavyweight grids.",
@@ -38,6 +38,9 @@
       "svelte": "./dist/charts/index.js",
       "default": "./dist/charts/index.js"
     },
+    "./element": {
+      "default": "./dist/bo-grid.element.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -58,12 +61,14 @@
     "demo:build": "vite build",
     "pages:build": "vite build --base=/bo-grid/ --outDir demo-dist",
     "preview": "vite preview",
-    "package": "svelte-package -i src/lib -o dist && node scripts/clean-dist.mjs",
+    "package": "svelte-package -i src/lib -o dist && node scripts/clean-dist.mjs && pnpm run build:wc",
+    "build:wc": "vite build --config vite.wc.config.ts",
     "prepublishOnly": "pnpm run package",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "size": "vite build && node scripts/size-check.mjs",
     "size:lib": "vite build --config vite.lib.config.ts && node scripts/size-lib.mjs",
     "smoke": "vite build --base=./ --outDir demo-dist && node scripts/smoke.mjs",
+    "smoke:wc": "node scripts/wc-smoke.mjs",
     "ssr": "node scripts/ssr.mjs",
     "bench": "node scripts/bench.mjs",
     "test": "vitest run",

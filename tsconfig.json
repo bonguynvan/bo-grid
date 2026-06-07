@@ -10,5 +10,9 @@
     "isolatedModules": true,
     "lib": ["ESNext", "DOM", "DOM.Iterable"]
   },
-  "include": ["src/**/*.ts", "src/**/*.svelte"]
+  "include": ["src/**/*.ts", "src/**/*.svelte"],
+  // src/wc is the custom-element wrapper, compiled in customElement mode only by
+  // vite.wc.config.ts. svelte-check (normal mode) would false-positive on its
+  // <svelte:options customElement>; the WC build + wc-smoke validate it instead.
+  "exclude": ["src/wc/**"]
 }
