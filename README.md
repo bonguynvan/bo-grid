@@ -56,7 +56,8 @@ Works with **SvelteKit / SSR** out of the box — `<Grid>` server-renders to HTM
 without touching `window`/`document`/`localStorage` (a CI gate, `pnpm ssr`,
 proves it). The package is `sideEffects: false`, so unused exports tree-shake
 away. See the **[SvelteKit guide](./docs/sveltekit.md)** for `load`-function data,
-realtime feeds, and layout persistence.
+server-side / lazy loading, realtime feeds, import helpers, charts, printing, and
+layout persistence.
 
 ## Usage
 

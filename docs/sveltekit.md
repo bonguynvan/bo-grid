@@ -120,6 +120,74 @@ the client:
 <Grid {rows} {columns} height={640} persistKey="watchlist" />
 ```
 
+## Importing data in a `load`
+
+The import helpers turn a fetched payload straight into rows — no `id`/flash
+boilerplate. `rowsFromObjects` is the one-liner for a JSON API:
+
+```ts
+// +page.server.ts
+import { rowsFromObjects, parseCSV } from 'bo-grid';
+
+export const load = async ({ fetch }) => {
+  const json = rowsFromObjects(await (await fetch('/api/quotes')).json());
+  const csv = parseCSV(await (await fetch('/data/q.csv')).text(), columns); // or CSV/TSV
+  return { rows: json };
+};
+```
+
+These are pure functions (no DOM), so they run on the server in `load` too.
+
+## Server-side data & lazy loading
+
+For datasets too large to ship, back the grid with a **`RowSource`** (windowed
+fetches), or lazy-load **tree children** / **groups** on expand — all `fetch`-based,
+so they fit SvelteKit's data story. The grid stays client-interactive; the initial
+page can still SSR a first window from `load`.
+
+```svelte
+<script lang="ts">
+  import { Grid } from 'bo-grid';
+  let { data } = $props();
+</script>
+
+<!-- server-side groups: summaries up front, rows on expand -->
+<Grid {columns} lazyGroups={data.groups}
+  loadGroup={(key) => fetch(`/api/orders?group=${key}`).then((r) => r.json())} height={560} />
+```
+
+(`RowSource`, `loadChildren`/`hasChildren`, and `lazyGroups`/`loadGroup` are all in
+the [API reference](https://bonguynvan.github.io/bo-grid/api.html).)
+
+## Charts
+
+The optional charts companion is a separate import and SSR-safe (plain SVG):
+
+```svelte
+<script>
+  import { LineChart, BarChart, DonutChart } from 'bo-grid/charts';
+</script>
+<LineChart data={data.trend} area />
+```
+
+## Printing & export (client actions)
+
+Export/print are user actions — call them from an event handler. `printTable` opens
+a print window (browser only); CSV/XLSX export likewise:
+
+```svelte
+<button onclick={() => printTable(rows, columns, { title: 'Report' })}>Print</button>
+<button onclick={() => exportCSV('rows.csv', rows, columns)}>Export CSV</button>
+```
+
+## Other frameworks
+
+In SvelteKit, import the `Grid` component directly (above) — it's the smallest path
+and supports custom `cell`/`detail` snippets. The `bo-grid/element` custom element
+is for **non-Svelte** hosts and is client-only (no `customElements` on the server),
+so it's not the right choice inside SvelteKit. See
+[frameworks.md](./frameworks.md) for React/Vue/Angular.
+
 ## Notes
 
 - **Styles** are bundled with the component (scoped `--bo-grid-*` CSS variables) —
@@ -129,4 +197,3 @@ the client:
   dynamic import) or just `npm i xlsx`.
 - See the [API reference](https://bonguynvan.github.io/bo-grid/api.html) for every
   prop and the [README](../README.md) for feature walkthroughs.
-```
