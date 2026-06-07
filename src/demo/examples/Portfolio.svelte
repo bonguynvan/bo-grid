@@ -63,9 +63,18 @@
     { type: 'number', key: 'shares', header: 'Shares', width: 92, decimals: 0, groupAgg: 'sum', group: 'Holding' },
     { type: 'price', key: 'avgCost', header: 'Avg Cost', width: 96, group: 'Pricing' },
     { type: 'price', key: 'last', header: 'Last', width: 92, group: 'Pricing' },
-    { type: 'volume', key: 'marketValue', header: 'Mkt Value', width: 108, groupAgg: 'sum', group: 'Valuation' },
+    // Data bar (proportional, anchored at 0): in-cell magnitude of each holding.
+    { type: 'volume', key: 'marketValue', header: 'Mkt Value', width: 132, groupAgg: 'sum', group: 'Valuation', dataBar: { min: 0 } },
     { type: 'heatmap', key: 'pnlPct', header: 'P&L %', width: 84, min: -30, max: 30, groupAgg: 'avg', group: 'P&L' },
-    { type: 'number', key: 'pnl', header: 'P&L $', width: 116, decimals: 0, groupAgg: 'sum', group: 'P&L' },
+    // Data bar (diverging around zero) + an icon set keyed by sign.
+    {
+      type: 'number', key: 'pnl', header: 'P&L $', width: 140, decimals: 0, groupAgg: 'sum', group: 'P&L',
+      dataBar: {},
+      icons: [
+        { at: -Infinity, icon: '▼', tone: 'down' },
+        { at: 0, icon: '▲', tone: 'up' },
+      ],
+    },
   ];
 
   let grouped = $state(true);

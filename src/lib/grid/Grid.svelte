@@ -754,6 +754,31 @@
     });
   });
 
+  // Conditional-formatting data-bar scales: for each `dataBar` column, the
+  // {min,max} the bars are drawn against — taken from explicit min/max, else
+  // auto-ranged over the current view (in-memory). Keyed by column key.
+  const dataBarRanges = $derived.by<Record<string, { min: number; max: number }>>(() => {
+    const out: Record<string, { min: number; max: number }> = {};
+    for (const col of columns) {
+      if (!col.dataBar) continue;
+      const { min, max } = col.dataBar;
+      let lo = min ?? Infinity;
+      let hi = max ?? -Infinity;
+      if (min == null || max == null) {
+        for (const row of view) {
+          const n = Number(row[col.key]);
+          if (!Number.isFinite(n)) continue;
+          if (min == null && n < lo) lo = n;
+          if (max == null && n > hi) hi = n;
+        }
+      }
+      if (!Number.isFinite(lo)) lo = 0;
+      if (!Number.isFinite(hi)) hi = lo + 1;
+      out[col.key] = { min: lo, max: hi };
+    }
+    return out;
+  });
+
   // Pagination (in-memory only): slice the view into pages; rows still
   // virtualize within a page. Off when pageSize <= 0.
   const paged = $derived(pageSize > 0 && !source);
@@ -1701,6 +1726,7 @@
                 seed={editing?.r === item.vr && editing?.c === ci ? editSeed : null}
                 fillCorner={fillHandle && !!sel.bounds && item.vr === sel.bounds.r1 && ci === sel.bounds.c1}
                 fillpreview={inFillPreview(item.vr, ci)}
+                barRange={col.dataBar ? dataBarRanges[col.key] : null}
                 {onFillStart}
                 tree={treeData && ci === 0
                   ? {

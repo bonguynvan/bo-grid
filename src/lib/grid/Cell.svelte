@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { ColumnDef, GridRow } from './column';
-  import { formatCell, colStyle, candlesOf, isNumeric } from './column';
+  import { formatCell, colStyle, candlesOf, isNumeric, dataBarGeometry, pickIcon, toneColor } from './column';
   import { heatColor } from './heatmap';
   import Sparkline from '../sparkline/Sparkline.svelte';
 
@@ -21,6 +21,7 @@
     seed = null,
     fillCorner = false,
     fillpreview = false,
+    barRange = null,
     colIndex,
     cellId,
     cellSnippet,
@@ -54,6 +55,9 @@
     fillCorner?: boolean;
     /** This cell is inside the in-progress fill drag's preview range. */
     fillpreview?: boolean;
+    /** Conditional-formatting data-bar scale (min/max over the view) for this
+        column; null when the column has no `dataBar`. */
+    barRange?: { min: number; max: number } | null;
     colIndex?: number;
     cellId?: string;
     cellSnippet?: Snippet<[{ row: GridRow; column: ColumnDef; value: unknown }]>;
@@ -136,6 +140,22 @@
       ? formatCell(col, value, row)
       : undefined,
   );
+
+  // ---- Conditional formatting (v0.10): data bar + icon set ----
+  // Geometry/threshold logic lives in column.ts (pure, unit-tested); here we map
+  // it to CSS (left/width %, tone → colour).
+  const hasCf = $derived(!!col.dataBar || !!col.icons);
+  const bar = $derived.by(() => {
+    if (!col.dataBar || !barRange) return null;
+    const g = dataBarGeometry(value, barRange);
+    if (!g) return null;
+    const color = g.negative ? (col.dataBar.negative ?? 'var(--bo-down)') : (col.dataBar.color ?? 'var(--bo-up)');
+    return { left: `${g.left * 100}%`, width: `${g.width * 100}%`, color };
+  });
+  const icon = $derived.by(() => {
+    const pick = col.icons ? pickIcon(value, col.icons) : null;
+    return pick ? { icon: pick.icon, color: toneColor(pick.tone) } : null;
+  });
 
   function cellStyle(): string {
     let s = width != null ? `flex:0 0 ${width}px;width:${width}px;` : colStyle(col);
@@ -263,6 +283,18 @@
     <span class="bo-avatar-name">{value ?? ''}{#if col.sub}<em>{row[col.sub]}</em>{/if}</span>
   {:else if col.type === 'text'}
     <strong>{formatCell(col, value, row)}</strong>{#if col.sub}<em>{row[col.sub]}</em>{/if}
+  {:else if hasCf}
+    {#if bar}<span class="bo-databar" style="left:{bar.left};width:{bar.width};background:{bar.color}"></span>{/if}
+    {#key col.flash ? row.flashSeq : 0}
+      <span
+        class="bo-cf-val"
+        class:flash={col.flash}
+        class:up={col.flash && row.flashDir === 'up'}
+        class:down={col.flash && row.flashDir === 'down'}
+      >
+        {#if icon}<span class="bo-cf-icon" style="color:{icon.color}">{icon.icon}</span>{/if}{formatCell(col, value, row)}
+      </span>
+    {/key}
   {:else if col.flash}
     {#key row.flashSeq}
       <span class="flash {row.flashDir}">{formatCell(col, value, row)}</span>
@@ -402,6 +434,34 @@
     font-style: normal;
     font-size: 11px;
     color: var(--bo-text-dim);
+  }
+
+  /* ---- Conditional formatting (v0.10): data bars + icon sets ---- */
+  .bo-databar {
+    position: absolute;
+    top: 50%;
+    height: 62%;
+    transform: translateY(-50%);
+    border-radius: 2px;
+    opacity: 0.22;
+    z-index: 0;
+    pointer-events: none;
+  }
+  /* Value sits above its data bar; carries the (optional) flash colour. */
+  .bo-cf-val {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .bo-cf-icon {
+    flex: none;
+    font-size: 11px;
+    line-height: 1;
   }
   .text strong {
     font-family: var(--bo-mono);

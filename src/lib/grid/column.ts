@@ -59,6 +59,45 @@ interface ColBase {
       <Grid>). Defaults to the column's type; `'set'` shows a value checklist;
       `false` disables filtering for this column. */
   filter?: false | FilterKind;
+  /** Conditional formatting — a horizontal bar painted behind the cell value,
+      scaled across the column's value range. The range is auto-computed over the
+      current view (in-memory) unless `min`/`max` are given; pass `min: 0` for
+      absolute proportional bars. Bars cross a zero baseline when the range spans
+      negatives. Numeric columns only. */
+  dataBar?: DataBarConfig;
+  /** Conditional formatting — show an icon beside the value, chosen by the
+      highest threshold `at` that is ≤ the cell value (e.g. ▲ ● ▼ by sign or band).
+      Numeric columns only. */
+  icons?: IconRule[];
+}
+
+/** Conditional-formatting data-bar config (see `ColBase.dataBar`). */
+export interface DataBarConfig {
+  min?: number;
+  max?: number;
+  /** Bar colour for values ≥ 0 (default `--bo-up`). Any CSS colour or var. */
+  color?: string;
+  /** Bar colour for values < 0 (default `--bo-down`). */
+  negative?: string;
+}
+
+/** A single icon-set threshold rule (see `ColBase.icons`). */
+export interface IconRule {
+  /** Lower bound: this rule wins when `value >= at` and `at` is the greatest
+      such threshold. */
+  at: number;
+  icon: string;
+  tone?: BadgeTone;
+}
+
+/** Resolved data-bar geometry as fractions of the cell width (0..1). */
+export interface DataBarGeom {
+  /** Distance of the bar's left edge from the cell's left edge. */
+  left: number;
+  /** Bar width. */
+  width: number;
+  /** The value is negative (use the bar's `negative` colour). */
+  negative: boolean;
 }
 
 export interface CellEditEvent {
@@ -192,4 +231,59 @@ export function isNumeric(col: ColumnDef): boolean {
 
 export function candlesOf(row: GridRow, key: string): Candle[] {
   return (row[key] as Candle[]) ?? [];
+}
+
+const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
+
+// Coerce to a number, but treat null/undefined/'' as non-numeric (NaN) — guards
+// against `Number(null) === 0` slipping blanks through as a real zero value.
+function numericOrNaN(value: unknown): number {
+  if (value === null || value === undefined || value === '') return NaN;
+  return typeof value === 'number' ? value : Number(value);
+}
+
+/**
+ * Conditional formatting — data-bar geometry. Maps `value` onto a 0..1 range,
+ * anchored at the zero baseline so signed columns diverge left/right around zero
+ * (left-anchored when the range doesn't cross zero). Returns null for
+ * non-numeric values (no bar). Pure; unit-tested.
+ */
+export function dataBarGeometry(value: unknown, range: { min: number; max: number }): DataBarGeom | null {
+  const n = numericOrNaN(value);
+  if (!Number.isFinite(n)) return null;
+  const span = range.max - range.min || 1;
+  const zero = clamp01((0 - range.min) / span);
+  const v = clamp01((n - range.min) / span);
+  return { left: Math.min(zero, v), width: Math.abs(v - zero), negative: n < 0 };
+}
+
+/**
+ * Conditional formatting — pick the icon-set rule for a value: the rule with the
+ * greatest `at` threshold that is ≤ the value (order-independent). Returns null
+ * for non-numeric values or when no threshold matches. Pure; unit-tested.
+ */
+export function pickIcon(value: unknown, rules: readonly IconRule[]): IconRule | null {
+  const n = numericOrNaN(value);
+  if (!Number.isFinite(n)) return null;
+  let pick: IconRule | null = null;
+  for (const rule of rules) {
+    if (n >= rule.at && (pick === null || rule.at >= pick.at)) pick = rule;
+  }
+  return pick;
+}
+
+/** Semantic tone → grid theme colour var (shared by badges + icon sets). */
+export function toneColor(tone?: BadgeTone): string {
+  switch (tone) {
+    case 'up':
+      return 'var(--bo-up)';
+    case 'down':
+      return 'var(--bo-down)';
+    case 'amber':
+      return 'var(--bo-amber)';
+    case 'info':
+      return 'var(--bo-sel-border)';
+    default:
+      return 'var(--bo-text-dim)';
+  }
 }

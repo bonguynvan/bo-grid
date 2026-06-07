@@ -10,7 +10,17 @@ export { default as Grid } from './grid/Grid.svelte';
 export { default as Sparkline } from './sparkline/Sparkline.svelte';
 
 // Column + grid configuration types
-export type { ColumnDef, Align, GridRow, SortDir, SortState, CellEditEvent } from './grid/column';
+export type {
+  ColumnDef,
+  Align,
+  GridRow,
+  SortDir,
+  SortState,
+  CellEditEvent,
+  BadgeTone,
+  DataBarConfig,
+  IconRule,
+} from './grid/column';
 export type { AggKind, AggResult } from './grid/aggregate';
 
 // Column filter model (for controlled filtering via `columnFilters`/`onFilterChange`)

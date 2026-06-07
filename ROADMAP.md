@@ -83,14 +83,25 @@ Scaling beyond fintech into CRM / projects / admin / content / analytics.
 - [x] **Rich built-in types**: `progress`, `rating`, `tags`, `badge`, `boolean`,
   `avatar` — all themed from the design tokens. New **Team** demo.
 
+## 0.10 · Conditional formatting — done
+
+The analytics & reporting layer — visual cues painted into the cells themselves,
+adding nothing to the core for grids that don't opt in.
+
+- [x] **Data bars** (`col.dataBar`): in-cell bars behind values, auto-ranged over
+  the view (or explicit `min`/`max`); diverge around a zero baseline for signed
+  columns; `color`/`negative` overrides.
+- [x] **Icon sets** (`col.icons`): threshold-driven icon beside the value, each
+  rule with a semantic `tone`. **Portfolio** demo shows both on Mkt Value / P&L.
+
 ## Candidate themes for later versions
 
 Scaling to more domains (analytics, dashboards, general business):
 
 - **More rich types** — `link`, `relative-time`, `currency`/`unit`, plus
   **computed columns** (`value: (row) => …`).
-- **Conditional formatting** — data bars, color scales, icon sets, rule-based
-  cell/row styling (analytics & reporting).
+- **More conditional formatting** — colour scales (cell background gradients) and
+  rule-based whole-row styling, building on 0.10's data bars + icon sets.
 - **Charts companion** — an optional `bo-grid/charts` package (tiny bar/line/area/
   donut) for dashboards, kept out of the core.
 - **Scale & server** — lazy group/tree server loading, 100+ column virtualization.

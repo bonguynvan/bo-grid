@@ -5,8 +5,12 @@ import {
   isEditable,
   isSortable,
   colWidth,
+  dataBarGeometry,
+  pickIcon,
+  toneColor,
   type ColumnDef,
   type GridRow,
+  type IconRule,
 } from './column';
 
 const row = (over: Record<string, unknown> = {}): GridRow =>
@@ -69,5 +73,84 @@ describe('colWidth', () => {
     expect(colWidth({ type: 'number', key: 'n', header: 'N', width: 120 })).toBe(120);
     expect(colWidth({ type: 'number', key: 'n', header: 'N' })).toBe(96); // fixed default
     expect(colWidth({ type: 'text', key: 't', header: 'T', flex: 1 })).toBe(160); // flex default
+  });
+});
+
+describe('dataBarGeometry', () => {
+  it('left-anchors a non-negative range (min 0): width is the value fraction', () => {
+    const r = { min: 0, max: 100 };
+    expect(dataBarGeometry(100, r)).toEqual({ left: 0, width: 1, negative: false });
+    expect(dataBarGeometry(50, r)).toEqual({ left: 0, width: 0.5, negative: false });
+    expect(dataBarGeometry(0, r)).toEqual({ left: 0, width: 0, negative: false });
+  });
+
+  it('diverges around the zero baseline when the range spans negatives', () => {
+    const r = { min: -100, max: 100 }; // zero sits at 0.5
+    expect(dataBarGeometry(100, r)).toEqual({ left: 0.5, width: 0.5, negative: false });
+    expect(dataBarGeometry(-100, r)).toEqual({ left: 0, width: 0.5, negative: true });
+    expect(dataBarGeometry(0, r)).toEqual({ left: 0.5, width: 0, negative: false });
+    expect(dataBarGeometry(-50, r)).toEqual({ left: 0.25, width: 0.25, negative: true });
+  });
+
+  it('clamps values outside the range to the edges', () => {
+    expect(dataBarGeometry(999, { min: 0, max: 10 })).toEqual({ left: 0, width: 1, negative: false });
+    expect(dataBarGeometry(-999, { min: 0, max: 10 })).toEqual({ left: 0, width: 0, negative: true });
+  });
+
+  it('returns null for non-numeric values (no bar)', () => {
+    expect(dataBarGeometry('abc', { min: 0, max: 10 })).toBeNull();
+    expect(dataBarGeometry(null, { min: 0, max: 10 })).toBeNull();
+    expect(dataBarGeometry(undefined, { min: 0, max: 10 })).toBeNull();
+  });
+
+  it('does not divide by zero on a degenerate (min === max) range', () => {
+    expect(dataBarGeometry(5, { min: 5, max: 5 })).toEqual({ left: 0, width: 0, negative: false });
+  });
+});
+
+describe('pickIcon', () => {
+  const sign: IconRule[] = [
+    { at: -Infinity, icon: '▼', tone: 'down' },
+    { at: 0, icon: '▲', tone: 'up' },
+  ];
+
+  it('picks the greatest threshold at ≤ value', () => {
+    expect(pickIcon(5, sign)?.icon).toBe('▲');
+    expect(pickIcon(0, sign)?.icon).toBe('▲'); // at:0 is inclusive
+    expect(pickIcon(-3, sign)?.icon).toBe('▼');
+  });
+
+  it('is order-independent', () => {
+    const reversed = [...sign].reverse();
+    expect(pickIcon(5, reversed)?.icon).toBe('▲');
+    expect(pickIcon(-3, reversed)?.icon).toBe('▼');
+  });
+
+  it('handles multi-band scales', () => {
+    const bands: IconRule[] = [
+      { at: 0, icon: 'lo' },
+      { at: 50, icon: 'mid' },
+      { at: 80, icon: 'hi' },
+    ];
+    expect(pickIcon(90, bands)?.icon).toBe('hi');
+    expect(pickIcon(60, bands)?.icon).toBe('mid');
+    expect(pickIcon(10, bands)?.icon).toBe('lo');
+    expect(pickIcon(-5, bands)).toBeNull(); // below every threshold
+  });
+
+  it('returns null for non-numeric values or no rules', () => {
+    expect(pickIcon('x', sign)).toBeNull();
+    expect(pickIcon(5, [])).toBeNull();
+  });
+});
+
+describe('toneColor', () => {
+  it('maps semantic tones to theme vars, defaulting to dim', () => {
+    expect(toneColor('up')).toBe('var(--bo-up)');
+    expect(toneColor('down')).toBe('var(--bo-down)');
+    expect(toneColor('amber')).toBe('var(--bo-amber)');
+    expect(toneColor('info')).toBe('var(--bo-sel-border)');
+    expect(toneColor('neutral')).toBe('var(--bo-text-dim)');
+    expect(toneColor(undefined)).toBe('var(--bo-text-dim)');
   });
 });

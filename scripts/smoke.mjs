@@ -381,6 +381,11 @@ await waitFor('.bo-grid .row', 'Portfolio example rendered no rows');
 await waitFor('.bo-grid .group', 'Portfolio example did not group by sector');
 const portfolioRows = document.querySelectorAll('.bo-grid .row').length;
 const portfolioGroups = document.querySelectorAll('.bo-grid .group').length;
+// Conditional formatting (v0.10): Mkt Value draws data bars; P&L shows ▲/▼ icons.
+const cfBars = document.querySelectorAll('.bo-grid .bo-databar').length;
+const cfIcons = document.querySelectorAll('.bo-grid .bo-cf-icon').length;
+if (cfBars === 0) fail('conditional formatting: data bars did not render on the Portfolio grid');
+if (cfIcons === 0) fail('conditional formatting: icon set did not render on the Portfolio grid');
 // onRowClick: clicking a position row surfaces it in the toolbar.
 click(document.querySelector('.bo-grid .row'));
 await wait(20);
@@ -900,7 +905,7 @@ console.log(
     `edit committed + validate; variable heights ${rowHeights.join('/')}; ` +
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
-    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
+    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
     `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );

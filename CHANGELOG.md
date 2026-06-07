@@ -3,6 +3,26 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.10.0] — Unreleased
+
+Theme: **conditional formatting** — the analytics & reporting layer (see
+[ROADMAP.md](./ROADMAP.md)).
+
+### Added
+
+- **Data bars** (`col.dataBar`): an in-cell horizontal bar painted behind the
+  value, scaled across the column's range. The range auto-computes over the
+  current view, or set `min`/`max` (`min: 0` gives absolute proportional bars).
+  Bars diverge left/right around a zero baseline when the range spans negatives;
+  `color`/`negative` override the default up/down theme colours.
+- **Icon sets** (`col.icons`): show an icon beside the value, chosen by the
+  highest threshold `at` that is ≤ the value (e.g. `▲`/`▼` by sign, or a 3-band
+  scale). Each rule takes a semantic `tone` (`up`/`down`/`amber`/`info`/`neutral`)
+  for its colour.
+- Both are themed, work with flashing/live cells, and add nothing to the core for
+  grids that don't use them. The **Portfolio** demo shows data bars on Mkt Value
+  and diverging bars + sign icons on P&L.
+
 ## [0.9.0] — Unreleased
 
 Theme: **rich cell types** — for any business domain (see [ROADMAP.md](./ROADMAP.md)).
@@ -252,6 +272,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.10.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.10.0
 [0.9.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.9.0
 [0.8.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.8.0
 [0.7.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.7.0
