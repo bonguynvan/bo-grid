@@ -65,6 +65,10 @@
     { type: 'price', key: 'last', header: 'Last', width: 92, group: 'Pricing' },
     // Data bar (proportional, anchored at 0): in-cell magnitude of each holding.
     { type: 'volume', key: 'marketValue', header: 'Mkt Value', width: 132, groupAgg: 'sum', group: 'Valuation', dataBar: { min: 0 } },
+    // Computed column: no `cost` field on the row — value() derives it. Still
+    // sorts, aggregates (subtotal/footer) and exports like a real column.
+    { type: 'volume', key: 'cost', header: 'Cost Basis', width: 116, groupAgg: 'sum', group: 'Valuation',
+      value: (row) => (row.shares as number) * (row.avgCost as number) },
     // Colour scale (diverging around 0, auto-ranged): a soft, theme-tinted heat ramp.
     { type: 'number', key: 'pnlPct', header: 'P&L %', width: 92, decimals: 1, groupAgg: 'avg', group: 'P&L', colorScale: { mid: 0 } },
     // Data bar (diverging around zero) + an icon set keyed by sign.

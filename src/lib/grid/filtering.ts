@@ -105,19 +105,32 @@ export function matchesFilter(value: unknown, f: ColumnFilter): boolean {
   return true; // unreachable fallback
 }
 
+/** Resolve a column's value for filtering — `row[key]` by default; Grid passes a
+    computed-aware resolver so computed columns filter on their derived value. */
+export type ValueResolver = (row: GridRow, key: string) => unknown;
+const byKey: ValueResolver = (row, key) => row[key];
+
 /** AND across every active per-column filter. */
-export function passesFilters(row: GridRow, filters: Record<string, ColumnFilter>): boolean {
+export function passesFilters(
+  row: GridRow,
+  filters: Record<string, ColumnFilter>,
+  valueOf: ValueResolver = byKey,
+): boolean {
   for (const key in filters) {
     const f = filters[key];
-    if (isFilterActive(f) && !matchesFilter(row[key], f)) return false;
+    if (isFilterActive(f) && !matchesFilter(valueOf(row, key), f)) return false;
   }
   return true;
 }
 
 /** Sorted unique string values for a column — the set-filter checklist. */
-export function distinctValues(rows: readonly GridRow[], key: string): string[] {
+export function distinctValues(
+  rows: readonly GridRow[],
+  key: string,
+  valueOf: ValueResolver = byKey,
+): string[] {
   const seen = new Set<string>();
-  for (const row of rows) seen.add(String(row[key] ?? ''));
+  for (const row of rows) seen.add(String(valueOf(row, key) ?? ''));
   return [...seen].sort((a, b) =>
     a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }),
   );

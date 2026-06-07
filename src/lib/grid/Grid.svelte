@@ -7,7 +7,7 @@
   import { untrack } from 'svelte';
   import type { Snippet } from 'svelte';
   import type { ColumnDef, GridRow, SortState, SortDir, CellEditEvent } from './column';
-  import { colStyle, isNumeric, isSortable, isEditable, compareBySorts, formatCell } from './column';
+  import { colStyle, isNumeric, isSortable, isEditable, compareBySorts, formatCell, cellValue } from './column';
   import { arrangePinned } from './pin';
   import { uniformHeights, variableHeights } from './rowheight';
   import { themeVars, lightTheme, type GridTheme } from './theme';
@@ -724,6 +724,14 @@
   }
 
   // In-memory pipeline (skipped entirely in source mode).
+  // Resolve a column's value by key (computed-aware) — for filtering and the
+  // set-filter distinct list. Falls back to the raw row field for plain columns.
+  const colByKey = $derived(new Map(columns.map((c) => [c.key, c] as const)));
+  const valueOf = (row: GridRow, key: string): unknown => {
+    const c = colByKey.get(key);
+    return c ? cellValue(c, row) : row[key];
+  };
+
   const view = $derived.by(() => {
     if (source) return [] as GridRow[];
     const base = rows;
@@ -741,10 +749,10 @@
     const hasColFilters = Object.keys(active).length > 0;
     return untrack(() => {
       let r = base;
-      if (f) r = r.filter((row) => allCols.some((c) => String(row[c.key] ?? '').toLowerCase().includes(f)));
-      if (q) r = r.filter((row) => allCols.some((c) => String(row[c.key] ?? '').toLowerCase().includes(q)));
+      if (f) r = r.filter((row) => allCols.some((c) => String(cellValue(c, row) ?? '').toLowerCase().includes(f)));
+      if (q) r = r.filter((row) => allCols.some((c) => String(cellValue(c, row) ?? '').toLowerCase().includes(q)));
       if (hasColFilters) {
-        r = r.filter((row) => passesFilters(row, active));
+        r = r.filter((row) => passesFilters(row, active, valueOf));
       }
       if (s.length > 0) {
         const colOf = (k: string) => allCols.find((c) => c.key === k);
@@ -764,7 +772,7 @@
       let lo = Infinity;
       let hi = -Infinity;
       for (const row of view) {
-        const raw = row[col.key];
+        const raw = cellValue(col, row);
         if (raw === null || raw === undefined || raw === '') continue; // blanks aren't 0
         const n = Number(raw);
         if (!Number.isFinite(n)) continue;
@@ -870,7 +878,7 @@
       if (col.type === 'sparkline' || col.type === 'text' || col.type === 'custom' || !col.groupAgg) return '';
       const vals: number[] = [];
       for (const row of v) {
-        const n = Number(row[col.key]);
+        const n = Number(cellValue(col, row));
         if (Number.isFinite(n)) vals.push(n);
       }
       const a = aggregate(vals);
@@ -980,7 +988,7 @@
       if (!row) continue;
       for (let c = b.c0; c <= cEnd; c++) {
         if (!isNumeric(cols[c])) continue;
-        const v = Number(row[cols[c].key]);
+        const v = Number(cellValue(cols[c], row));
         if (Number.isFinite(v)) vals.push(v);
       }
     }
@@ -1110,7 +1118,7 @@
     // A set filter needs distinct values; in source mode they can't be
     // enumerated, so fall back to the column's typed filter.
     if (source && kind === 'set') kind = defaultFilterKind(col);
-    const values = !source && kind === 'set' ? distinctValues(rows, col.key) : [];
+    const values = !source && kind === 'set' ? distinctValues(rows, col.key, valueOf) : [];
     if (!FilterMenuComp) FilterMenuComp = (await import('./FilterMenu.svelte')).default;
     filterUi = { key: col.key, kind, header: col.header, values, x: rect.left, y: rect.bottom + 2 };
   }
@@ -1144,7 +1152,7 @@
     let maxLen = col.header.length;
     if (!source) {
       for (const row of view.slice(0, 500)) {
-        const s = formatCell(col, row[col.key], row);
+        const s = formatCell(col, cellValue(col, row), row);
         if (s.length > maxLen) maxLen = s.length;
       }
     }
@@ -1184,7 +1192,7 @@
     const row = dataAt(r);
     if (!row) return;
     const column = cols[c];
-    onCellClick({ row, column, value: row[column.key] }, e);
+    onCellClick({ row, column, value: cellValue(column, row) }, e);
   }
 
   // Move the focus to an absolute (r, c), clamped; extend the selection if asked.
@@ -1217,7 +1225,7 @@
       const cells: string[] = [];
       for (let c = b.c0; c <= cEnd; c++) {
         const col = cols[c];
-        cells.push(col.type === 'sparkline' || col.type === 'custom' ? '' : formatCell(col, row[col.key], row));
+        cells.push(col.type === 'sparkline' || col.type === 'custom' ? '' : formatCell(col, cellValue(col, row), row));
       }
       lines.push(cells.join('\t'));
     }

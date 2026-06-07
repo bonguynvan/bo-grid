@@ -104,12 +104,26 @@ describe('passesFilters', () => {
   it('ignores inactive filters', () => {
     expect(passesFilters(row, { name: { kind: 'text', op: 'contains', q: '' } })).toBe(true);
   });
+  it('filters a computed column through the value resolver', () => {
+    // `total` is derived (qty*px), not a row field; resolver supplies it.
+    const r = { id: 1, qty: 3, px: 10 } as unknown as GridRow;
+    const valueOf = (row: GridRow, key: string) =>
+      key === 'total' ? (row.qty as number) * (row.px as number) : row[key];
+    const filters: Record<string, ColumnFilter> = { total: { kind: 'number', op: 'ge', a: 25 } };
+    expect(passesFilters(r, filters, valueOf)).toBe(true); // 30 ≥ 25
+    expect(passesFilters({ ...r, qty: 2 }, filters, valueOf)).toBe(false); // 20 < 25
+  });
 });
 
 describe('distinctValues', () => {
   it('returns sorted unique strings (numeric-aware)', () => {
     const rows = [{ id: 1, n: 2 }, { id: 2, n: 10 }, { id: 3, n: 2 }] as unknown as GridRow[];
     expect(distinctValues(rows, 'n')).toEqual(['2', '10']);
+  });
+  it('resolves computed values via the resolver', () => {
+    const rows = [{ id: 1, a: 1 }, { id: 2, a: 2 }] as unknown as GridRow[];
+    const valueOf = (row: GridRow) => `#${row.a}`;
+    expect(distinctValues(rows, 'tag', valueOf)).toEqual(['#1', '#2']);
   });
 });
 

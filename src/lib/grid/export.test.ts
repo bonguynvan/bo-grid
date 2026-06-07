@@ -27,6 +27,16 @@ describe('rowsToMatrix', () => {
   it('omits the header when header:false', () => {
     expect(rowsToMatrix(rows, columns, { header: false })).toHaveLength(2);
   });
+
+  it('exports a computed column via value() (no backing field)', () => {
+    const cols: ColumnDef[] = [
+      { type: 'price', key: 'price', header: 'Price' },
+      { type: 'number', key: 'doubled', header: 'Doubled', value: (r) => (r.price as number) * 2 },
+    ];
+    const m = rowsToMatrix(rows, cols, { header: false });
+    expect(m[0]).toEqual([12.5, 25]); // 12.5 → 25
+    expect(m[1]).toEqual([7, 14]);
+  });
 });
 
 describe('toCSV', () => {

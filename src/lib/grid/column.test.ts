@@ -5,6 +5,8 @@ import {
   isEditable,
   isSortable,
   colWidth,
+  cellValue,
+  compareBySorts,
   dataBarGeometry,
   colorScaleBackground,
   pickIcon,
@@ -58,6 +60,33 @@ describe('isEditable', () => {
     expect(isEditable({ type: 'date', key: 'd', header: 'D', editable: true })).toBe(true);
     expect(isEditable({ type: 'custom', key: 'x', header: 'X', editable: true })).toBe(false);
     expect(isEditable({ type: 'sparkline', key: 's', header: 'S', sparkKey: 'k', editable: true })).toBe(false);
+  });
+
+  it('never edits a computed column (no field to write back)', () => {
+    expect(isEditable({ type: 'number', key: 'r', header: 'R', editable: true, value: (row) => row.a })).toBe(false);
+  });
+});
+
+describe('computed columns (value)', () => {
+  const ratio: ColumnDef = {
+    type: 'number',
+    key: 'ratio',
+    header: 'Ratio',
+    value: (r) => (r.a as number) / (r.b as number),
+  };
+
+  it('cellValue derives from the whole row when value() is set, else reads the field', () => {
+    expect(cellValue(ratio, row({ a: 10, b: 2 }))).toBe(5);
+    expect(cellValue({ type: 'number', key: 'a', header: 'A' }, row({ a: 7 }))).toBe(7);
+  });
+
+  it('sorts by the derived value (asc + desc)', () => {
+    const rows = [row({ id: 1, a: 10, b: 5 }), row({ id: 2, a: 9, b: 1 }), row({ id: 3, a: 8, b: 4 })];
+    const colOf = () => ratio; // ratios: id1=2, id2=9, id3=2
+    const asc = [...rows].sort((x, y) => compareBySorts(x, y, [{ key: 'ratio', dir: 'asc' }], colOf));
+    expect(asc[asc.length - 1].id).toBe(2); // highest ratio last
+    const desc = [...rows].sort((x, y) => compareBySorts(x, y, [{ key: 'ratio', dir: 'desc' }], colOf));
+    expect(desc[0].id).toBe(2); // highest ratio first
   });
 });
 

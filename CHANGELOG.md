@@ -3,6 +3,22 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.12.0] — Unreleased
+
+Theme: **computed columns** — derive a column from the whole row (KPIs, ratios,
+deltas) for dashboards & analytics. See [ROADMAP.md](./ROADMAP.md).
+
+### Added
+
+- **Computed columns** (`col.value: (row) => …`): a column's value is derived from
+  the whole row instead of read from `row[key]`. The derived value flows through
+  **display, sort, filter (incl. quick filter + set filter), group/footer
+  aggregation, conditional formatting, export, copy and the cell-click payload** —
+  everywhere a real column does. `key` still identifies the column (sort/filter
+  key) but need not be a real field. Computed columns aren't editable (no field to
+  write back). In-memory mode (a server source owns its own derivations). The
+  **Portfolio** demo adds a derived **Cost Basis** column (shares × avg cost).
+
 ## [0.11.0] — Unreleased
 
 Theme: **colour scales** — completes the conditional-formatting trio (data bars +
@@ -296,6 +312,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.12.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.12.0
 [0.11.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.11.0
 [0.10.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.10.0
 [0.9.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.9.0

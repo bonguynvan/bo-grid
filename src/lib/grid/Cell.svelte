@@ -6,6 +6,7 @@
     colStyle,
     candlesOf,
     isNumeric,
+    cellValue,
     dataBarGeometry,
     colorScaleBackground,
     pickIcon,
@@ -126,8 +127,9 @@
 
   // Dynamic field read. row is a runes class instance, so row[col.key] still
   // goes through the $state getter — fine-grained reactivity is preserved even
-  // though the key is only known at runtime.
-  const value = $derived(row[col.key]);
+  // though the key is only known at runtime. Computed columns derive from the
+  // whole row via cellValue (their value() reads the row's $state getters too).
+  const value = $derived(cellValue(col, row));
   // Typed inline editor: date columns edit with a date picker, numeric columns
   // with a numeric input; everything else stays a text input.
   const editorType = $derived(col.type === 'date' ? 'date' : isNumeric(col) ? 'number' : 'text');

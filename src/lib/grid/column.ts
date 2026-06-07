@@ -9,6 +9,13 @@ interface ColBase {
   /** Field on the row to read for this column's value. */
   key: string;
   header: string;
+  /** Computed value: derive this cell's value from the whole row instead of
+      reading `row[key]` (KPIs, ratios, deltas). Flows through display, sort,
+      filter, aggregation, export and conditional formatting. `key` still names
+      the column (and is the sort/filter key) but need not be a real row field.
+      Keep it cheap and pure — it's called during sort/filter. Computed columns
+      aren't editable. In-memory mode (a server source owns its own derivations). */
+  value?: (row: GridRow) => unknown;
   /** Fixed width in px. Ignored when `flex` is set. */
   width?: number;
   /** Min/max width (px) enforced while drag-resizing this column. */
@@ -165,6 +172,15 @@ export interface GridRow {
   [field: string]: unknown;
 }
 
+/**
+ * The cell's value: a column's computed `value(row)` when defined, else the row
+ * field `row[key]`. Route ALL value reads through this so computed columns flow
+ * through display, sort, filter, aggregation and export.
+ */
+export function cellValue(col: ColumnDef, row: GridRow): unknown {
+  return col.value ? col.value(row) : row[col.key];
+}
+
 export function formatCell(col: ColumnDef, value: unknown, row?: GridRow): string {
   if (col.format) return col.format(value, row);
   const n = typeof value === 'number' ? value : Number(value);
@@ -201,7 +217,8 @@ export function isSortable(col: ColumnDef): boolean {
 const DISPLAY_ONLY = ['sparkline', 'custom', 'tags', 'badge', 'boolean', 'avatar', 'progress', 'rating'];
 
 export function isEditable(col: ColumnDef): boolean {
-  return !!col.editable && !DISPLAY_ONLY.includes(col.type);
+  // Computed columns have no underlying field to write back to.
+  return !!col.editable && !col.value && !DISPLAY_ONLY.includes(col.type);
 }
 
 function rawCompare(a: unknown, b: unknown): number {
@@ -210,7 +227,11 @@ function rawCompare(a: unknown, b: unknown): number {
 }
 
 export function compareRows(a: GridRow, b: GridRow, sort: SortState, col?: ColumnDef): number {
-  const d = col?.compare ? col.compare(a[sort.key], b[sort.key]) : rawCompare(a[sort.key], b[sort.key]);
+  // Computed columns sort by their derived value; everything else reads the
+  // authoritative sort key off the row.
+  const av = col?.value ? col.value(a) : a[sort.key];
+  const bv = col?.value ? col.value(b) : b[sort.key];
+  const d = col?.compare ? col.compare(av, bv) : rawCompare(av, bv);
   return sort.dir === 'asc' ? d : -d;
 }
 

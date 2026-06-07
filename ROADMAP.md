@@ -104,12 +104,17 @@ Completes the conditional-formatting trio (data bars + icon sets + colour scales
   default; works on any numeric column (complements the fixed `heatmap` type).
   **Portfolio** P&L % now uses an auto-ranged diverging scale.
 
+## 0.12 · Computed columns — done
+
+- [x] **Computed columns** (`col.value: (row) => …`): derive a column's value from
+  the whole row (KPIs, ratios, deltas). Flows through display, sort, filter,
+  group/footer aggregation, conditional formatting, export and copy. Not editable;
+  in-memory mode. **Portfolio** adds a derived Cost Basis column.
+
 ## Candidate themes for later versions
 
 Scaling to more domains (analytics, dashboards, general business):
 
-- **Computed columns** — `value: (row) => …` derives a cell's value from the whole
-  row (KPIs, ratios, deltas) so sort/filter/format/export all flow through it.
 - **More rich types** — `link`, `relative-time`, `currency`/`unit`.
 - **Charts companion** — an optional `bo-grid/charts` package (tiny bar/line/area/
   donut) for dashboards, kept out of the core.

@@ -389,6 +389,16 @@ const cfScale = document.querySelectorAll('.bo-grid .c[style*="color-mix"]').len
 if (cfBars === 0) fail('conditional formatting: data bars did not render on the Portfolio grid');
 if (cfIcons === 0) fail('conditional formatting: icon set did not render on the Portfolio grid');
 if (cfScale === 0) fail('conditional formatting: colour scale did not tint any cells');
+// Computed column (v0.12): Cost Basis has no backing field — value(row) derives it.
+// If cellValue weren't wired through, its cells would be blank.
+const pfHeads = [...document.querySelectorAll('.bo-grid .head .h')];
+const costHead = pfHeads.find((h) => h.querySelector('.label')?.textContent?.trim() === 'Cost Basis');
+if (!costHead) fail('computed column: Cost Basis header did not render');
+const costIdx = pfHeads.indexOf(costHead);
+const costCell = document.querySelector('.bo-grid .row')?.querySelectorAll('.c')[costIdx];
+if (!costCell || !/\d/.test(costCell.textContent || '')) {
+  fail(`computed column: Cost Basis cell rendered no derived value (got "${costCell?.textContent}")`);
+}
 // onRowClick: clicking a position row surfaces it in the toolbar.
 click(document.querySelector('.bo-grid .row'));
 await wait(20);
@@ -908,7 +918,7 @@ console.log(
     `edit committed + validate; variable heights ${rowHeights.join('/')}; ` +
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
-    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
+    `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale + computed-col, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
     `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );

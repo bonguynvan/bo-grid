@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ColumnDef, GridRow } from './column';
-  import { colStyle, formatCell } from './column';
+  import { colStyle, formatCell, cellValue } from './column';
   import { aggregate } from './aggregate';
   import type { GroupNode } from './grouping';
 
@@ -22,7 +22,7 @@
     if (col.type === 'sparkline' || col.type === 'text' || !col.groupAgg) return '';
     const vals: number[] = [];
     for (const row of group.rows) {
-      const v = Number((row as GridRow)[col.key]);
+      const v = Number(cellValue(col, row as GridRow));
       if (Number.isFinite(v)) vals.push(v);
     }
     const a = aggregate(vals);
