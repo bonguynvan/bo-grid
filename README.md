@@ -734,7 +734,14 @@ import { rowsFromObjects } from 'bo-grid';
 const rows = rowsFromObjects(await (await fetch('/api/rows')).json());
 ```
 
-See the **CSV import** demo (switches CSV / TSV / JSON).
+Not sure what you'll get? **`parseRows(text, columns?)`** auto-detects JSON / TSV /
+CSV — perfect for a paste handler:
+
+```svelte
+<div onpaste={(e) => (rows = parseRows(e.clipboardData.getData('text'), columns))}>…</div>
+```
+
+See the **CSV import** demo (CSV / TSV / JSON / Auto-detect).
 
 Excel export loads SheetJS via **dynamic import**, so it lands in its own lazy
 chunk and never bloats your core bundle. `xlsx` is an **optional peer dependency**
@@ -764,8 +771,8 @@ printTable(rows, columns, { title: 'Sales report' });
 `Sparkline` component · `drawCandles` / `setupHiDpiCanvas` (draw on your own
 canvas) · `fmtPrice` / `fmtPercent` / `fmtVolume` / `fmtDate` · `heatColor` ·
 `Selection` · `aggregate` · `toCSV` / `exportCSV` / `exportXLSX` / `rowsToMatrix` ·
-`parseCSV` / `parseCSVMatrix` / `parseTSV` / `parseJSON` / `rowsFromObjects` ·
-`toHTMLTable` / `printTable`.
+`parseCSV` / `parseCSVMatrix` / `parseTSV` / `parseJSON` / `parseRows` /
+`rowsFromObjects` · `toHTMLTable` / `printTable`.
 
 ## Pivot tables
 

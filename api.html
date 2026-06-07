@@ -416,13 +416,14 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>parseTSV</td><td><span class="type">(text, columns?) =&gt; GridRow[]</span></td></tr>
           <tr><td>parseJSON</td><td><span class="type">(text) =&gt; GridRow[]</span></td></tr>
           <tr><td>rowsFromObjects</td><td><span class="type">(objects) =&gt; GridRow[]</span></td></tr>
+          <tr><td>parseRows</td><td><span class="type">(text, columns?) =&gt; GridRow[]</span></td></tr>
           <tr><td>parseCSVMatrix</td><td><span class="type">(text) =&gt; string[][]</span></td></tr>
           <tr><td>toHTMLTable</td><td><span class="type">(rows, columns) =&gt; string</span></td></tr>
           <tr><td>printTable</td><td><span class="type">(rows, columns, { title? }) =&gt; void</span></td></tr>
         </tbody>
       </table>
       <p><code>toHTMLTable</code>/<code>printTable</code> render <em>all</em> rows (the live grid virtualizes) to a clean, escaped table — for printing or PDF capture.</p>
-      <p><code>parseCSV</code>/<code>parseTSV</code> are the inverse of <code>toCSV</code> (RFC4180-aware): map headers to columns, coerce numeric/<code>date</code> columns, stamp <code>id</code> + flash fields. <code>rowsFromObjects</code> adapts a JSON/API array (own <code>id</code> or index + flash fields).</p>
+      <p><code>parseCSV</code>/<code>parseTSV</code> are the inverse of <code>toCSV</code> (RFC4180-aware): map headers to columns, coerce numeric/<code>date</code> columns, stamp <code>id</code> + flash fields. <code>rowsFromObjects</code> adapts a JSON/API array (own <code>id</code> or index + flash fields). <code>parseRows</code> auto-detects JSON/TSV/CSV — handy for a paste handler.</p>
       <p><code>ExportOptions</code>: <code>{ formatted?: boolean; header?: boolean }</code>. Numeric columns export as raw numbers unless <code>formatted</code> is set; sparkline columns are skipped. <code>exportXLSX</code> dynamic-imports the optional <code>xlsx</code> peer (separate lazy chunk).</p>
 
       <!-- ============ EXPORTS ============ -->

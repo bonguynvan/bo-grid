@@ -188,6 +188,11 @@ Completes the conditional-formatting trio (data bars + icon sets + colour scales
   (print window + dialog). Closes the "can't print a virtualized grid" gap. New
   **Print** demo.
 
+## 0.25 · Smart import — done
+
+- [x] **`parseRows`**: auto-detect JSON / TSV / CSV and parse to rows — ideal for a
+  paste handler. **CSV import** demo gains an Auto-detect option.
+
 ## Candidate themes for later versions
 
 The roadmap's planned features are all shipped, plus cross-framework support and

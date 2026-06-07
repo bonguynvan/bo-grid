@@ -64,6 +64,7 @@ export {
   parseCSVMatrix,
   parseTSV,
   parseJSON,
+  parseRows,
   rowsFromObjects,
 } from './grid/export';
 export { exportXLSX } from './grid/export-xlsx';

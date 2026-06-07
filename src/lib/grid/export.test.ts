@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ColumnDef, GridRow } from './column';
-import { toCSV, rowsToMatrix, parseCSV, parseCSVMatrix, parseTSV, parseJSON, rowsFromObjects } from './export';
+import { toCSV, rowsToMatrix, parseCSV, parseCSVMatrix, parseTSV, parseJSON, parseRows, rowsFromObjects } from './export';
 
 const columns: ColumnDef[] = [
   { type: 'text', key: 'name', header: 'Name' },
@@ -138,5 +138,31 @@ describe('parseJSON', () => {
   });
   it('throws on a non-array top level', () => {
     expect(() => parseJSON('{"name":"A"}')).toThrow();
+  });
+});
+
+describe('parseRows (auto-detect)', () => {
+  const cols: ColumnDef[] = [
+    { type: 'text', key: 'name', header: 'Name' },
+    { type: 'number', key: 'n', header: 'N' },
+  ];
+  it('detects a JSON array', () => {
+    const out = parseRows('  [{"name":"A","n":1}]', cols);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ name: 'A', n: 1 });
+  });
+  it('detects TSV (tab in the first line)', () => {
+    const out = parseRows('Name\tN\nA\t5', cols);
+    expect(out[0]).toMatchObject({ name: 'A', n: 5 });
+  });
+  it('falls back to CSV otherwise', () => {
+    const out = parseRows('Name,N\nA,5', cols);
+    expect(out[0]).toMatchObject({ name: 'A', n: 5 });
+  });
+  it('falls through to delimited when leading "[" is not valid JSON (no throw)', () => {
+    // Starts with "[" but is really CSV — parseJSON fails, so it parses as CSV.
+    const out = parseRows('[bracketed],N\n[x],5', cols);
+    expect(out).toHaveLength(1);
+    expect(out[0]['[bracketed]']).toBe('[x]'); // unmatched header → raw key; parsed as CSV
   });
 });

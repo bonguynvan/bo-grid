@@ -201,3 +201,27 @@ export function parseJSON(text: string): GridRow[] {
   if (!Array.isArray(data)) throw new Error('parseJSON: expected a JSON array of objects');
   return rowsFromObjects(data);
 }
+
+/**
+ * Smart import: detect the format of `text` — a JSON array, TSV, or CSV — and
+ * parse it into grid rows. Ideal for a paste handler where the source is unknown:
+ *
+ *   el.addEventListener('paste', (e) => {
+ *     rows = parseRows(e.clipboardData.getData('text'), columns);
+ *   });
+ *
+ * Leading `[` → JSON (falls through to delimited if it isn't valid JSON); a tab in
+ * the first line → TSV; otherwise CSV. Pure; unit-tested.
+ */
+export function parseRows(text: string, columns: readonly ColumnDef[] = []): GridRow[] {
+  if (text.trimStart().startsWith('[')) {
+    try {
+      return parseJSON(text);
+    } catch {
+      // Not valid JSON after all — treat it as delimited text below.
+    }
+  }
+  const nl = text.indexOf('\n');
+  const firstLine = nl === -1 ? text : text.slice(0, nl);
+  return firstLine.includes('\t') ? parseTSV(text, columns) : parseCSV(text, columns);
+}

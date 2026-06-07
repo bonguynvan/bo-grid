@@ -3,6 +3,18 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.25.0] — Unreleased
+
+Theme: **smart import** — auto-detect pasted/loaded data. See [ROADMAP.md](./ROADMAP.md).
+
+### Added
+
+- **`parseRows(text, columns?)`**: detect the format — a JSON array, TSV, or CSV —
+  and parse it into grid rows. Ideal for a paste handler where the source is
+  unknown (`parseRows(e.clipboardData.getData('text'), columns)`): leading `[` →
+  JSON (falls through to delimited if it isn't valid JSON), a tab in the first line
+  → TSV, otherwise CSV. The **CSV import** demo gains an **Auto-detect** option.
+
 ## [0.24.0] — Unreleased
 
 Theme: **print / export view** — print or capture all rows (the live grid
@@ -549,6 +561,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.25.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.25.0
 [0.24.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.24.0
 [0.23.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.23.0
 [0.22.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.22.0

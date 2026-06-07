@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Grid, parseCSV, parseTSV, parseJSON, toCSV, type ColumnDef, type GridRow } from '../../lib';
+  import { Grid, parseCSV, parseTSV, parseJSON, parseRows, toCSV, type ColumnDef, type GridRow } from '../../lib';
   import { ui } from '../theme.svelte';
 
   // Round-trip import: parse CSV / TSV / JSON text → rows, and export rows → CSV.
@@ -10,8 +10,8 @@
     { type: 'number', key: 'rating', header: 'Rating', width: 100, decimals: 1 },
   ];
 
-  type Fmt = 'csv' | 'tsv' | 'json';
-  const SAMPLES: Record<Fmt, string> = {
+  type Fmt = 'auto' | 'csv' | 'tsv' | 'json';
+  const SAMPLES: Record<'csv' | 'tsv' | 'json', string> = {
     csv: `Name,Role,Salary,Rating
 Ada Lovelace,Engineer,142000,4.9
 "Grace Hopper, Jr.",Architect,158000,4.8
@@ -38,10 +38,17 @@ Alan Turing\tResearcher\t150000\t5`,
 
   function setFormat(f: Fmt) {
     format = f;
-    text = SAMPLES[f];
+    if (f !== 'auto') text = SAMPLES[f]; // 'auto' parses whatever's in the box
   }
   function load() {
-    rows = format === 'tsv' ? parseTSV(text, columns) : format === 'json' ? parseJSON(text) : parseCSV(text, columns);
+    rows =
+      format === 'auto'
+        ? parseRows(text, columns)
+        : format === 'tsv'
+          ? parseTSV(text, columns)
+          : format === 'json'
+            ? parseJSON(text)
+            : parseCSV(text, columns);
   }
   function exportText() {
     setFormat('csv');
@@ -54,6 +61,7 @@ Alan Turing\tResearcher\t150000\t5`,
     <option value="csv" selected={format === 'csv'}>CSV</option>
     <option value="tsv" selected={format === 'tsv'}>TSV</option>
     <option value="json" selected={format === 'json'}>JSON</option>
+    <option value="auto" selected={format === 'auto'}>Auto-detect</option>
   </select>
   <button class="btn primary csv-load" type="button" onclick={load}>↑ Load → grid</button>
   <button class="btn" type="button" onclick={exportText}>↓ Export grid → CSV</button>
