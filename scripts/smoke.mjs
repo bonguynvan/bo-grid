@@ -917,6 +917,30 @@ const widePinned = [...document.querySelectorAll('.bo-grid .head .h')].filter((h
 ).length;
 if (widePinned === 0) fail('wide grid: pinned Account column not sticky in horizontal-scroll mode');
 
+// Themes (v0.18): the same grid re-themed by passing a preset object to `theme`.
+const themesTab = tab('Themes');
+if (!themesTab) fail('Themes example tab not found');
+click(themesTab);
+await waitFor('.theme-picker', 'Themes example did not mount');
+const themeGridStyle = () => document.querySelector('.bo-grid.grid')?.getAttribute('style') || '';
+// Default preset is midnight (#0f172a) — poll until the Themes grid is live.
+let themesOk = false;
+for (let i = 0; i < 40; i++) {
+  if (/--bo-grid-bg:\s*#0f172a/i.test(themeGridStyle())) {
+    themesOk = true;
+    break;
+  }
+  await wait(25);
+}
+if (!themesOk) fail('Themes: default midnight preset not applied to the grid');
+// Switch to the terminal preset (#0a0f0a) and assert the grid re-themes.
+[...document.querySelectorAll('.theme-picker .tp-btn')]
+  .find((b) => b.textContent.trim() === 'terminal')
+  ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(30);
+if (!/--bo-grid-bg:\s*#0a0f0a/i.test(themeGridStyle()))
+  fail('Themes: switching to the terminal preset did not re-theme the grid');
+
 // Tree data: roots render collapsed; expanding a folder reveals children.
 const treeTab = tab('Tree');
 if (!treeTab) fail('Tree example tab not found');
@@ -1009,7 +1033,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale + computed-col, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

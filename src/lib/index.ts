@@ -38,8 +38,17 @@ export { pivot } from './grid/pivot';
 export type { PivotConfig, PivotResult } from './grid/pivot';
 
 // Theming
-export { themeVars, darkTheme, lightTheme } from './grid/theme';
-export type { GridTheme } from './grid/theme';
+export {
+  themeVars,
+  darkTheme,
+  lightTheme,
+  highContrastDark,
+  highContrastLight,
+  midnightTheme,
+  terminalTheme,
+  themePresets,
+} from './grid/theme';
+export type { GridTheme, ThemePreset } from './grid/theme';
 
 // Sparkline canvas primitives (draw candlesticks on your own canvas)
 export { drawCandles, setupHiDpiCanvas } from './sparkline/sparkline-render';

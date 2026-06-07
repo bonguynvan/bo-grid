@@ -100,3 +100,89 @@ export const lightTheme: GridTheme = {
   selBorder: '#6366f1',
   scheme: 'light',
 };
+
+// High-contrast dark (accessibility): pure black, white text, strong borders and
+// vivid status colours — comfortably exceeds WCAG AA, toward AAA.
+export const highContrastDark: GridTheme = {
+  bg: '#000000',
+  headerBg: '#0a0a0a',
+  rowA: '#000000',
+  rowB: '#0a0a0a',
+  rowHover: '#1c1c1c',
+  text: '#ffffff',
+  textDim: '#c8c8c8',
+  border: 'rgba(255,255,255,0.34)',
+  up: '#00e676',
+  down: '#ff5252',
+  amber: '#ffd740',
+  selFill: 'rgba(255,255,255,0.20)',
+  selBorder: '#ffffff',
+  scheme: 'dark',
+};
+
+// High-contrast light (accessibility): white, near-black text, strong borders.
+export const highContrastLight: GridTheme = {
+  bg: '#ffffff',
+  headerBg: '#eeeeee',
+  rowA: '#ffffff',
+  rowB: '#f5f5f5',
+  rowHover: '#e3e3e3',
+  text: '#000000',
+  textDim: '#383838',
+  border: 'rgba(0,0,0,0.42)',
+  up: '#007a36',
+  down: '#c20000',
+  amber: '#7a5c00',
+  selFill: 'rgba(0,0,0,0.10)',
+  selBorder: '#000000',
+  scheme: 'light',
+};
+
+// Midnight: a deep navy/indigo dark theme — a calmer, "premium" alternative.
+export const midnightTheme: GridTheme = {
+  bg: '#0f172a',
+  headerBg: '#0b1120',
+  rowA: '#0f172a',
+  rowB: '#121d35',
+  rowHover: '#1e293b',
+  text: '#e2e8f0',
+  textDim: '#94a3b8',
+  border: 'rgba(148,163,184,0.16)',
+  up: '#34d399',
+  down: '#fb7185',
+  amber: '#fbbf24',
+  selFill: 'rgba(129,140,248,0.22)',
+  selBorder: '#818cf8',
+  scheme: 'dark',
+};
+
+// Terminal: green phosphor on near-black — a retro fintech/console look.
+export const terminalTheme: GridTheme = {
+  bg: '#0a0f0a',
+  headerBg: '#0d140d',
+  rowA: '#0a0f0a',
+  rowB: '#0e160e',
+  rowHover: '#16241a',
+  text: '#4ade80',
+  textDim: '#3f9e60',
+  border: 'rgba(74,222,128,0.20)',
+  up: '#4ade80',
+  down: '#f87171',
+  amber: '#fde047',
+  selFill: 'rgba(74,222,128,0.16)',
+  selBorder: '#4ade80',
+  scheme: 'dark',
+};
+
+/** All built-in presets, keyed by name (handy for a theme picker). */
+export const themePresets = {
+  dark: darkTheme,
+  light: lightTheme,
+  'high-contrast-dark': highContrastDark,
+  'high-contrast-light': highContrastLight,
+  midnight: midnightTheme,
+  terminal: terminalTheme,
+} satisfies Record<string, GridTheme>;
+
+/** Built-in preset name. */
+export type ThemePreset = keyof typeof themePresets;

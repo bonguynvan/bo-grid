@@ -72,6 +72,12 @@ export const EXAMPLES: Example[] = [
     load: () => import('./WideGrid.svelte'),
   },
   {
+    id: 'themes',
+    title: 'Themes',
+    blurb: 'Built-in theme presets — dark, light, high-contrast, midnight, terminal.',
+    load: () => import('./Themes.svelte'),
+  },
+  {
     id: 'tree',
     title: 'Tree',
     blurb: 'A file-explorer tree — expandable folders, indented rows (tree data).',

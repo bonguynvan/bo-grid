@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { themeVars, lightTheme, darkTheme } from './theme';
+import { themeVars, lightTheme, darkTheme, themePresets } from './theme';
 
 describe('themeVars', () => {
   it('maps theme keys to --bo-grid-* custom properties', () => {
@@ -19,6 +19,25 @@ describe('themeVars', () => {
 
   it('dark and light presets define the same token set', () => {
     expect(Object.keys(darkTheme).sort()).toEqual(Object.keys(lightTheme).sort());
+  });
+
+  it('every built-in preset defines the same token set and serializes', () => {
+    const keys = Object.keys(darkTheme).sort();
+    for (const [name, preset] of Object.entries(themePresets)) {
+      expect(Object.keys(preset).sort(), `preset ${name}`).toEqual(keys);
+      expect(themeVars(preset).endsWith(';'), `preset ${name}`).toBe(true);
+    }
+  });
+
+  it('exposes the expected preset names', () => {
+    expect(Object.keys(themePresets)).toEqual([
+      'dark',
+      'light',
+      'high-contrast-dark',
+      'high-contrast-light',
+      'midnight',
+      'terminal',
+    ]);
   });
 
   it('serializes layout/density tokens (radius / fontSize / cellPad)', () => {

@@ -437,7 +437,8 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
 
       <!-- ============ THEMING ============ -->
       <h2 id="theming">Theming</h2>
-      <p>Dark-first and self-contained — no CSS import required. Override any token by setting the matching <code>--bo-grid-*</code> custom property on an ancestor.</p>
+      <p>Dark-first and self-contained — no CSS import required. Override any token by setting the matching <code>--bo-grid-*</code> custom property on an ancestor, or pass the <code>theme</code> prop a custom token map.</p>
+      <p>Six built-in presets are exported: <code>darkTheme</code>, <code>lightTheme</code>, <code>highContrastDark</code>, <code>highContrastLight</code>, <code>midnightTheme</code>, <code>terminalTheme</code> — plus a <code>themePresets</code> name→preset map and a <code>ThemePreset</code> type for a theme picker. Pass any to <code>theme</code>.</p>
       <table>
         <thead><tr><th>Token</th><th>Default</th><th>Token</th><th>Default</th></tr></thead>
         <tbody>

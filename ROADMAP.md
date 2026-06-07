@@ -146,16 +146,20 @@ Completes the conditional-formatting trio (data bars + icon sets + colour scales
   cache. Sync `getChildren` unchanged. New **Lazy tree** demo. (`buildTreeRows`
   generalized to a pure `TreeAccess` resolver; unit-tested.)
 
+## 0.18 · More theme presets — done
+
+- [x] Four new presets — `highContrastDark`/`highContrastLight` (a11y), `midnight`,
+  `terminal` — plus `themePresets` map + `ThemePreset` type. New **Themes** demo.
+
 ## Candidate themes for later versions
 
 Scaling to more domains (analytics, dashboards, general business):
 
 - **Server-side group loading** — lazy group expansion against a `RowSource`
   (grouping is client-only today; lazy trees landed in 0.17).
-- **More theme presets / demos** — additional built-in palettes; a screen-reader
-  + axe-core pass for a specific deployment.
 - **More charts** — stacked/grouped bars, a legend/tooltip layer (still in the
   companion, never the core).
+- **Polish** — a screen-reader + axe-core pass for a specific deployment; more demos.
 
 Note: the eager grid core is ~97% of its 28 KB budget; the next sizable *core*
 feature should recalibrate it (still ~15× smaller than AG Grid). The charts

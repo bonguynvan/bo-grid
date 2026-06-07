@@ -3,6 +3,19 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.18.0] — Unreleased
+
+Theme: **more theme presets** — polish. See [ROADMAP.md](./ROADMAP.md).
+
+### Added
+
+- **Four new built-in theme presets**: `highContrastDark` / `highContrastLight`
+  (accessibility — strong borders + vivid status colours, well beyond AA),
+  `midnightTheme` (deep navy/indigo dark) and `terminalTheme` (green-on-black
+  retro). Plus `themePresets` (a name→preset map) and a `ThemePreset` type for
+  building a theme picker. Pass any preset to the `theme` prop. New **Themes**
+  demo (a live preset switcher).
+
 ## [0.17.0] — Unreleased
 
 Theme: **server-side / lazy tree loading** — load tree children on expand. See
@@ -427,6 +440,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.18.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.18.0
 [0.17.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.17.0
 [0.16.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.16.0
 [0.15.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.15.0

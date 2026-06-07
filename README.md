@@ -385,9 +385,20 @@ a built-in preset or a custom token map:
 <Grid {rows} {columns} theme={{ bg: '#0b1020', up: '#22d3ee' }} height={640} />
 ```
 
-Built-in `darkTheme` / `lightTheme` are exported (`GridTheme`). Or set any
-`--bo-grid-*` custom property on an ancestor — the prop is just a convenience over
-these:
+Six built-in presets are exported (`GridTheme`): `darkTheme`, `lightTheme`,
+`highContrastDark`, `highContrastLight`, `midnightTheme`, `terminalTheme` — plus a
+`themePresets` name→preset map (and a `ThemePreset` type) for a theme picker:
+
+```svelte
+<script>
+  import { Grid, themePresets, type ThemePreset } from 'bo-grid';
+  let preset: ThemePreset = 'midnight';
+</script>
+<Grid {rows} {columns} theme={themePresets[preset]} height={640} />
+```
+
+Or set any `--bo-grid-*` custom property on an ancestor — the prop is just a
+convenience over these:
 
 ```css
 .my-app {
