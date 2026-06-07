@@ -75,6 +75,8 @@
     detail,
     detailHeight = 160,
     getChildren,
+    loadChildren,
+    hasChildren,
     onRowReorder,
     pageSize = 0,
     page,
@@ -185,6 +187,14 @@
         `rows` are the roots; the grid renders an indented, expandable tree.
         In-memory mode; filter/sort/group/paginate are not applied to the tree. */
     getChildren?: (row: GridRow) => GridRow[] | undefined;
+    /** Async tree data: load a row's children on expand (server-backed trees).
+        Returns a promise; the grid shows a loading row, then caches the result.
+        Pair with `hasChildren` (a cheap predicate) so chevrons show without
+        loading. Use instead of `getChildren`. In-memory roots. */
+    loadChildren?: (row: GridRow) => Promise<GridRow[]>;
+    /** Cheap predicate for whether a row has children (drives the expand chevron
+        without loading). Required with `loadChildren`; optional with `getChildren`. */
+    hasChildren?: (row: GridRow) => boolean;
     /** Enable drag-to-reorder rows via a handle in the first column. Called with
         the from/to indices (into the visible rows) on drop — reorder your own
         `rows` in here. Flat, unsorted, in-memory lists only. */
@@ -379,6 +389,41 @@
     if (expandedRows.has(id)) expandedRows.delete(id);
     else expandedRows.add(id);
     expVersion++;
+  }
+
+  // Async tree children: cache loaded children by row id; track in-flight loads.
+  const childrenCache = new Map<string | number, GridRow[]>();
+  const loadingIds = new Set<string | number>();
+  let treeVersion = $state(0);
+
+  // Expand/collapse a tree node, lazy-loading children on first expand (async).
+  function toggleTreeNode(row: GridRow): void {
+    const id = getRowId(row);
+    if (expandedRows.has(id)) {
+      expandedRows.delete(id);
+      expVersion++;
+      return;
+    }
+    expandedRows.add(id);
+    expVersion++;
+    if (loadChildren && !childrenCache.has(id) && !loadingIds.has(id)) {
+      loadingIds.add(id);
+      treeVersion++;
+      Promise.resolve(loadChildren(row)).then(
+        (kids) => {
+          childrenCache.set(id, kids);
+          loadingIds.delete(id);
+          treeVersion++;
+        },
+        () => {
+          // On failure, collapse so the user can retry by expanding again.
+          loadingIds.delete(id);
+          expandedRows.delete(id);
+          expVersion++;
+          treeVersion++;
+        },
+      );
+    }
   }
 
   function isRowSelected(id: string | number): boolean {
@@ -840,7 +885,7 @@
     paged ? view.slice(currentPage * pageSize, currentPage * pageSize + pageSize) : view,
   );
 
-  const treeData = $derived(!!getChildren && !source);
+  const treeData = $derived(!!(getChildren || loadChildren) && !source);
 
   // Drag-to-reorder rows (flat, unsorted, in-memory only). The handle lives in
   // the first cell; the dragged/drop indices are tracked in component state.
@@ -858,11 +903,17 @@
   }
 
   const flat = $derived.by<VisualRow[]>(() => {
-    if (treeData && getChildren) {
+    if (treeData) {
       const roots = rows;
       expVersion; // track expand/collapse
+      treeVersion; // track async child loads
       return untrack(() =>
-        buildTreeRows(roots, getChildren, (r) => expandedRows.has(getRowId(r))),
+        buildTreeRows(roots, {
+          childrenOf: (r) => (loadChildren ? childrenCache.get(getRowId(r)) : getChildren?.(r)),
+          hasChildren: hasChildren ?? ((r) => !!getChildren?.(r)?.length),
+          isExpanded: (r) => expandedRows.has(getRowId(r)),
+          isLoading: (r) => loadingIds.has(getRowId(r)),
+        }),
       );
     }
     const v = pageRows;
@@ -968,6 +1019,7 @@
   type RenderItem =
     | { vr: number; kind: 'group'; group: GroupNode }
     | { vr: number; kind: 'data'; row: GridRow; depth?: number; hasChildren?: boolean }
+    | { vr: number; kind: 'treeloading'; depth: number }
     | { vr: number; kind: 'skeleton' };
 
   const renderItems = $derived.by<RenderItem[]>(() => {
@@ -983,6 +1035,7 @@
         const item = flat[vr];
         if (!item) continue;
         if (item.kind === 'group') out.push({ vr, kind: 'group', group: item.group });
+        else if (item.kind === 'treeloading') out.push({ vr, kind: 'treeloading', depth: item.depth });
         else out.push({ vr, kind: 'data', row: item.row, depth: item.depth, hasChildren: item.hasChildren });
       }
     }
@@ -1422,12 +1475,12 @@
         const open = expandedRows.has(id);
         if (e.key === 'ArrowRight' && !open) {
           e.preventDefault();
-          toggleExpand(id);
+          toggleTreeNode(item.row);
           return;
         }
         if (e.key === 'ArrowLeft' && open) {
           e.preventDefault();
-          toggleExpand(id);
+          toggleTreeNode(item.row);
           return;
         }
       }
@@ -1724,6 +1777,14 @@
               <span class="c" style={cellWidthStyle(ci)}><span class="skelbar"></span></span>
             {/each}
           </div>
+        {:else if item.kind === 'treeloading'}
+          <div class="row treeloading" role="row" aria-rowindex={item.vr + 2} aria-live="polite" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
+            {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
+            {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
+            <span class="tree-loading-cell" style="padding-left:{(item.depth ?? 0) * 16 + 24}px">
+              <span class="spinner sm" aria-hidden="true"></span>Loading…
+            </span>
+          </div>
         {:else}
           <!-- Row activation is keyboard-accessible at the grid level: Enter on the focused cell fires onRowClick (focus is via aria-activedescendant). -->
           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -1788,7 +1849,7 @@
                         depth: item.depth ?? 0,
                         hasChildren: item.hasChildren ?? false,
                         expanded: isExpanded(getRowId(item.row)),
-                        onToggle: () => toggleExpand(getRowId(item.row)),
+                        onToggle: () => toggleTreeNode(item.row),
                       }
                     : undefined}
                   dragHandle={reorderable && ci === 0
@@ -2202,6 +2263,23 @@
     .spinner {
       animation: none;
     }
+  }
+  .spinner.sm {
+    width: 12px;
+    height: 12px;
+    border-width: 1.5px;
+  }
+  /* Async tree: placeholder row shown while a node's children load. */
+  .row.treeloading {
+    align-items: center;
+  }
+  .tree-loading-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--bo-font-size, 13px);
+    color: var(--bo-text-dim);
+    font-style: italic;
   }
   .spacer {
     position: relative;

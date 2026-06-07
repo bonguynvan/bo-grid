@@ -15,7 +15,9 @@ export interface GroupNode {
 
 export type VisualRow =
   | { kind: 'data'; row: GridRow; depth?: number; hasChildren?: boolean }
-  | { kind: 'group'; group: GroupNode };
+  | { kind: 'group'; group: GroupNode }
+  // A placeholder under an expanded tree node whose children are loading (async).
+  | { kind: 'treeloading'; depth: number };
 
 /**
  * Flatten data rows into the visual row list the grid renders: a stream of

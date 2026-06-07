@@ -3,6 +3,26 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.17.0] — Unreleased
+
+Theme: **server-side / lazy tree loading** — load tree children on expand. See
+[ROADMAP.md](./ROADMAP.md).
+
+### Added
+
+- **Async tree children** (`loadChildren`): load a node's children on first expand
+  (server-backed hierarchies — file trees, org charts, category trees too large to
+  ship upfront). Returns a promise; the grid shows a loading row, then caches the
+  result. Pair with **`hasChildren`** (a cheap predicate) so the expand chevron
+  shows without loading. Sync `getChildren` is unchanged and still supported.
+- New **Lazy tree** demo (a file tree that loads folders on demand).
+
+### Notes
+
+- `loadChildren` is in-memory-roots mode (like `getChildren`); a failed load
+  collapses the node so it can be retried. The loading row is an `aria-live`
+  region. Tree flattening (`buildTreeRows`) is still pure and unit-tested.
+
 ## [0.16.0] — Unreleased
 
 Theme: **scale — column (horizontal) virtualization** for very wide grids. See
@@ -407,6 +427,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.17.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.17.0
 [0.16.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.16.0
 [0.15.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.15.0
 [0.14.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.14.0

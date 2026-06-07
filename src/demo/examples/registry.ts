@@ -78,6 +78,12 @@ export const EXAMPLES: Example[] = [
     load: () => import('./Tree.svelte'),
   },
   {
+    id: 'lazytree',
+    title: 'Lazy tree',
+    blurb: 'A server-backed tree — children load on expand (async) with a loading row.',
+    load: () => import('./LazyTree.svelte'),
+  },
+  {
     id: 'tasks',
     title: 'Tasks',
     blurb: 'A drag-to-reorder task list (row reordering via a handle).',

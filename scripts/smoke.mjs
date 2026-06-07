@@ -943,6 +943,29 @@ if (document.querySelectorAll('.bo-grid .row').length !== treeRootsCount) {
   fail('ArrowLeft did not collapse the focused tree node');
 }
 
+// Lazy tree (v0.17): children load async on expand — a loading row appears, then
+// children replace it. (hasChildren shows the chevron without loading.)
+const lazyTab = tab('Lazy tree');
+if (!lazyTab) fail('Lazy tree example tab not found');
+click(lazyTab);
+// Wait for the LazyTree component itself (unique marker) — the previous Tree
+// example also has .tree-toggle, so don't race on that selector.
+await waitFor('.lazy-note', 'Lazy tree example did not mount');
+await waitFor('.bo-grid .tree-toggle', 'Lazy tree did not render expandable roots');
+const lazyRootsCount = document.querySelectorAll('.bo-grid .row').length;
+document.querySelector('.bo-grid .tree-toggle').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(20);
+if (!document.querySelector('.bo-grid .row.treeloading')) fail('lazy tree: loading row did not appear on expand');
+// Children arrive after the simulated latency; the loading row is replaced.
+let lazyAfter = lazyRootsCount;
+for (let i = 0; i < 60; i++) {
+  lazyAfter = document.querySelectorAll('.bo-grid .row').length;
+  if (lazyAfter > lazyRootsCount && !document.querySelector('.bo-grid .row.treeloading')) break;
+  await wait(25);
+}
+if (!(lazyAfter > lazyRootsCount)) fail(`lazy tree: children did not load (${lazyRootsCount} → ${lazyAfter})`);
+if (document.querySelector('.bo-grid .row.treeloading')) fail('lazy tree: loading row did not clear after load');
+
 // Row reorder: drag the first row's handle and drop it onto a later row.
 const tasksTab = tab('Tasks');
 if (!tasksTab) fail('Tasks example tab not found');
@@ -986,7 +1009,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale + computed-col, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

@@ -139,12 +139,19 @@ Completes the conditional-formatting trio (data bars + icon sets + colour scales
   runs collapse into spacers; pinned columns always render. Pure windowing math in
   `colvirt.ts`. New **Wide** demo. Core budget recalibrated 28 → 32 KB.
 
+## 0.17 · Server-side / lazy tree loading — done
+
+- [x] **Async tree children** (`loadChildren` + `hasChildren`): load a node's
+  children on expand (server-backed trees), with a loading row and a children
+  cache. Sync `getChildren` unchanged. New **Lazy tree** demo. (`buildTreeRows`
+  generalized to a pure `TreeAccess` resolver; unit-tested.)
+
 ## Candidate themes for later versions
 
 Scaling to more domains (analytics, dashboards, general business):
 
-- **Server-side group/tree loading** — lazy-load group/tree children on expand
-  (the remaining "server" half of scale; client tree/group is in-memory today).
+- **Server-side group loading** — lazy group expansion against a `RowSource`
+  (grouping is client-only today; lazy trees landed in 0.17).
 - **More theme presets / demos** — additional built-in palettes; a screen-reader
   + axe-core pass for a specific deployment.
 - **More charts** — stacked/grouped bars, a legend/tooltip layer (still in the
