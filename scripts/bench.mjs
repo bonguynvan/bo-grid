@@ -25,11 +25,15 @@ const server = await createServer({
 const fmt = (n) => n.toLocaleString('en-US');
 const ms = (n) => `${n.toFixed(2)} ms`;
 const results = [];
-function time(label, detail, fn) {
+let failed = false;
+// `ceiling` (ms) is a deliberately generous regression guard (~15-30× the real
+// time) — machine variance won't trip it, but an algorithmic regression (e.g.
+// O(log n) → O(n)) blows past it. Catches drift without flaky absolute thresholds.
+function time(label, detail, fn, ceiling) {
   const t0 = performance.now();
   const out = fn();
   const t1 = performance.now();
-  results.push({ label, detail, t: t1 - t0 });
+  results.push({ label, detail, t: t1 - t0, ceiling });
   return out;
 }
 
@@ -49,14 +53,14 @@ try {
   let vModel;
   time('build variable-height model', `${fmt(N)} rows → Float64 prefix sums`, () => {
     vModel = variableHeights(heights);
-  });
+  }, 200);
   const LOOKUPS = 1_000_000;
   time('variable indexAt() lookups', `${fmt(LOOKUPS)} × binary search O(log n)`, () => {
     let acc = 0;
     const total = vModel.total;
     for (let i = 0; i < LOOKUPS; i++) acc += vModel.indexAt((i * 6151) % total);
     if (acc < 0) throw new Error('unreachable');
-  });
+  }, 1500);
 
   // --- Virtual scroll: uniform row heights (O(1)) ---
   const uModel = uniformHeights(N, 36);
@@ -64,12 +68,12 @@ try {
     let acc = 0;
     for (let i = 0; i < N; i++) acc += uModel.indexAt(i * 36);
     if (acc < 0) throw new Error('unreachable');
-  });
+  }, 200);
 
   // --- Range aggregation over a full column ---
   const vals = new Array(N);
   for (let i = 0; i < N; i++) vals[i] = ((i * 7) % 1000) / 3;
-  time('aggregate()', `sum/avg/count/min/max over ${fmt(N)} numbers`, () => aggregate(vals));
+  time('aggregate()', `sum/avg/count/min/max over ${fmt(N)} numbers`, () => aggregate(vals), 400);
 
   // --- Multi-key sort ---
   const M = 100_000;
@@ -81,7 +85,7 @@ try {
   ];
   time('multi-key sort', `${fmt(M)} rows by 2 keys (compareBySorts)`, () => {
     rows.sort((a, b) => compareBySorts(a, b, sorts));
-  });
+  }, 2500);
 
   // --- Tree flatten (pre-order DFS) ---
   const roots = [];
@@ -102,13 +106,16 @@ try {
       hasChildren: (row) => !!row.children?.length,
       isExpanded: () => true,
     });
-  });
+  }, 300);
 
   // --- Report ---
   const wLabel = Math.max(...results.map((r) => r.label.length));
   console.log('\nbo-grid hot-path benchmarks — Node, single thread, deterministic inputs\n');
-  for (const { label, detail, t } of results) {
-    console.log(`  ${ms(t).padStart(10)}   ${label.padEnd(wLabel)}  ${detail}`);
+  for (const { label, detail, t, ceiling } of results) {
+    const over = ceiling != null && t > ceiling;
+    failed ||= over;
+    const tail = over ? `  ✗ OVER ${ms(ceiling)} ceiling` : '';
+    console.log(`  ${ms(t).padStart(10)}   ${label.padEnd(wLabel)}  ${detail}${tail}`);
   }
   const vLookup = results.find((r) => r.label === 'variable indexAt() lookups');
   const perLookupNs = (vLookup.t * 1e6) / LOOKUPS;
@@ -116,7 +123,13 @@ try {
     `\n  → ${perLookupNs.toFixed(0)} ns per variable-height row lookup ` +
       `(the per-frame cost of finding the first visible row at any scroll position).`,
   );
-  console.log(`  → tree rows flattened: ${fmt(flat.length)}\n`);
+  console.log(`  → tree rows flattened: ${fmt(flat.length)}`);
+  console.log(
+    failed
+      ? '\n✗ bench: a hot path exceeded its regression ceiling — likely an algorithmic regression.\n'
+      : '\n✓ bench: all hot paths within their (generous) regression ceilings.\n',
+  );
 } finally {
   await server.close();
 }
+if (failed) process.exit(1);
