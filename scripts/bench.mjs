@@ -17,6 +17,9 @@ const server = await createServer({
   server: { middlewareMode: true },
   appType: 'custom',
   logLevel: 'error',
+  // Load TS via ssrLoadModule only — don't let the dep-scanner crawl built output
+  // (demo-dist/dist) and choke on its dynamic imports.
+  optimizeDeps: { entries: [], noDiscovery: true },
 });
 
 const fmt = (n) => n.toLocaleString('en-US');
@@ -94,7 +97,11 @@ try {
   const NODES = 1000 * (1 + 10 * (1 + 5)); // 61,000
   let flat;
   time('buildTreeRows()', `${fmt(NODES)} nodes, all expanded`, () => {
-    flat = buildTreeRows(roots, (row) => row.children ?? [], () => true);
+    flat = buildTreeRows(roots, {
+      childrenOf: (row) => row.children,
+      hasChildren: (row) => !!row.children?.length,
+      isExpanded: () => true,
+    });
   });
 
   // --- Report ---

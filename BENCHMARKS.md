@@ -10,13 +10,22 @@ excluded — you already ship the Svelte runtime):
 
 | Asset | gzip |
 | --- | --- |
-| `bo-grid` JS | **~20 KB** |
-| `bo-grid` CSS | **~2.7 KB** |
+| `bo-grid` core JS | **~31 KB** |
+| `bo-grid` CSS | **~4 KB** |
+| `bo-grid/charts` (optional) | **~3 KB** |
 
-This is an order of magnitude smaller than typical enterprise data grids, whose
-core bundles run into the hundreds of KB before features. Excel/CSV export is the
-only heavy dependency, and it is a **dynamic import** of an optional `xlsx` peer —
-it never lands in the core bundle unless you call `exportXLSX`.
+This is an order of magnitude smaller than typical heavyweight data grids, whose
+core bundles run into the hundreds of KB before features. A few notes:
+
+- The number is the **whole public API** measured eagerly. A consumer who imports
+  only what they use (e.g. `import { Grid }`) tree-shakes the rest — the package is
+  `sideEffects: false` — so the IO/print helpers don't ship unless imported.
+- The **charts companion** is a separate entry (`bo-grid/charts`) on its own budget;
+  it adds nothing to the grid unless you import it.
+- **Excel export** is a **dynamic import** of the optional `xlsx` peer — it never
+  lands in the core bundle unless you call `exportXLSX`.
+- The heavy menu UI (filter menu, columns panel) lazy-loads on first use and is
+  excluded from the core number above.
 
 The size is a CI gate: `pnpm size:lib` fails the build if JS or CSS exceeds the
 budget, so it can't silently regress.
@@ -39,14 +48,14 @@ don't):
 
 | Operation | Scale | Time |
 | --- | --- | --- |
-| Build variable-height model | 1,000,000 rows → prefix sums | ~4 ms |
-| `indexAt()` lookups (variable, binary search) | 1,000,000 lookups | ~77 ms (**~77 ns each**) |
+| Build variable-height model | 1,000,000 rows → prefix sums | ~3 ms |
+| `indexAt()` lookups (variable, binary search) | 1,000,000 lookups | ~79 ms (**~79 ns each**) |
 | `indexAt()` lookups (uniform, O(1)) | 1,000,000 lookups | ~3 ms |
-| `aggregate()` (sum/avg/count/min/max) | 1,000,000 numbers | ~7 ms |
-| Multi-key sort (`compareBySorts`) | 100,000 rows × 2 keys | ~56 ms |
-| `buildTreeRows()` (pre-order DFS) | 61,000 nodes | ~3 ms |
+| `aggregate()` (sum/avg/count/min/max) | 1,000,000 numbers | ~9 ms |
+| Multi-key sort (`compareBySorts`) | 100,000 rows × 2 keys | ~52 ms |
+| `buildTreeRows()` (pre-order DFS) | 61,000 nodes | ~5 ms |
 
-The headline: **~77 ns to locate the first visible row at any scroll position in
+The headline: **~79 ns to locate the first visible row at any scroll position in
 a million-row variable-height dataset.** A 60 fps frame budget is 16.7 ms, so that
 lookup is roughly 0.0005% of a frame — virtualization cost is effectively free,
 and it's flat as the dataset grows.

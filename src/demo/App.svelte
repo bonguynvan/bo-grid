@@ -56,7 +56,7 @@
 
 <header class="lp-hero" id="top">
   <div class="lp-hero-inner">
-    <p class="lp-eyebrow">Svelte 5 · MIT · ~20&nbsp;KB gzip</p>
+    <p class="lp-eyebrow">Svelte 5 · MIT · ~31&nbsp;KB gzip core</p>
     <h1 class="lp-h1">
       Fintech data grids,<br />
       <span class="lp-accent">without the enterprise bill.</span>
@@ -81,9 +81,9 @@
     </div>
 
     <dl class="lp-stats">
-      <div class="lp-stat"><dt>~20 KB</dt><dd>gzip, core</dd></div>
-      <div class="lp-stat"><dt>~77 ns</dt><dd>row lookup @ 1M</dd></div>
-      <div class="lp-stat"><dt>9</dt><dd>live examples</dd></div>
+      <div class="lp-stat"><dt>~31 KB</dt><dd>gzip, core</dd></div>
+      <div class="lp-stat"><dt>~79 ns</dt><dd>row lookup @ 1M</dd></div>
+      <div class="lp-stat"><dt>17</dt><dd>live examples</dd></div>
       <div class="lp-stat"><dt>SSR</dt><dd>SvelteKit-safe</dd></div>
     </dl>
   </div>

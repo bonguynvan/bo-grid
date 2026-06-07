@@ -27,3 +27,4 @@ jobs:
       - run: pnpm smoke:wc
       - run: pnpm size
       - run: pnpm size:lib
+      - run: pnpm bench # also catches API drift in the measured hot paths

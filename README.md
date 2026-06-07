@@ -1,8 +1,9 @@
 # bo-grid
 
 Tiny, fast **Svelte 5** data grid for fintech UIs — canvas sparklines, batched
-realtime cell updates, and virtual scrolling in a package that gzips to ~20 KB.
-A free alternative to the heavyweight grids that paywall these features.
+realtime cell updates, and virtual scrolling, with a core that gzips to ~31 KB
+(Svelte external; unused exports tree-shake). A free alternative to the heavyweight
+grids that paywall these features.
 
 **[Live demo](https://bonguynvan.github.io/bo-grid/)** ·
 **[API reference](https://bonguynvan.github.io/bo-grid/api.html)** ·
@@ -36,7 +37,7 @@ them with the tabs.
 | Price | $$$ / dev / year | Free (MIT) |
 | Sparklines | paid tier | built in |
 | Realtime cell updates | DIY / complex | built-in primitive |
-| Bundle | hundreds of KB | **~20 KB gzip** ([benchmarks](./BENCHMARKS.md)) |
+| Bundle | hundreds of KB | **~31 KB gzip core** ([benchmarks](./BENCHMARKS.md)) |
 | Svelte | wrapper | native Svelte 5 |
 
 bo-grid ships most of the features other grids put behind a **paid (Enterprise)**
