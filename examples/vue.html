@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>bo-grid · Vue 3</title>
+    <style>
+      body { margin: 2rem; font: 14px system-ui, sans-serif; background: #111; color: #eee; }
+      h1 { font-size: 1rem; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <h1>bo-grid in Vue 3 (no build — Vue ESM via CDN)</h1>
+    <div id="app"></div>
+
+    <script type="module">
+      import { createApp, h, ref, computed, onMounted } from 'https://esm.sh/vue@3';
+      import 'https://esm.sh/bo-grid/element'; // registers <bo-grid>
+
+      const columns = [
+        { type: 'text', key: 'name', header: 'Name', flex: 1, minWidth: 160 },
+        { type: 'price', key: 'price', header: 'Price', width: 100 },
+        { type: 'percent', key: 'changePct', header: 'Chg %', width: 100, colorScale: { mid: 0 } },
+      ];
+
+      const App = {
+        setup() {
+          const el = ref(null);
+          const theme = ref('dark');
+          const rows = computed(() =>
+            Array.from({ length: 120 }, (_, id) => ({
+              id,
+              flashSeq: 0,
+              flashDir: 'up',
+              name: 'Row ' + id,
+              price: Math.round((50 + Math.sin(id) * 40) * 100) / 100,
+              changePct: Math.round(Math.sin(id * 1.3) * 8 * 100) / 100,
+            })),
+          );
+          const sync = () => {
+            if (el.value) el.value.config = { columns, rows: rows.value, theme: theme.value, height: 440, filterMenu: true };
+          };
+          onMounted(sync);
+          const toggle = () => {
+            theme.value = theme.value === 'dark' ? 'midnight' : 'dark';
+            sync();
+          };
+          // Render <bo-grid> with a ref; set `config` imperatively (object prop).
+          return () =>
+            h('div', [
+              h('button', { onClick: toggle }, `theme: ${theme.value}`),
+              h('bo-grid', { ref: el, style: 'display:block' }),
+            ]);
+        },
+      };
+
+      // Tell Vue <bo-grid> is a custom element (in a build, set
+      // compilerOptions.isCustomElement; the runtime build with render fns is fine).
+      const app = createApp(App);
+      app.config.compilerOptions.isCustomElement = (tag) => tag === 'bo-grid';
+      app.mount('#app');
+    </script>
+  </body>
+</html>

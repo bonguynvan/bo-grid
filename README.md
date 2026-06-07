@@ -111,7 +111,8 @@ el.config = { columns, rows, theme: 'dark', height: 520 };
 ```
 
 It works in React, Vue, Angular and plain HTML — see
-**[docs/frameworks.md](./docs/frameworks.md)** for per-framework recipes. (Custom
+**[docs/frameworks.md](./docs/frameworks.md)** for per-framework recipes and
+**[examples/](./examples/)** for runnable, build-free starters. (Custom
 `cell`/`detail` snippets are Svelte-only; use built-in types, `format`, or computed
 `value` from other frameworks. Native Svelte users should import `Grid` directly —
 smaller, and snippets work.)

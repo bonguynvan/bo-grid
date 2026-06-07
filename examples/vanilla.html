@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>bo-grid · vanilla custom element</title>
+    <style>
+      body { margin: 2rem; font: 14px system-ui, sans-serif; background: #111; color: #eee; }
+      h1 { font-size: 1rem; font-weight: 600; }
+      a { color: #818cf8; }
+    </style>
+  </head>
+  <body>
+    <h1>bo-grid in plain HTML/JS — the <code>&lt;bo-grid&gt;</code> custom element</h1>
+    <p>No build step. See <a href="../docs/frameworks.md">docs/frameworks.md</a>.</p>
+
+    <bo-grid id="grid" style="display:block"></bo-grid>
+
+    <script type="module">
+      // Published package via a CDN (works once `bo-grid` is on npm). For local
+      // dev against this repo, swap to: import '../dist/bo-grid.element.js';
+      import 'https://esm.sh/bo-grid/element';
+
+      const rows = Array.from({ length: 200 }, (_, id) => ({
+        id,
+        flashSeq: 0,
+        flashDir: 'up',
+        symbol: 'SYM' + id,
+        price: Math.round((50 + Math.sin(id) * 40) * 100) / 100,
+        changePct: Math.round((Math.sin(id * 1.3) * 8) * 100) / 100,
+      }));
+
+      const grid = document.getElementById('grid');
+      // The whole API goes through the `config` property (set in JS).
+      grid.config = {
+        theme: 'dark',
+        height: 480,
+        rowSelection: true,
+        filterMenu: true,
+        columns: [
+          { type: 'text', key: 'symbol', header: 'Symbol', width: 120 },
+          { type: 'price', key: 'price', header: 'Price', width: 100 },
+          { type: 'percent', key: 'changePct', header: 'Chg %', width: 100, colorScale: { mid: 0 } },
+        ],
+        rows,
+        onCellEdit: (e) => console.log('edit', e),
+      };
+
+      // Updating `config` re-renders reactively:
+      // grid.config = { ...grid.config, theme: 'midnight' };
+    </script>
+  </body>
+</html>

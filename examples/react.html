@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>bo-grid · React</title>
+    <style>
+      body { margin: 2rem; font: 14px system-ui, sans-serif; background: #111; color: #eee; }
+      h1 { font-size: 1rem; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <h1>bo-grid in React (no build — React + htm via CDN)</h1>
+    <div id="app"></div>
+
+    <script type="module">
+      import React from 'https://esm.sh/react@18';
+      import { createRoot } from 'https://esm.sh/react-dom@18/client';
+      import htm from 'https://esm.sh/htm';
+      import 'https://esm.sh/bo-grid/element'; // registers <bo-grid>
+
+      const html = htm.bind(React.createElement);
+
+      const columns = [
+        { type: 'text', key: 'name', header: 'Name', flex: 1, minWidth: 160 },
+        { type: 'price', key: 'price', header: 'Price', width: 100 },
+        { type: 'percent', key: 'changePct', header: 'Chg %', width: 100, colorScale: { mid: 0 } },
+      ];
+
+      // A thin React wrapper: keep the <bo-grid> element's `config` property in
+      // sync with props via a ref + effect (custom elements take object props in JS).
+      function BoGrid({ rows, columns, ...rest }) {
+        const ref = React.useRef(null);
+        React.useEffect(() => {
+          if (ref.current) ref.current.config = { rows, columns, ...rest };
+        }, [rows, columns, rest]);
+        return html`<bo-grid ref=${ref} style=${{ display: 'block' }}></bo-grid>`;
+      }
+
+      function App() {
+        const [theme, setTheme] = React.useState('dark');
+        const rows = React.useMemo(
+          () =>
+            Array.from({ length: 120 }, (_, id) => ({
+              id,
+              flashSeq: 0,
+              flashDir: 'up',
+              name: 'Row ' + id,
+              price: Math.round((50 + Math.sin(id) * 40) * 100) / 100,
+              changePct: Math.round(Math.sin(id * 1.3) * 8 * 100) / 100,
+            })),
+          [],
+        );
+        return html`
+          <button onClick=${() => setTheme((t) => (t === 'dark' ? 'midnight' : 'dark'))}>
+            theme: ${theme}
+          </button>
+          <${BoGrid} rows=${rows} columns=${columns} theme=${theme} height=${440} rowSelection filterMenu />
+        `;
+      }
+
+      createRoot(document.getElementById('app')).render(html`<${App} />`);
+    </script>
+  </body>
+</html>

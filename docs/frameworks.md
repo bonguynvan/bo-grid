@@ -7,6 +7,10 @@ element** (`<bo-grid>`) so you can use it anywhere.
 import 'bo-grid/element'; // registers <bo-grid> (styles inject automatically)
 ```
 
+> **Runnable starters:** [`examples/`](../examples/) has build-free HTML files for
+> [vanilla](../examples/vanilla.html), [React](../examples/react.html) and
+> [Vue](../examples/vue.html) — `npx serve examples` and open one.
+
 The element takes the **whole grid API through a single `config` property** — set
 it in JS (arrays and functions can't be HTML attributes). Updating `config`
 re-renders reactively.
