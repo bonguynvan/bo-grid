@@ -84,6 +84,12 @@ export const EXAMPLES: Example[] = [
     load: () => import('./CsvIO.svelte'),
   },
   {
+    id: 'print',
+    title: 'Print',
+    blurb: 'Print or export ALL rows as a clean HTML table (toHTMLTable / printTable).',
+    load: () => import('./PrintView.svelte'),
+  },
+  {
     id: 'tree',
     title: 'Tree',
     blurb: 'A file-explorer tree — expandable folders, indented rows (tree data).',

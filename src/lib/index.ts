@@ -69,6 +69,9 @@ export {
 export { exportXLSX } from './grid/export-xlsx';
 export type { ExportOptions } from './grid/export';
 
+// Printable / export HTML (renders ALL rows, unlike the virtualized grid)
+export { toHTMLTable, printTable, escapeHTML } from './grid/print';
+
 // Server-side / windowed data source
 export { createArraySource } from './grid/source';
 export type {

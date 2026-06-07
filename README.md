@@ -749,12 +749,23 @@ Sparkline columns are skipped; numeric columns export as raw numbers so
 spreadsheets can compute on them (pass `{ formatted: true }` for display strings).
 Ctrl/⌘+C still copies the current selection as TSV.
 
+**Printing.** The grid virtualizes, so printing it directly drops off-screen rows.
+`printTable(rows, columns, { title })` opens a print window with **all** rows as a
+clean table (Save-as-PDF from the dialog); `toHTMLTable(rows, columns)` returns
+that table as an HTML string to embed. See the **Print** demo.
+
+```ts
+import { printTable } from 'bo-grid';
+printTable(rows, columns, { title: 'Sales report' });
+```
+
 ## Also exported
 
 `Sparkline` component · `drawCandles` / `setupHiDpiCanvas` (draw on your own
 canvas) · `fmtPrice` / `fmtPercent` / `fmtVolume` / `fmtDate` · `heatColor` ·
 `Selection` · `aggregate` · `toCSV` / `exportCSV` / `exportXLSX` / `rowsToMatrix` ·
-`parseCSV` / `parseCSVMatrix` / `parseTSV` / `parseJSON` / `rowsFromObjects`.
+`parseCSV` / `parseCSVMatrix` / `parseTSV` / `parseJSON` / `rowsFromObjects` ·
+`toHTMLTable` / `printTable`.
 
 ## Pivot tables
 

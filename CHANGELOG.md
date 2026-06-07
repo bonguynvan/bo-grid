@@ -3,6 +3,22 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.24.0] — Unreleased
+
+Theme: **print / export view** — print or capture all rows (the live grid
+virtualizes). See [ROADMAP.md](./ROADMAP.md).
+
+### Added
+
+- **`toHTMLTable(rows, columns)`**: render rows to a clean, semantic `<table>` HTML
+  string — formatted via the column formatters, numeric columns right-aligned,
+  sparkline/custom columns skipped, all values HTML-escaped. Renders **every** row,
+  unlike the virtualized grid. Pure; embeddable.
+- **`printTable(rows, columns, { title? })`**: open a print window with that table
+  and trigger the print dialog (Save-as-PDF from there). Browser-only.
+- `escapeHTML` helper exported. New **Print** demo (live grid + a full printable
+  preview + a Print button).
+
 ## [0.23.0] — Unreleased
 
 Theme: **TSV & JSON import** — round out the data I/O. See [ROADMAP.md](./ROADMAP.md).
@@ -533,6 +549,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.24.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.24.0
 [0.23.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.23.0
 [0.22.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.22.0
 [0.21.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.21.0

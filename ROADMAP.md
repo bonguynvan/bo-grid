@@ -182,6 +182,12 @@ Completes the conditional-formatting trio (data bars + icon sets + colour scales
 - [x] **`parseTSV`** (tab-delimited), **`rowsFromObjects`** (plain objects → rows),
   **`parseJSON`** (JSON array → rows). The **CSV import** demo switches CSV/TSV/JSON.
 
+## 0.24 · Print / export view — done
+
+- [x] **`toHTMLTable`** (all rows → semantic, escaped `<table>`) + **`printTable`**
+  (print window + dialog). Closes the "can't print a virtualized grid" gap. New
+  **Print** demo.
+
 ## Candidate themes for later versions
 
 The roadmap's planned features are all shipped, plus cross-framework support and
