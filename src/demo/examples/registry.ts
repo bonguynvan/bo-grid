@@ -54,6 +54,12 @@ export const EXAMPLES: Example[] = [
     load: () => import('./Leaderboard.svelte'),
   },
   {
+    id: 'team',
+    title: 'Team',
+    blurb: 'A people/CRM board — avatars, status badges, progress, ratings, tags (rich cell types).',
+    load: () => import('./Team.svelte'),
+  },
+  {
     id: 'tree',
     title: 'Tree',
     blurb: 'A file-explorer tree — expandable folders, indented rows (tree data).',

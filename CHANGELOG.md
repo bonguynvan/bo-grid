@@ -3,6 +3,20 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.9.0] — Unreleased
+
+Theme: **rich cell types** — for any business domain (see [ROADMAP.md](./ROADMAP.md)).
+
+### Added
+
+- **Rich built-in column types** beyond fintech numbers: `progress` (in-cell bar,
+  `min`/`max`), `rating` (stars, `max`), `tags` (chips from a `string[]` or
+  comma-separated string), `badge` (status pill coloured via a `tones` map),
+  `boolean` (✓/✕ with optional `trueLabel`/`falseLabel`), and `avatar` (initials +
+  name, optional `sub`). All themed from the design tokens; copy/export render
+  sensible text. Makes bo-grid a fit for CRM, project, admin and content apps —
+  not just trading. New **Team** demo showcases them.
+
 ## [0.8.0] — Unreleased
 
 Theme: **design tokens & polish** (see [ROADMAP.md](./ROADMAP.md)).
@@ -238,6 +252,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.9.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.9.0
 [0.8.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.8.0
 [0.7.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.7.0
 [0.6.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.6.0

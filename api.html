@@ -283,6 +283,12 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>'date'</td><td><span class="type">dateStyle?: 'short'|'medium'</span></td><td>Formatted date (value is epoch ms).</td></tr>
           <tr><td>'heatmap'</td><td><span class="type">min: number; max: number</span></td><td>Diverging red→green background ramp.</td></tr>
           <tr><td>'sparkline'</td><td><span class="type">sparkKey: string</span></td><td>Canvas candlesticks from a <code>Candle[]</code> field.</td></tr>
+          <tr><td>'progress'</td><td><span class="type">min?: number; max?: number</span></td><td>In-cell progress bar (value mapped to min..max).</td></tr>
+          <tr><td>'rating'</td><td><span class="type">max?: number</span></td><td>Star rating (value of max, default 5).</td></tr>
+          <tr><td>'tags'</td><td><span class="type">value: string[]</span></td><td>Chips from an array (or comma-separated string).</td></tr>
+          <tr><td>'badge'</td><td><span class="type">tones?: Record&lt;string, BadgeTone&gt;</span></td><td>Status pill; colour per value via <code>tones</code> (up/down/amber/info/neutral).</td></tr>
+          <tr><td>'boolean'</td><td><span class="type">trueLabel?; falseLabel?: string</span></td><td>✓ / ✕ with optional labels.</td></tr>
+          <tr><td>'avatar'</td><td><span class="type">sub?: string</span></td><td>Initials circle + name (optional secondary <code>sub</code> field).</td></tr>
         </tbody>
       </table>
       <pre><code><span class="tok-key">const</span> columns: ColumnDef[] = [

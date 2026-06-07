@@ -76,15 +76,28 @@ than AG Grid; heavy UI stays lazy and excluded from the core count).
   on top of colour/typography — any look from a small token map.
 - [x] **Themed scrollbars** in the viewport (Firefox + Chromium/Safari).
 
+## 0.9 · Rich cell types — done
+
+Scaling beyond fintech into CRM / projects / admin / content / analytics.
+
+- [x] **Rich built-in types**: `progress`, `rating`, `tags`, `badge`, `boolean`,
+  `avatar` — all themed from the design tokens. New **Team** demo.
+
 ## Candidate themes for later versions
 
-- **Scale & server** — full server-side row model (lazy group/tree level
-  loading), horizontal column virtualization for 100+ column grids.
-- **Trust & polish** — a formal WCAG 2.1 AA audit, more theme presets + a
-  theming guide, additional demos, visual-regression tests.
+Scaling to more domains (analytics, dashboards, general business):
 
-Out of scope by design (they fight the "tiny" positioning): integrated charting
-(sparklines cover the right-sized need), viewport row model, RTL — unless real
-demand appears.
+- **More rich types** — `link`, `relative-time`, `currency`/`unit`, plus
+  **computed columns** (`value: (row) => …`).
+- **Conditional formatting** — data bars, color scales, icon sets, rule-based
+  cell/row styling (analytics & reporting).
+- **Charts companion** — an optional `bo-grid/charts` package (tiny bar/line/area/
+  donut) for dashboards, kept out of the core.
+- **Scale & server** — lazy group/tree server loading, 100+ column virtualization.
+- **Trust & polish** — a formal WCAG 2.1 AA audit, more theme presets, more demos.
+
+Out of scope by design (they fight the "tiny" positioning): a heavyweight
+integrated-charting engine in the core (the companion package is the answer),
+viewport row model, RTL — unless real demand appears.
 
 Ideas and feedback welcome — open an issue.

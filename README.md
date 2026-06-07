@@ -100,7 +100,25 @@ keep frames smooth.
 
 ## Column types
 
-`text` · `price` · `percent` · `volume` · `number` · `date` · `heatmap` · `sparkline` · `custom`
+**Data:** `text` · `price` · `percent` · `volume` · `number` · `date` · `heatmap` ·
+`sparkline`
+**Rich:** `progress` · `rating` · `tags` · `badge` · `boolean` · `avatar`
+**Escape hatch:** `custom`
+
+Rich types render value as a widget — handy well beyond fintech (CRM, projects,
+admin, content). All are themed from the design tokens:
+
+```ts
+const columns: ColumnDef[] = [
+  { type: 'avatar',  key: 'name',   header: 'Member', sub: 'role' },
+  { type: 'badge',   key: 'status', header: 'Status',
+    tones: { Active: 'up', Away: 'amber', Offline: 'neutral' } },
+  { type: 'progress', key: 'done',  header: 'Progress', min: 0, max: 100 },
+  { type: 'rating',  key: 'score',  header: 'Rating', max: 5 },
+  { type: 'tags',    key: 'skills', header: 'Skills' },        // value: string[]
+  { type: 'boolean', key: 'remote', header: 'Remote', trueLabel: 'Remote', falseLabel: 'Office' },
+];
+```
 
 Sizing: `width` (px) or `flex` (grow weight). See `ColumnDef` for per-type options.
 

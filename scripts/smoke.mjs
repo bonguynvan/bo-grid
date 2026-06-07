@@ -815,6 +815,23 @@ if (lbBars === 0) fail('Leaderboard score bars (custom cell) did not render');
 if (lbPodium === 0) fail('Leaderboard podium rowClass did not apply');
 if (lbPinned === 0) fail('Leaderboard pinned "You" row did not render');
 
+// Team: rich built-in cell types (avatar, badge, progress, rating, tags, boolean).
+const teamTab = tab('Team');
+if (!teamTab) fail('Team example tab not found');
+click(teamTab);
+await wait(50);
+await waitFor('.bo-grid .row', 'Team example rendered no rows');
+for (const [sel, label] of [
+  ['.bo-grid .bo-avatar', 'avatar'],
+  ['.bo-grid .bo-badge', 'badge'],
+  ['.bo-grid .bo-progress .bo-progress-fill', 'progress'],
+  ['.bo-grid .bo-rating', 'rating'],
+  ['.bo-grid .bo-tag', 'tags'],
+  ['.bo-grid .bo-bool', 'boolean'],
+]) {
+  if (document.querySelectorAll(sel).length === 0) fail(`Team: ${label} cell type did not render`);
+}
+
 // Tree data: roots render collapsed; expanding a folder reveals children.
 const treeTab = tab('Tree');
 if (!treeTab) fail('Tree example tab not found');

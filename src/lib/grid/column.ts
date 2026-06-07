@@ -81,8 +81,18 @@ export type ColumnDef =
   | (ColBase & { type: 'date'; dateStyle?: DateStyle })
   | (ColBase & { type: 'heatmap'; min: number; max: number; decimals?: number })
   | (ColBase & { type: 'sparkline'; sparkKey: string })
+  // Rich cell types (any business domain) — value renders as the named widget.
+  | (ColBase & { type: 'progress'; min?: number; max?: number })
+  | (ColBase & { type: 'rating'; max?: number })
+  | (ColBase & { type: 'tags' }) // value: string[] (or comma-separated string)
+  | (ColBase & { type: 'badge'; tones?: Record<string, BadgeTone> })
+  | (ColBase & { type: 'boolean'; trueLabel?: string; falseLabel?: string })
+  | (ColBase & { type: 'avatar'; sub?: string }) // value: display name
   // Rendered by the consumer's `cell` snippet on <Grid>.
   | (ColBase & { type: 'custom' });
+
+/** Semantic colour for a `badge` value (mapped via the column's `tones`). */
+export type BadgeTone = 'up' | 'down' | 'amber' | 'info' | 'neutral';
 
 export type SortDir = 'asc' | 'desc';
 
@@ -115,7 +125,14 @@ export function formatCell(col: ColumnDef, value: unknown, row?: GridRow): strin
       return fmtDate(n, col.dateStyle);
     case 'heatmap':
       return n.toFixed(col.decimals ?? 2);
+    case 'rating':
+      return `${value ?? 0}`;
+    case 'tags':
+      return Array.isArray(value) ? value.join(', ') : String(value ?? '');
+    case 'boolean':
+      return value ? (col.trueLabel ?? 'Yes') : (col.falseLabel ?? 'No');
     default:
+      // progress / badge / avatar / link / text and friends.
       return value == null ? '' : String(value);
   }
 }
@@ -124,8 +141,11 @@ export function isSortable(col: ColumnDef): boolean {
   return col.type !== 'sparkline' && col.sortable !== false;
 }
 
+// Rich display widgets aren't text-editable (they render structured/visual data).
+const DISPLAY_ONLY = ['sparkline', 'custom', 'tags', 'badge', 'boolean', 'avatar', 'progress', 'rating'];
+
 export function isEditable(col: ColumnDef): boolean {
-  return !!col.editable && col.type !== 'sparkline' && col.type !== 'custom';
+  return !!col.editable && !DISPLAY_ONLY.includes(col.type);
 }
 
 function rawCompare(a: unknown, b: unknown): number {
@@ -166,7 +186,8 @@ export function colWidth(col: ColumnDef): number {
 }
 
 export function isNumeric(col: ColumnDef): boolean {
-  return col.type !== 'text' && col.type !== 'sparkline' && col.type !== 'custom';
+  // Non-numeric (text-aligned / structured) types; everything else is a number.
+  return !['text', 'sparkline', 'custom', 'tags', 'badge', 'boolean', 'avatar'].includes(col.type);
 }
 
 export function candlesOf(row: GridRow, key: string): Candle[] {

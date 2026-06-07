@@ -70,6 +70,16 @@
     onFillStart?: () => void;
   } = $props();
 
+  // Avatar initials: first letters of the first two words.
+  function initials(name: string): string {
+    return name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? '')
+      .join('');
+  }
+
   let cancelled = false;
   function focusSelect(node: HTMLInputElement) {
     node.focus();
@@ -113,7 +123,9 @@
       ? new Date(Number(value)).toISOString().slice(0, 10)
       : String(value ?? ''),
   );
-  const kind = $derived(col.type === 'text' ? 'text' : col.type === 'sparkline' ? 'spark' : 'num');
+  // Alignment kind: numbers right-align (tabular); sparkline + text-like rich
+  // types (tags/badge/boolean/avatar) left-align.
+  const kind = $derived(col.type === 'sparkline' ? 'spark' : isNumeric(col) ? 'num' : 'text');
   // Optional per-column cell class (static string or value/row function).
   const extraClass = $derived(
     typeof col.cellClass === 'function' ? (col.cellClass(value, row) ?? '') : (col.cellClass ?? ''),
@@ -223,6 +235,32 @@
     {#if cellSnippet}{@render cellSnippet({ row, column: col, value })}{:else}{value ?? ''}{/if}
   {:else if col.type === 'sparkline'}
     <Sparkline candles={candlesOf(row, col.sparkKey)} />
+  {:else if col.type === 'progress'}
+    {@const lo = col.min ?? 0}
+    {@const pct = Math.max(0, Math.min(100, (((Number(value) || 0) - lo) / (((col.max ?? 100) - lo) || 1)) * 100))}
+    <span class="bo-progress" title={String(value ?? '')}>
+      <span class="bo-progress-fill" style="width:{pct}%"></span>
+    </span>
+  {:else if col.type === 'rating'}
+    {@const rmax = col.max ?? 5}
+    {@const r = Math.max(0, Math.min(rmax, Math.round(Number(value) || 0)))}
+    <span class="bo-rating" aria-label="{r} out of {rmax}">
+      <span class="bo-stars-on">{'★'.repeat(r)}</span><span class="bo-stars-off">{'★'.repeat(rmax - r)}</span>
+    </span>
+  {:else if col.type === 'tags'}
+    {@const tags = Array.isArray(value) ? value : String(value ?? '').split(',').map((s) => s.trim()).filter(Boolean)}
+    <span class="bo-tags">{#each tags as t (t)}<span class="bo-tag">{t}</span>{/each}</span>
+  {:else if col.type === 'badge'}
+    <span class="bo-badge bo-badge-{col.tones?.[String(value)] ?? 'neutral'}">{value ?? ''}</span>
+  {:else if col.type === 'boolean'}
+    {#if value}
+      <span class="bo-bool bo-bool-yes">✓{#if col.trueLabel}&nbsp;{col.trueLabel}{/if}</span>
+    {:else}
+      <span class="bo-bool bo-bool-no">✕{#if col.falseLabel}&nbsp;{col.falseLabel}{/if}</span>
+    {/if}
+  {:else if col.type === 'avatar'}
+    <span class="bo-avatar" aria-hidden="true">{initials(String(value ?? ''))}</span>
+    <span class="bo-avatar-name">{value ?? ''}{#if col.sub}<em>{row[col.sub]}</em>{/if}</span>
   {:else if col.type === 'text'}
     <strong>{formatCell(col, value, row)}</strong>{#if col.sub}<em>{row[col.sub]}</em>{/if}
   {:else if col.flash}
@@ -266,6 +304,104 @@
   }
   .text {
     gap: 6px;
+  }
+
+  /* ---- Rich cell types (v0.9) — all colours from theme tokens ---- */
+  .bo-progress {
+    flex: 1;
+    min-width: 36px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--bo-row-hover);
+    overflow: hidden;
+  }
+  .bo-progress-fill {
+    display: block;
+    height: 100%;
+    background: var(--bo-up);
+    border-radius: 999px;
+  }
+  .bo-rating {
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .bo-stars-on {
+    color: var(--bo-amber);
+  }
+  .bo-stars-off {
+    color: var(--bo-border);
+  }
+  .bo-tags {
+    display: flex;
+    gap: 4px;
+    overflow: hidden;
+  }
+  .bo-tag {
+    padding: 1px 7px;
+    font-size: 11px;
+    color: var(--bo-text-dim);
+    background: var(--bo-row-hover);
+    border: 0.5px solid var(--bo-border);
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .bo-badge {
+    padding: 2px 9px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .bo-badge-up {
+    color: var(--bo-up);
+    background: color-mix(in srgb, var(--bo-up) 15%, transparent);
+  }
+  .bo-badge-down {
+    color: var(--bo-down);
+    background: color-mix(in srgb, var(--bo-down) 15%, transparent);
+  }
+  .bo-badge-amber {
+    color: var(--bo-amber);
+    background: color-mix(in srgb, var(--bo-amber) 15%, transparent);
+  }
+  .bo-badge-info {
+    color: var(--bo-sel-border);
+    background: color-mix(in srgb, var(--bo-sel-border) 15%, transparent);
+  }
+  .bo-badge-neutral {
+    color: var(--bo-text-dim);
+    background: var(--bo-row-hover);
+  }
+  .bo-bool-yes {
+    color: var(--bo-up);
+    font-weight: 600;
+  }
+  .bo-bool-no {
+    color: var(--bo-text-dim);
+  }
+  .bo-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--bo-bg);
+    background: var(--bo-text-dim);
+    border-radius: 50%;
+  }
+  .bo-avatar-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .bo-avatar-name em {
+    margin-left: 6px;
+    font-style: normal;
+    font-size: 11px;
+    color: var(--bo-text-dim);
   }
   .text strong {
     font-family: var(--bo-mono);
