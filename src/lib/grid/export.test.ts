@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ColumnDef, GridRow } from './column';
-import { toCSV, rowsToMatrix, parseCSV, parseCSVMatrix } from './export';
+import { toCSV, rowsToMatrix, parseCSV, parseCSVMatrix, parseTSV, parseJSON, rowsFromObjects } from './export';
 
 const columns: ColumnDef[] = [
   { type: 'text', key: 'name', header: 'Name' },
@@ -99,5 +99,44 @@ describe('parseCSV', () => {
     const back = parseCSV(csv, cols);
     expect(back[0].name).toBe('Acme, Inc'); // quoted comma survives the round-trip
     expect(back[0].qty).toBe(5);
+  });
+});
+
+describe('parseTSV', () => {
+  const cols: ColumnDef[] = [
+    { type: 'text', key: 'name', header: 'Name' },
+    { type: 'number', key: 'qty', header: 'Qty' },
+  ];
+  it('parses tab-separated rows (same mapping as CSV)', () => {
+    const out = parseTSV('Name\tQty\nAcme\t5\nBeta\t9', cols);
+    expect(out).toHaveLength(2);
+    expect(out[0]).toMatchObject({ name: 'Acme', qty: 5 });
+    expect(out[1]).toMatchObject({ name: 'Beta', qty: 9 });
+  });
+  it('does not split on commas (only tabs)', () => {
+    const out = parseTSV('Name\tQty\nAcme, Inc\t5', cols);
+    expect(out[0].name).toBe('Acme, Inc'); // comma stays in the field
+  });
+});
+
+describe('rowsFromObjects', () => {
+  it('stamps id (index) + flash fields, keeping all fields', () => {
+    const out = rowsFromObjects([{ name: 'A', n: 1 }, { name: 'B', n: 2 }]);
+    expect(out[0]).toEqual({ id: 0, flashSeq: 0, flashDir: 'up', name: 'A', n: 1 });
+    expect(out[1].id).toBe(1);
+  });
+  it("keeps an object's own id", () => {
+    expect(rowsFromObjects([{ id: 'x7', name: 'A' }])[0].id).toBe('x7');
+  });
+});
+
+describe('parseJSON', () => {
+  it('parses a JSON array of objects into rows', () => {
+    const out = parseJSON('[{"name":"A","n":1},{"name":"B","n":2}]');
+    expect(out).toHaveLength(2);
+    expect(out[0]).toMatchObject({ id: 0, name: 'A', n: 1 });
+  });
+  it('throws on a non-array top level', () => {
+    expect(() => parseJSON('{"name":"A"}')).toThrow();
   });
 });

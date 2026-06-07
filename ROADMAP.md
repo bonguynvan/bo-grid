@@ -177,6 +177,11 @@ Completes the conditional-formatting trio (data bars + icon sets + colour scales
   parse into `GridRow`s (header→column mapping, numeric/date coercion). New **CSV
   import** demo.
 
+## 0.23 · TSV & JSON import — done
+
+- [x] **`parseTSV`** (tab-delimited), **`rowsFromObjects`** (plain objects → rows),
+  **`parseJSON`** (JSON array → rows). The **CSV import** demo switches CSV/TSV/JSON.
+
 ## Candidate themes for later versions
 
 The roadmap's planned features are all shipped, plus cross-framework support and

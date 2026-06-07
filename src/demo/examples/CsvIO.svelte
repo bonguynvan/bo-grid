@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { Grid, parseCSV, toCSV, type ColumnDef, type GridRow } from '../../lib';
+  import { Grid, parseCSV, parseTSV, parseJSON, toCSV, type ColumnDef, type GridRow } from '../../lib';
   import { ui } from '../theme.svelte';
 
-  // CSV round-trip: parse text → rows, and export rows → text. Edit the CSV and
-  // Load it, or Export the current grid back to CSV.
+  // Round-trip import: parse CSV / TSV / JSON text → rows, and export rows → CSV.
   const columns: ColumnDef[] = [
     { type: 'text', key: 'name', header: 'Name', flex: 1, minWidth: 160 },
     { type: 'text', key: 'role', header: 'Role', width: 140 },
@@ -11,31 +10,58 @@
     { type: 'number', key: 'rating', header: 'Rating', width: 100, decimals: 1 },
   ];
 
-  const SAMPLE = `Name,Role,Salary,Rating
+  type Fmt = 'csv' | 'tsv' | 'json';
+  const SAMPLES: Record<Fmt, string> = {
+    csv: `Name,Role,Salary,Rating
 Ada Lovelace,Engineer,142000,4.9
 "Grace Hopper, Jr.",Architect,158000,4.8
 Alan Turing,Researcher,150000,5
-Katherine Johnson,Analyst,138000,4.7`;
+Katherine Johnson,Analyst,138000,4.7`,
+    tsv: `Name\tRole\tSalary\tRating
+Ada Lovelace\tEngineer\t142000\t4.9
+Grace Hopper\tArchitect\t158000\t4.8
+Alan Turing\tResearcher\t150000\t5`,
+    json: JSON.stringify(
+      [
+        { name: 'Ada Lovelace', role: 'Engineer', salary: 142000, rating: 4.9 },
+        { name: 'Grace Hopper', role: 'Architect', salary: 158000, rating: 4.8 },
+        { name: 'Alan Turing', role: 'Researcher', salary: 150000, rating: 5 },
+      ],
+      null,
+      2,
+    ),
+  };
 
-  let csvText = $state(SAMPLE);
-  let rows = $state<GridRow[]>(parseCSV(SAMPLE, columns));
+  let format = $state<Fmt>('csv');
+  let text = $state(SAMPLES.csv);
+  let rows = $state<GridRow[]>(parseCSV(SAMPLES.csv, columns));
 
+  function setFormat(f: Fmt) {
+    format = f;
+    text = SAMPLES[f];
+  }
   function load() {
-    rows = parseCSV(csvText, columns);
+    rows = format === 'tsv' ? parseTSV(text, columns) : format === 'json' ? parseJSON(text) : parseCSV(text, columns);
   }
   function exportText() {
-    csvText = toCSV(rows, columns);
+    setFormat('csv');
+    text = toCSV(rows, columns);
   }
 </script>
 
 <div class="controls">
-  <button class="btn primary csv-load" type="button" onclick={load}>↑ Load CSV → grid</button>
+  <select class="csv-format" aria-label="Import format" onchange={(e) => setFormat(e.currentTarget.value as Fmt)}>
+    <option value="csv" selected={format === 'csv'}>CSV</option>
+    <option value="tsv" selected={format === 'tsv'}>TSV</option>
+    <option value="json" selected={format === 'json'}>JSON</option>
+  </select>
+  <button class="btn primary csv-load" type="button" onclick={load}>↑ Load → grid</button>
   <button class="btn" type="button" onclick={exportText}>↓ Export grid → CSV</button>
-  <span class="hint">Edit the CSV (quotes, commas handled) and Load it, or Export the grid back to CSV.</span>
+  <span class="hint">Edit the {format.toUpperCase()} and Load it (quotes/commas/tabs handled), or Export back to CSV.</span>
 </div>
 
 <div class="io">
-  <textarea class="csv-text" bind:value={csvText} spellcheck="false" aria-label="CSV text"></textarea>
+  <textarea class="csv-text" bind:value={text} spellcheck="false" aria-label="Import text"></textarea>
   <div class="gridwrap">
     <Grid {rows} {columns} theme={ui.theme} height={260} ariaLabel="CSV data" />
   </div>
@@ -69,9 +95,20 @@ Katherine Johnson,Analyst,138000,4.7`;
     background: var(--up);
     border-color: var(--up);
   }
-  .btn:focus-visible {
+  .btn:focus-visible,
+  .csv-format:focus-visible {
     outline: 2px solid var(--up);
     outline-offset: 2px;
+  }
+  .csv-format {
+    padding: 5px 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+    background: var(--header-bg);
+    border: 0.5px solid var(--border);
+    border-radius: 7px;
+    cursor: pointer;
   }
   .hint {
     color: var(--text-dim);

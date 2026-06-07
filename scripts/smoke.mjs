@@ -967,6 +967,15 @@ document.querySelector('.csv-load').dispatchEvent(new window.MouseEvent('click',
 await wait(40);
 const csvAfter = document.querySelectorAll('.bo-grid .row').length;
 if (csvAfter !== 1) fail(`CSV: loading a 1-row CSV did not update the grid (got ${csvAfter})`);
+// Switch to JSON format → loads the 3-row JSON sample (parseJSON, v0.23).
+const csvFmt = document.querySelector('.csv-format');
+csvFmt.value = 'json';
+csvFmt.dispatchEvent(new window.Event('change', { bubbles: true }));
+await wait(20);
+document.querySelector('.csv-load').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(40);
+const csvJson = document.querySelectorAll('.bo-grid .row').length;
+if (csvJson !== 3) fail(`CSV: JSON import did not load 3 rows (got ${csvJson})`);
 
 // Tree data: roots render collapsed; expanding a folder reveals children.
 const treeTab = tab('Tree');
@@ -1084,7 +1093,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale + computed-col, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut/${dashStacked} stacked/${dashLegend} legend (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), csv ${csvRows}→${csvAfter} rows (parse/load), tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut/${dashStacked} stacked/${dashLegend} legend (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), csv ${csvRows}→${csvAfter} rows + json ${csvJson} (csv/tsv/json import), tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

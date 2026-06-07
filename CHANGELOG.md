@@ -3,6 +3,25 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.23.0] — Unreleased
+
+Theme: **TSV & JSON import** — round out the data I/O. See [ROADMAP.md](./ROADMAP.md).
+
+### Added
+
+- **`parseTSV(text, columns?)`**: TAB-separated import with the same header→column
+  mapping and coercion as `parseCSV` — handy for spreadsheet/clipboard data
+  (`Ctrl/⌘+C` copies the selection as TSV).
+- **`rowsFromObjects(objects)`**: adapt plain objects (e.g. a JSON API response) to
+  grid rows — stamps `id` (own `id` or index) + flash fields, keeping all fields.
+- **`parseJSON(text)`**: parse a JSON array of objects into rows
+  (`JSON.parse` + `rowsFromObjects`).
+- The **CSV import** demo now switches between CSV / TSV / JSON.
+
+### Internal
+
+- The CSV/TSV parsers share one delimiter-aware core (`parseDelimited`).
+
 ## [0.22.0] — Unreleased
 
 Theme: **CSV import** — round-trip the dependency-free CSV export. See
@@ -514,6 +533,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.23.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.23.0
 [0.22.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.22.0
 [0.21.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.21.0
 [0.20.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.20.0

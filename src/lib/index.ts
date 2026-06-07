@@ -57,7 +57,15 @@ export type { GridTheme, ThemePreset } from './grid/theme';
 export { drawCandles, setupHiDpiCanvas } from './sparkline/sparkline-render';
 
 // Export + import (CSV is dependency-free; XLSX dynamic-imports the optional `xlsx` peer)
-export { toCSV, exportCSV, parseCSV, parseCSVMatrix } from './grid/export';
+export {
+  toCSV,
+  exportCSV,
+  parseCSV,
+  parseCSVMatrix,
+  parseTSV,
+  parseJSON,
+  rowsFromObjects,
+} from './grid/export';
 export { exportXLSX } from './grid/export-xlsx';
 export type { ExportOptions } from './grid/export';
 

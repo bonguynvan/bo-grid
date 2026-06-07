@@ -79,11 +79,10 @@ export function exportCSV(
 }
 
 /**
- * Parse RFC4180 CSV text into a 2-D string matrix — handles quoted fields with
- * embedded commas, doubled quotes and newlines, and CRLF or LF line endings.
- * Pure; the inverse of `rowsToMatrix`. Unit-tested.
+ * Parse delimited text (CSV/TSV) into a 2-D string matrix — handles quoted fields
+ * with embedded delimiters, doubled quotes and newlines, and CRLF or LF endings.
  */
-export function parseCSVMatrix(text: string): string[][] {
+function parseDelimited(text: string, delim: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let field = '';
@@ -118,7 +117,7 @@ export function parseCSVMatrix(text: string): string[][] {
     if (c === '"') {
       inQuotes = true;
       i++;
-    } else if (c === ',') {
+    } else if (c === delim) {
       endField();
       i++;
     } else if (c === '\n') {
@@ -135,19 +134,20 @@ export function parseCSVMatrix(text: string): string[][] {
   return rows;
 }
 
-/**
- * Parse CSV text into grid rows. The first line is the header; each header maps
- * to a column by `header` or `key`. Numeric columns are coerced to numbers and
- * `date` columns parsed to epoch ms (`Date.parse`); blanks and unparseable values
- * stay as-is. Rows get a sequential `id` + flash fields so they're `GridRow`-ready.
- * Inverse of `toCSV` — round-trips. Pure; unit-tested.
- */
-export function parseCSV(text: string, columns: readonly ColumnDef[] = []): GridRow[] {
-  const matrix = parseCSVMatrix(text).filter((r) => !(r.length === 1 && r[0] === '')); // drop blank lines
-  if (matrix.length < 1) return [];
-  const headers = matrix[0];
+/** Parse RFC4180 CSV text into a 2-D string matrix. Pure; inverse of `rowsToMatrix`. */
+export function parseCSVMatrix(text: string): string[][] {
+  return parseDelimited(text, ',');
+}
+
+// Header-row matrix → grid rows: map each header to a column (by `header` or
+// `key`), coerce numeric columns to numbers and `date` columns to epoch ms, leave
+// blanks/unparseable as-is, and stamp id + flash fields. Drops blank lines.
+function matrixToRows(matrix: string[][], columns: readonly ColumnDef[]): GridRow[] {
+  const m = matrix.filter((r) => !(r.length === 1 && r[0] === ''));
+  if (m.length < 1) return [];
+  const headers = m[0];
   const cols = headers.map((h) => columns.find((c) => c.header === h || c.key === h));
-  return matrix.slice(1).map((cells, i) => {
+  return m.slice(1).map((cells, i) => {
     const row: Record<string, unknown> = { id: i, flashSeq: 0, flashDir: 'up' };
     headers.forEach((h, c) => {
       const col = cols[c];
@@ -167,4 +167,37 @@ export function parseCSV(text: string, columns: readonly ColumnDef[] = []): Grid
     });
     return row as GridRow;
   });
+}
+
+/**
+ * Parse CSV text into grid rows. The first line is the header (mapped to columns
+ * by `header` or `key`); numeric columns coerce to numbers, `date` columns to
+ * epoch ms. Rows get `id` + flash fields so they're `GridRow`-ready. Inverse of
+ * `toCSV` — round-trips. Pure; unit-tested.
+ */
+export function parseCSV(text: string, columns: readonly ColumnDef[] = []): GridRow[] {
+  return matrixToRows(parseDelimited(text, ','), columns);
+}
+
+/** Parse TAB-separated text into grid rows (same mapping as `parseCSV`). Handy for
+    spreadsheet/clipboard data — `Ctrl/⌘+C` copies the selection as TSV. */
+export function parseTSV(text: string, columns: readonly ColumnDef[] = []): GridRow[] {
+  return matrixToRows(parseDelimited(text, '\t'), columns);
+}
+
+/**
+ * Adapt plain objects (e.g. a JSON API response) to grid rows: stamp `id` (the
+ * object's own `id`, else the index) and `flashSeq`/`flashDir` if absent, keeping
+ * all fields. The cheapest path from `await res.json()` to `<Grid rows>`.
+ */
+export function rowsFromObjects(objects: readonly Record<string, unknown>[]): GridRow[] {
+  return objects.map((o, i) => ({ id: i, flashSeq: 0, flashDir: 'up', ...o }) as GridRow);
+}
+
+/** Parse a JSON array of objects into grid rows (`JSON.parse` + `rowsFromObjects`).
+    Throws on invalid JSON or a non-array top level. */
+export function parseJSON(text: string): GridRow[] {
+  const data = JSON.parse(text);
+  if (!Array.isArray(data)) throw new Error('parseJSON: expected a JSON array of objects');
+  return rowsFromObjects(data);
 }

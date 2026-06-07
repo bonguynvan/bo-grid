@@ -725,7 +725,16 @@ const rows = parseCSV(text, columns);             // …and back to rows (round-
 
 `parseCSV` is RFC4180-aware (quoted fields, embedded commas/quotes/newlines), maps
 headers to columns, coerces numeric/`date` columns, and stamps `id` + flash fields
-so the result drops straight into `<Grid rows={…}>`. See the **CSV import** demo.
+so the result drops straight into `<Grid rows={…}>`. There's also `parseTSV` (tab-
+separated — what Ctrl/⌘+C copies), and for JSON/API data, `rowsFromObjects(objects)`
+/ `parseJSON(text)`:
+
+```ts
+import { rowsFromObjects } from 'bo-grid';
+const rows = rowsFromObjects(await (await fetch('/api/rows')).json());
+```
+
+See the **CSV import** demo (switches CSV / TSV / JSON).
 
 Excel export loads SheetJS via **dynamic import**, so it lands in its own lazy
 chunk and never bloats your core bundle. `xlsx` is an **optional peer dependency**
@@ -745,7 +754,7 @@ Ctrl/⌘+C still copies the current selection as TSV.
 `Sparkline` component · `drawCandles` / `setupHiDpiCanvas` (draw on your own
 canvas) · `fmtPrice` / `fmtPercent` / `fmtVolume` / `fmtDate` · `heatColor` ·
 `Selection` · `aggregate` · `toCSV` / `exportCSV` / `exportXLSX` / `rowsToMatrix` ·
-`parseCSV` / `parseCSVMatrix`.
+`parseCSV` / `parseCSVMatrix` / `parseTSV` / `parseJSON` / `rowsFromObjects`.
 
 ## Pivot tables
 
