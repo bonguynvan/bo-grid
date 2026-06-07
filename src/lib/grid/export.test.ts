@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ColumnDef, GridRow } from './column';
-import { toCSV, rowsToMatrix } from './export';
+import { toCSV, rowsToMatrix, parseCSV, parseCSVMatrix } from './export';
 
 const columns: ColumnDef[] = [
   { type: 'text', key: 'name', header: 'Name' },
@@ -50,5 +50,54 @@ describe('toCSV', () => {
   it('runs values through formatters in formatted mode', () => {
     const csv = toCSV(rows, columns, { formatted: true, header: false });
     expect(csv.startsWith('"Acme, Inc",12.50')).toBe(true);
+  });
+});
+
+describe('parseCSVMatrix', () => {
+  it('parses simple rows (LF and CRLF)', () => {
+    expect(parseCSVMatrix('a,b\n1,2')).toEqual([['a', 'b'], ['1', '2']]);
+    expect(parseCSVMatrix('a,b\r\n1,2\r\n')).toEqual([['a', 'b'], ['1', '2']]);
+  });
+  it('handles quoted fields with commas, doubled quotes and newlines', () => {
+    expect(parseCSVMatrix('"Acme, Inc","say ""hi"""')).toEqual([['Acme, Inc', 'say "hi"']]);
+    expect(parseCSVMatrix('"line1\nline2",x')).toEqual([['line1\nline2', 'x']]);
+  });
+  it('keeps empty fields', () => {
+    expect(parseCSVMatrix('a,,c')).toEqual([['a', '', 'c']]);
+  });
+});
+
+describe('parseCSV', () => {
+  const cols: ColumnDef[] = [
+    { type: 'text', key: 'name', header: 'Name' },
+    { type: 'number', key: 'qty', header: 'Qty' },
+    { type: 'date', key: 'start', header: 'Start' },
+  ];
+
+  it('maps headers to keys, coercing numeric + date columns', () => {
+    const out = parseCSV('Name,Qty,Start\nAcme,5,2020-03-01\n', cols);
+    expect(out).toHaveLength(1);
+    expect(out[0].name).toBe('Acme');
+    expect(out[0].qty).toBe(5); // numeric coercion
+    expect(out[0].start).toBe(Date.parse('2020-03-01')); // date → epoch ms
+    expect(out[0].id).toBe(0); // GridRow-ready
+    expect(out[0].flashSeq).toBe(0);
+  });
+
+  it('leaves blanks and unparseable values as-is, drops blank lines', () => {
+    const out = parseCSV('Name,Qty\nAcme,\n\nBeta,x\n', cols);
+    expect(out).toHaveLength(2); // blank line dropped
+    expect(out[0].qty).toBe(''); // blank stays blank (not 0)
+    expect(out[1].qty).toBe('x'); // unparseable numeric stays string
+  });
+
+  it('round-trips with toCSV (raw mode)', () => {
+    const original = [
+      { id: 0, flashSeq: 0, flashDir: 'up', name: 'Acme, Inc', qty: 5, start: Date.UTC(2020, 2, 1) },
+    ] as unknown as GridRow[];
+    const csv = toCSV(original, cols); // date exports formatted; re-parse to ms
+    const back = parseCSV(csv, cols);
+    expect(back[0].name).toBe('Acme, Inc'); // quoted comma survives the round-trip
+    expect(back[0].qty).toBe(5);
   });
 });

@@ -171,14 +171,21 @@ Completes the conditional-formatting trio (data bars + icon sets + colour scales
   from **React, Vue, Angular and vanilla** — see [docs/frameworks.md](./docs/frameworks.md).
   `wc-smoke` gate verifies it registers + renders + reacts.
 
+## 0.22 · CSV import — done
+
+- [x] **`parseCSV` / `parseCSVMatrix`**: round-trip the CSV export — RFC4180-aware
+  parse into `GridRow`s (header→column mapping, numeric/date coercion). New **CSV
+  import** demo.
+
 ## Candidate themes for later versions
 
-The roadmap's planned features are all shipped, plus cross-framework support.
-Remaining ideas are polish or demand-driven:
+The roadmap's planned features are all shipped, plus cross-framework support and
+CSV round-trip. Remaining ideas are polish or demand-driven:
 
 - **Polish** — a live screen-reader + axe-core pass; framework starter repos;
   multi-level lazy groups; custom-cell bridging for the Web Component.
-- Driven by real-world usage once published — open an issue with what's missing.
+- Driven by real-world usage now that it's published — open an issue with what's
+  missing.
 
 Note: the eager grid core is ~97% of its 28 KB budget; the next sizable *core*
 feature should recalibrate it (still ~15× smaller than AG Grid). The charts

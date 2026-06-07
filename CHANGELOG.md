@@ -3,6 +3,22 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.22.0] — Unreleased
+
+Theme: **CSV import** — round-trip the dependency-free CSV export. See
+[ROADMAP.md](./ROADMAP.md).
+
+### Added
+
+- **`parseCSV(text, columns?)`**: parse CSV text into grid rows — the inverse of
+  `toCSV`. Maps headers to columns (by `header` or `key`), coerces numeric columns
+  to numbers and `date` columns to epoch ms, leaves blanks/unparseable values
+  as-is, and stamps `id` + flash fields so rows are `GridRow`-ready. RFC4180-aware
+  (quoted fields with embedded commas, doubled quotes, and newlines; CRLF or LF).
+- **`parseCSVMatrix(text)`**: the low-level 2-D string parse, exported for custom
+  mapping.
+- New **CSV import** demo (a live parse ⇄ export round-trip).
+
 ## [0.21.0] — Unreleased
 
 Theme: **framework-agnostic custom element** — use bo-grid in React, Vue, Angular
@@ -498,6 +514,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.22.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.22.0
 [0.21.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.21.0
 [0.20.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.20.0
 [0.19.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.19.0

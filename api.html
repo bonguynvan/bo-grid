@@ -405,15 +405,18 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
       <pre><code>createArraySource(rows, { latency?: number, filterKeys?: string[] }): RowSource</code></pre>
 
       <!-- ============ EXPORT ============ -->
-      <h2 id="export">Export</h2>
+      <h2 id="export">Export &amp; import</h2>
       <table>
         <thead><tr><th>Function</th><th>Signature</th></tr></thead>
         <tbody>
           <tr><td>toCSV</td><td><span class="type">(rows, columns, opts?) =&gt; string</span></td></tr>
           <tr><td>exportCSV</td><td><span class="type">(filename, rows, columns, opts?) =&gt; void</span></td></tr>
           <tr><td>exportXLSX</td><td><span class="type">(filename, rows, columns, opts?) =&gt; Promise&lt;void&gt;</span></td></tr>
+          <tr><td>parseCSV</td><td><span class="type">(text, columns?) =&gt; GridRow[]</span></td></tr>
+          <tr><td>parseCSVMatrix</td><td><span class="type">(text) =&gt; string[][]</span></td></tr>
         </tbody>
       </table>
+      <p><code>parseCSV</code> is the inverse of <code>toCSV</code> (RFC4180-aware): maps headers to columns, coerces numeric/<code>date</code> columns, stamps <code>id</code> + flash fields. Round-trips.</p>
       <p><code>ExportOptions</code>: <code>{ formatted?: boolean; header?: boolean }</code>. Numeric columns export as raw numbers unless <code>formatted</code> is set; sparkline columns are skipped. <code>exportXLSX</code> dynamic-imports the optional <code>xlsx</code> peer (separate lazy chunk).</p>
 
       <!-- ============ EXPORTS ============ -->

@@ -56,8 +56,8 @@ export type { GridTheme, ThemePreset } from './grid/theme';
 // Sparkline canvas primitives (draw candlesticks on your own canvas)
 export { drawCandles, setupHiDpiCanvas } from './sparkline/sparkline-render';
 
-// Export (CSV is dependency-free; XLSX dynamic-imports the optional `xlsx` peer)
-export { toCSV, exportCSV } from './grid/export';
+// Export + import (CSV is dependency-free; XLSX dynamic-imports the optional `xlsx` peer)
+export { toCSV, exportCSV, parseCSV, parseCSVMatrix } from './grid/export';
 export { exportXLSX } from './grid/export-xlsx';
 export type { ExportOptions } from './grid/export';
 

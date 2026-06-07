@@ -78,6 +78,12 @@ export const EXAMPLES: Example[] = [
     load: () => import('./Themes.svelte'),
   },
   {
+    id: 'csv',
+    title: 'CSV import',
+    blurb: 'Round-trip CSV — parse text into rows (parseCSV) and export rows back (toCSV).',
+    load: () => import('./CsvIO.svelte'),
+  },
+  {
     id: 'tree',
     title: 'Tree',
     blurb: 'A file-explorer tree — expandable folders, indented rows (tree data).',

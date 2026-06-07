@@ -947,6 +947,27 @@ await wait(30);
 if (!/--bo-grid-bg:\s*#0a0f0a/i.test(themeGridStyle()))
   fail('Themes: switching to the terminal preset did not re-theme the grid');
 
+// CSV import (v0.22): parseCSV renders the sample; editing + Load updates the grid.
+const csvTab = tab('CSV import');
+if (!csvTab) fail('CSV import example tab not found');
+click(csvTab);
+await waitFor('.csv-text', 'CSV example did not mount');
+let csvRows = 0;
+for (let i = 0; i < 40; i++) {
+  csvRows = document.querySelectorAll('.bo-grid .row').length;
+  if (csvRows >= 4) break;
+  await wait(25);
+}
+if (csvRows < 4) fail(`CSV: parsed sample did not render 4 rows (got ${csvRows})`);
+// Load a 1-row CSV and assert the grid updates through parseCSV.
+const csvTa = document.querySelector('.csv-text');
+csvTa.value = 'Name,Role,Salary,Rating\nSolo Dev,Engineer,100000,5';
+csvTa.dispatchEvent(new window.Event('input', { bubbles: true }));
+document.querySelector('.csv-load').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(40);
+const csvAfter = document.querySelectorAll('.bo-grid .row').length;
+if (csvAfter !== 1) fail(`CSV: loading a 1-row CSV did not update the grid (got ${csvAfter})`);
+
 // Tree data: roots render collapsed; expanding a folder reveals children.
 const treeTab = tab('Tree');
 if (!treeTab) fail('Tree example tab not found');
@@ -1063,7 +1084,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale + computed-col, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut/${dashStacked} stacked/${dashLegend} legend (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut/${dashStacked} stacked/${dashLegend} legend (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), csv ${csvRows}→${csvAfter} rows (parse/load), tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

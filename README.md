@@ -710,16 +710,21 @@ const columns = [
 ];
 ```
 
-## Export
+## Export & import
 
-CSV export is dependency-free:
+CSV export — and import — are dependency-free:
 
 ```ts
-import { exportCSV, toCSV } from 'bo-grid';
+import { exportCSV, toCSV, parseCSV } from 'bo-grid';
 
 exportCSV('tickers.csv', rows, columns);          // triggers a download
 const text = toCSV(rows, columns, { formatted: true }); // or get the string
+const rows = parseCSV(text, columns);             // …and back to rows (round-trip)
 ```
+
+`parseCSV` is RFC4180-aware (quoted fields, embedded commas/quotes/newlines), maps
+headers to columns, coerces numeric/`date` columns, and stamps `id` + flash fields
+so the result drops straight into `<Grid rows={…}>`. See the **CSV import** demo.
 
 Excel export loads SheetJS via **dynamic import**, so it lands in its own lazy
 chunk and never bloats your core bundle. `xlsx` is an **optional peer dependency**
@@ -738,7 +743,8 @@ Ctrl/⌘+C still copies the current selection as TSV.
 
 `Sparkline` component · `drawCandles` / `setupHiDpiCanvas` (draw on your own
 canvas) · `fmtPrice` / `fmtPercent` / `fmtVolume` / `fmtDate` · `heatColor` ·
-`Selection` · `aggregate` · `toCSV` / `exportCSV` / `exportXLSX` / `rowsToMatrix`.
+`Selection` · `aggregate` · `toCSV` / `exportCSV` / `exportXLSX` / `rowsToMatrix` ·
+`parseCSV` / `parseCSVMatrix`.
 
 ## Pivot tables
 
