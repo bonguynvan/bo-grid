@@ -12,12 +12,14 @@ export default defineConfig({
     emptyOutDir: true,
     minify: 'esbuild',
     lib: {
-      entry: 'src/lib/index.ts',
+      // Two entries: the grid core and the optional charts companion. Measured
+      // separately by size-lib.mjs so each keeps its own budget.
+      entry: { 'bo-grid': 'src/lib/index.ts', charts: 'src/lib/charts/index.ts' },
       formats: ['es'],
-      fileName: () => 'bo-grid.js',
     },
     rollupOptions: {
       external: ['svelte', /^svelte\//, 'xlsx'],
+      output: { entryFileNames: '[name].js', chunkFileNames: '[name]-[hash].js' },
     },
   },
 });

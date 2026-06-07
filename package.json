@@ -1,6 +1,6 @@
 {
   "name": "bo-grid",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "type": "module",
   "license": "MIT",
   "description": "Tiny, fast Svelte 5 data grid: canvas sparklines, batched realtime cell updates, and virtual scrolling. A free, fintech-focused alternative to heavyweight grids.",
@@ -32,6 +32,11 @@
       "types": "./dist/index.d.ts",
       "svelte": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./charts": {
+      "types": "./dist/charts/index.d.ts",
+      "svelte": "./dist/charts/index.js",
+      "default": "./dist/charts/index.js"
     },
     "./package.json": "./package.json"
   },

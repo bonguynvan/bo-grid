@@ -858,6 +858,21 @@ const teamText = document.querySelector('.bo-grid')?.textContent || '';
 if (!/ ago|just now|^in |\bin \d/.test(teamText)) fail('Team: relative-time column did not render');
 if (!/\$\d/.test(teamText)) fail('Team: currency column did not render');
 
+// Dashboard: the bo-grid/charts companion — KPI cards (standalone charts) plus
+// in-cell charts (a LineChart in each grid row's custom Trend cell).
+const dashTab = tab('Dashboard');
+if (!dashTab) fail('Dashboard example tab not found');
+click(dashTab);
+await wait(50);
+await waitFor('.boc-line', 'Dashboard charts did not render (lazy chunk)');
+const dashLines = document.querySelectorAll('.boc-line').length;
+const dashBars = document.querySelectorAll('.boc-bar rect').length;
+const dashArcs = document.querySelectorAll('.boc-donut path').length;
+if (dashBars === 0) fail('Dashboard: bar chart did not render');
+if (dashArcs === 0) fail('Dashboard: donut chart did not render');
+// >1 line = the KPI card line + one LineChart per grid row (charts inside cells).
+if (dashLines < 2) fail(`Dashboard: in-cell line charts did not render (${dashLines} line charts)`);
+
 // Tree data: roots render collapsed; expanding a folder reveals children.
 const treeTab = tab('Tree');
 if (!treeTab) fail('Tree example tab not found');
@@ -927,7 +942,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale + computed-col, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut (charts companion), tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

@@ -3,6 +3,29 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.14.0] — Unreleased
+
+Theme: **`bo-grid/charts` companion** — tiny dashboard charts, kept out of the
+grid core. See [ROADMAP.md](./ROADMAP.md).
+
+### Added
+
+- **`bo-grid/charts` subpath** — an optional, dependency-free SVG chart set for
+  dashboards: `LineChart` (with optional `area`), `BarChart` (signed, zero-axis)
+  and `DonutChart` (pie when `thickness >= size/2`). Themeable via `color`/`colors`
+  props or `--boc-*` CSS vars. Imported separately
+  (`import { LineChart } from 'bo-grid/charts'`) so it adds **nothing** to the grid
+  core — the companion is ~2 KB gzip on its own budget.
+- Exposed the SVG geometry helpers (`linePoints`, `linePath`, `areaPath`,
+  `barRects`, `donutArcs`, `extent`) and `CHART_PALETTE` for building custom charts.
+- New **Dashboard** demo: KPI cards (standalone charts) and **charts inside grid
+  cells** (a `LineChart` in each row's custom Trend column).
+
+### Internal
+
+- `size:lib` now measures the charts companion under its own budget (8 KB); the
+  grid core budget (28 KB) is unaffected since charts are a separate entry.
+
 ## [0.13.0] — Unreleased
 
 Theme: **more rich cell types** — `link`, `relative` (relative time) and
@@ -332,6 +355,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.14.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.14.0
 [0.13.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.13.0
 [0.12.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.12.0
 [0.11.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.11.0

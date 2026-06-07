@@ -201,6 +201,28 @@ const columns: ColumnDef[] = [
 In-memory mode (a server `source` owns its own derivations). Keep `value()` cheap
 and pure — it's called during sort and filter.
 
+## Charts (companion)
+
+For dashboards, `bo-grid/charts` ships tiny, dependency-free SVG charts —
+`LineChart`, `BarChart`, `DonutChart`. They're a **separate import**, so they add
+nothing to the grid core (~2 KB gzip on their own). Use them standalone, or inside
+a grid cell via a `custom` column.
+
+```svelte
+<script>
+  import { LineChart, BarChart, DonutChart } from 'bo-grid/charts';
+</script>
+
+<LineChart data={[3, 5, 4, 8, 6, 9]} width={160} height={40} area />
+<BarChart data={[4, 8, 6, 9, 7]} color="var(--up)" />
+<DonutChart data={[{ value: 5, label: 'A' }, { value: 3, label: 'B' }]} />
+```
+
+Theme them with `color` / `colors` props, or by setting `--boc-color` and
+`--boc-1`…`--boc-6` CSS vars on any ancestor. The geometry helpers (`linePoints`,
+`barRects`, `donutArcs`, …) are exported too, for rolling your own SVG charts. See
+the **Dashboard** example for charts inside grid cells.
+
 ## Row height
 
 Uniform 36px by default. Pass `rowHeight` as a number for a different density, or

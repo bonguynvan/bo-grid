@@ -117,18 +117,25 @@ Completes the conditional-formatting trio (data bars + icon sets + colour scales
   (epoch ms → "3 hours ago"), **`currency`** (localized via `Intl.NumberFormat`).
   Exported `relativeTime` / `fmtCurrency`. **Team** demo shows all three.
 
+## 0.14 · Charts companion — done
+
+- [x] **`bo-grid/charts`** subpath: `LineChart`/`BarChart`/`DonutChart`, SVG,
+  dependency-free, ~2 KB gzip on its own budget — **nothing added to the grid
+  core**. Themeable via props or `--boc-*` vars; geometry helpers exported. New
+  **Dashboard** demo (KPI cards + charts inside grid cells).
+
 ## Candidate themes for later versions
 
 Scaling to more domains (analytics, dashboards, general business):
 
-- **Charts companion** — an optional `bo-grid/charts` package (tiny bar/line/area/
-  donut) for dashboards, kept out of the core. (Sidesteps the core size budget,
-  now at ~97%.)
 - **Scale & server** — lazy group/tree server loading, 100+ column virtualization.
 - **Trust & polish** — a formal WCAG 2.1 AA audit, more theme presets, more demos.
+- **More charts** — stacked/grouped bars, a legend/tooltip layer (still in the
+  companion, never the core).
 
-Note: the eager core is ~97% of its 28 KB budget; the next sizable core feature
-should recalibrate it (still ~15× smaller than AG Grid).
+Note: the eager grid core is ~97% of its 28 KB budget; the next sizable *core*
+feature should recalibrate it (still ~15× smaller than AG Grid). The charts
+companion (its own 8 KB budget) is the model for keeping the core tiny.
 
 Out of scope by design (they fight the "tiny" positioning): a heavyweight
 integrated-charting engine in the core (the companion package is the answer),

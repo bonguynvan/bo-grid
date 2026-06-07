@@ -60,6 +60,12 @@ export const EXAMPLES: Example[] = [
     load: () => import('./Team.svelte'),
   },
   {
+    id: 'dashboard',
+    title: 'Dashboard',
+    blurb: 'KPI cards and in-cell charts via the bo-grid/charts companion (line, bar, donut).',
+    load: () => import('./Dashboard.svelte'),
+  },
+  {
     id: 'tree',
     title: 'Tree',
     blurb: 'A file-explorer tree — expandable folders, indented rows (tree data).',

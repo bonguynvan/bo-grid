@@ -16,7 +16,10 @@ const DIR = 'lib-dist';
 // ~28 KB gzip it is still ~15–20× smaller than AG Grid (~500 KB) — the "tiny"
 // claim holds. Heavy optional UI (filter menu, tool panel) stays lazy and is
 // excluded below, so this is genuinely the always-loaded core.
-const BUDGET_KB = { js: 28, css: 6 }; // gzipped, Svelte excluded, eager core only
+// The grid core (`js`) is the always-loaded promise. The optional charts
+// companion (`bo-grid/charts`) is a separate entry a consumer only pays for if
+// they import it — budgeted on its own so it also stays tiny.
+const BUDGET_KB = { js: 28, css: 6, charts: 8 }; // gzipped, Svelte excluded
 
 const gzipKb = (path) => gzipSync(readFileSync(path)).length / 1024;
 const jsFiles = readdirSync(DIR).filter((f) => f.endsWith('.js'));
@@ -31,24 +34,32 @@ function staticDeps(code) {
   return [...deps];
 }
 
-// Eager closure: BFS from the entry, following static imports only.
-const eager = new Set();
-const queue = ['bo-grid.js'];
-while (queue.length) {
-  const f = queue.pop();
-  if (eager.has(f) || !jsFiles.includes(f)) continue;
-  eager.add(f);
-  for (const d of staticDeps(readFileSync(`${DIR}/${f}`, 'utf8'))) {
-    if (jsFiles.includes(d)) queue.push(d);
+// Eager closure: BFS from an entry, following static imports only.
+function eagerClosure(entry) {
+  const seen = new Set();
+  const queue = [entry];
+  while (queue.length) {
+    const f = queue.pop();
+    if (seen.has(f) || !jsFiles.includes(f)) continue;
+    seen.add(f);
+    for (const d of staticDeps(readFileSync(`${DIR}/${f}`, 'utf8'))) {
+      if (jsFiles.includes(d)) queue.push(d);
+    }
   }
+  return seen;
 }
 
+const core = eagerClosure('bo-grid.js');
+const chartsSet = jsFiles.includes('charts.js') ? eagerClosure('charts.js') : new Set();
+
 let coreJs = 0;
+let chartsJs = 0;
 let lazyJs = 0;
 const lazy = [];
 for (const f of jsFiles) {
   const kb = gzipKb(`${DIR}/${f}`);
-  if (eager.has(f)) coreJs += kb;
+  if (core.has(f)) coreJs += kb;
+  else if (chartsSet.has(f)) chartsJs += kb;
   else {
     lazyJs += kb;
     lazy.push([f, kb]);
@@ -57,12 +68,15 @@ for (const f of jsFiles) {
 let css = 0;
 for (const f of readdirSync(DIR)) if (f.endsWith('.css')) css += gzipKb(`${DIR}/${f}`);
 
+const rows = [
+  ['JS   ', coreJs, BUDGET_KB.js],
+  ['CSS  ', css, BUDGET_KB.css],
+];
+if (chartsSet.size) rows.push(['charts', chartsJs, BUDGET_KB.charts]);
+
 let failed = false;
 console.log('library size (gzip, Svelte external — eager core)');
-for (const [name, kb, budget] of [
-  ['JS ', coreJs, BUDGET_KB.js],
-  ['CSS', css, BUDGET_KB.css],
-]) {
+for (const [name, kb, budget] of rows) {
   const ok = kb <= budget;
   failed ||= !ok;
   console.log(`  ${ok ? '✓' : '✗'} ${name}  ${kb.toFixed(2)} KB / ${budget} KB  (${Math.round((kb / budget) * 100)}%)`);

@@ -154,6 +154,7 @@
         <a href="./">Demo</a>
         <a href="#grid">Grid</a>
         <a href="#columns">Columns</a>
+        <a href="#charts">Charts</a>
         <a href="#source">Source</a>
         <a href="#theming">Theming</a>
         <a href="https://github.com/bonguynvan/bo-grid">GitHub</a>
@@ -326,6 +327,23 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
       <p>Set <code>value: (row) =&gt; …</code> to derive a column from the whole row (KPIs, ratios, deltas). The derived value flows through display, sort, filter, group/footer aggregation, conditional formatting, export and copy — like a real column. <code>key</code> still names the column but need not be a real field; computed columns aren't editable. In-memory mode; keep <code>value()</code> cheap and pure (it runs during sort/filter).</p>
       <pre><code>{ type: <span class="tok-str">'price'</span>, key: <span class="tok-str">'total'</span>, header: <span class="tok-str">'Total'</span>,
   value: (row) =&gt; row.qty * row.price, groupAgg: <span class="tok-str">'sum'</span> }</code></pre>
+
+      <!-- ============ CHARTS ============ -->
+      <h2 id="charts">Charts <span class="tag">companion</span></h2>
+      <p>For dashboards, <code>bo-grid/charts</code> ships tiny, dependency-free SVG charts. It is a <strong>separate import</strong>, so it adds nothing to the grid core (~2&nbsp;KB gzip on its own). Use them standalone or inside a grid cell via a <code>custom</code> column. Theme with <code>color</code>/<code>colors</code> props or <code>--boc-color</code> / <code>--boc-1…6</code> CSS vars.</p>
+      <table>
+        <thead><tr><th>Component</th><th>Key props</th><th>Renders</th></tr></thead>
+        <tbody>
+          <tr><td>LineChart</td><td><span class="type">data: number[]; area?; color?</span></td><td>Line (optional filled area).</td></tr>
+          <tr><td>BarChart</td><td><span class="type">data: number[]; gap?; color?</span></td><td>Bars from a zero axis (signed-aware).</td></tr>
+          <tr><td>DonutChart</td><td><span class="type">data: number[] | {value,color?}[]; thickness?</span></td><td>Donut, or pie when <code>thickness ≥ size/2</code>.</td></tr>
+        </tbody>
+      </table>
+      <pre><code><span class="tok-key">import</span> { LineChart, BarChart, DonutChart } <span class="tok-key">from</span> <span class="tok-str">'bo-grid/charts'</span>;
+
+&lt;LineChart data={[3, 5, 4, 8, 6, 9]} area /&gt;
+&lt;DonutChart data={[{ value: 5 }, { value: 3 }]} /&gt;</code></pre>
+      <p>The SVG geometry helpers (<code>linePoints</code>, <code>barRects</code>, <code>donutArcs</code>, <code>extent</code>, …) are exported too, for building your own charts.</p>
 
       <!-- ============ SELECTION ============ -->
       <h2 id="selection">Selection &amp; keyboard</h2>
