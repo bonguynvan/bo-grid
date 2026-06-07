@@ -200,6 +200,8 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>getChildren</td><td><span class="type">(row) =&gt; GridRow[]</span></td><td>Tree data: return a row's children. <code>rows</code> become roots; renders an indented, expandable tree.</td></tr>
           <tr><td>loadChildren</td><td><span class="type">(row) =&gt; Promise&lt;GridRow[]&gt;</span></td><td>Async tree: load children on expand (server-backed); shows a loading row, then caches. Pair with <code>hasChildren</code>.</td></tr>
           <tr><td>hasChildren</td><td><span class="type">(row) =&gt; boolean</span></td><td>Cheap predicate for the expand chevron (no load). Required with <code>loadChildren</code>.</td></tr>
+          <tr><td>lazyGroups</td><td><span class="type">{ key; label?; count?; agg? }[]</span></td><td>Server-side grouping: group summaries; headers show the count + preformatted <code>agg</code>. Rows load via <code>loadGroup</code>.</td></tr>
+          <tr><td>loadGroup</td><td><span class="type">(key) =&gt; Promise&lt;GridRow[]&gt;</span></td><td>Load a lazy group's rows on expand (loading row, then cached). Required with <code>lazyGroups</code>.</td></tr>
           <tr><td>onRowReorder</td><td><span class="type">(from, to) =&gt; void</span></td><td>Drag-to-reorder rows via a first-column handle; reorder your own data. Flat unsorted lists.</td></tr>
           <tr><td>pageSize</td><td><span class="type">number</span></td><td>Rows per page (&gt; 0 shows a pager instead of one long scroll). In-memory mode. Default 0.</td></tr>
           <tr><td>page / onPageChange</td><td><span class="type">number / (page) =&gt; void</span></td><td>Controlled current page (0-based) + change callback (URL-sync paging).</td></tr>

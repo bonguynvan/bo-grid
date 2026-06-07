@@ -19,6 +19,9 @@
   // Aggregate over the group's leaf rows. Reads row $state values, so group
   // subtotals stay live as the feed ticks (only on-screen groups are rendered).
   function aggText(col: ColumnDef): string {
+    // Lazy/server groups carry preformatted aggregate strings (leaf rows aren't
+    // loaded), so use those directly when present.
+    if (group.aggText) return group.aggText[col.key] ?? '';
     if (col.type === 'sparkline' || col.type === 'text' || !col.groupAgg) return '';
     const vals: number[] = [];
     for (const row of group.rows) {

@@ -14,7 +14,7 @@
   import { themeVars, lightTheme, type GridTheme } from './theme';
   import { Selection } from './selection.svelte';
   import { aggregate, type AggKind, type AggResult } from './aggregate';
-  import { buildFlatRows, activeGroupsAt, type VisualRow, type GroupNode } from './grouping';
+  import { buildFlatRows, buildLazyGroupRows, activeGroupsAt, type VisualRow, type GroupNode, type LazyGroup } from './grouping';
   import { buildTreeRows } from './tree';
   import { moveIndex } from './reorder';
   import { parseClipboard, isSingleCell } from './clipboard';
@@ -77,6 +77,8 @@
     getChildren,
     loadChildren,
     hasChildren,
+    lazyGroups,
+    loadGroup,
     onRowReorder,
     pageSize = 0,
     page,
@@ -195,6 +197,12 @@
     /** Cheap predicate for whether a row has children (drives the expand chevron
         without loading). Required with `loadChildren`; optional with `getChildren`. */
     hasChildren?: (row: GridRow) => boolean;
+    /** Server-side grouping: top-level group summaries (header data, no leaf rows).
+        Each group's rows load on expand via `loadGroup`. In-memory mode. */
+    lazyGroups?: LazyGroup[];
+    /** Load a lazy group's leaf rows on expand (returns a promise; shows a loading
+        row, then caches). Required with `lazyGroups`. */
+    loadGroup?: (key: string) => Promise<GridRow[]>;
     /** Enable drag-to-reorder rows via a handle in the first column. Called with
         the from/to indices (into the visible rows) on drop — reorder your own
         `rows` in here. Flat, unsorted, in-memory lists only. */
@@ -419,6 +427,35 @@
           // On failure, collapse so the user can retry by expanding again.
           loadingIds.delete(id);
           expandedRows.delete(id);
+          expVersion++;
+          treeVersion++;
+        },
+      );
+    }
+  }
+
+  // Expand/collapse a server-side group, lazy-loading its rows on first expand.
+  // Reuses the tree's children cache + loading machinery, keyed by group key.
+  function toggleLazyGroup(key: string): void {
+    if (expandedRows.has(key)) {
+      expandedRows.delete(key);
+      expVersion++;
+      return;
+    }
+    expandedRows.add(key);
+    expVersion++;
+    if (loadGroup && !childrenCache.has(key) && !loadingIds.has(key)) {
+      loadingIds.add(key);
+      treeVersion++;
+      Promise.resolve(loadGroup(key)).then(
+        (rows) => {
+          childrenCache.set(key, rows);
+          loadingIds.delete(key);
+          treeVersion++;
+        },
+        () => {
+          loadingIds.delete(key);
+          expandedRows.delete(key);
           expVersion++;
           treeVersion++;
         },
@@ -886,6 +923,8 @@
   );
 
   const treeData = $derived(!!(getChildren || loadChildren) && !source);
+  // Server-side (lazy) grouping: group summaries up front, rows on expand.
+  const lazyGrouped = $derived(!!lazyGroups && !source && !treeData);
 
   // Drag-to-reorder rows (flat, unsorted, in-memory only). The handle lives in
   // the first cell; the dragged/drop indices are tracked in component state.
@@ -913,6 +952,18 @@
           hasChildren: hasChildren ?? ((r) => !!getChildren?.(r)?.length),
           isExpanded: (r) => expandedRows.has(getRowId(r)),
           isLoading: (r) => loadingIds.has(getRowId(r)),
+        }),
+      );
+    }
+    if (lazyGrouped && lazyGroups) {
+      const groups = lazyGroups;
+      expVersion; // track expand/collapse
+      treeVersion; // track async row loads
+      return untrack(() =>
+        buildLazyGroupRows(groups, {
+          isExpanded: (key) => expandedRows.has(key),
+          rowsOf: (key) => childrenCache.get(key),
+          isLoading: (key) => loadingIds.has(key),
         }),
       );
     }
@@ -1767,7 +1818,7 @@
           <div class="grouprow" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
             {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
             {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
-            <GroupRow group={item.group} columns={cols} onToggle={toggleGroup} rowIndex={item.vr + 2} />
+            <GroupRow group={item.group} columns={cols} onToggle={lazyGrouped ? toggleLazyGroup : toggleGroup} rowIndex={item.vr + 2} />
           </div>
         {:else if item.kind === 'skeleton'}
           <div class="row skeleton" role="row" aria-rowindex={item.vr + 2} aria-hidden="true" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">

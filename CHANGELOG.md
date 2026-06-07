@@ -3,6 +3,22 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.20.0] — Unreleased
+
+Theme: **server-side (lazy) grouping** — group totals up front, rows on expand.
+See [ROADMAP.md](./ROADMAP.md).
+
+### Added
+
+- **Server-side grouping** (`lazyGroups` + `loadGroup`): pass top-level group
+  summaries (`{ key, label?, count?, agg? }`) — the grid renders collapsed group
+  headers with the server-provided count and preformatted aggregates, and loads
+  each group's leaf rows on expand via `loadGroup(key)` (a loading row, then
+  cached). For data grouped on the server / too large to fetch upfront. `LazyGroup`
+  type exported. New **Server groups** demo (orders by region).
+- Reuses the lazy-tree loading machinery; `buildLazyGroupRows` is pure and
+  unit-tested. `GroupNode` gained an optional `aggText` (server aggregate strings).
+
 ## [0.19.0] — Unreleased
 
 Theme: **more charts** — multi-series bars, a legend, and tooltips, all in the
@@ -459,6 +475,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 - **Release tooling**: `pnpm release` / `pnpm release:dry` run all gates then
   publish.
 
+[0.20.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.20.0
 [0.19.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.19.0
 [0.18.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.18.0
 [0.17.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.17.0

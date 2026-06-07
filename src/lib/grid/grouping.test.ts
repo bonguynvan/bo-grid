@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { GridRow } from './column';
-import { buildFlatRows, activeGroupsAt } from './grouping';
+import { buildFlatRows, activeGroupsAt, buildLazyGroupRows, type LazyGroup } from './grouping';
 
 const rows = [
   { id: 0, sector: 'Tech', exchange: 'NYSE' },
@@ -47,5 +47,46 @@ describe('activeGroupsAt', () => {
     const idx = flat.findIndex((r) => r.kind === 'data' && r.row.id === 1);
     const chain = activeGroupsAt(flat, idx).map((g) => g.path);
     expect(chain).toEqual(['Tech', 'Tech/NASDAQ']);
+  });
+});
+
+describe('buildLazyGroupRows', () => {
+  const groups: LazyGroup[] = [
+    { key: 'Tech', count: 12, agg: { mv: '$1.2B' } },
+    { key: 'Energy', label: 'Energy & Utilities', count: 5 },
+  ];
+
+  it('shows one collapsed header per group when nothing is expanded', () => {
+    const flat = buildLazyGroupRows(groups, {
+      isExpanded: () => false,
+      rowsOf: () => undefined,
+      isLoading: () => false,
+    });
+    expect(flat.map((r) => r.kind)).toEqual(['group', 'group']);
+    expect(flat.every((r) => r.kind === 'group' && r.group.collapsed)).toBe(true);
+    // Server-provided count, label and aggregates carry onto the header.
+    const tech = flat[0] as { group: { count: number; aggText?: Record<string, string> } };
+    expect(tech.group.count).toBe(12);
+    expect(tech.group.aggText?.mv).toBe('$1.2B');
+    expect((flat[1] as { group: { value: string } }).group.value).toBe('Energy & Utilities');
+  });
+
+  it('shows a loading placeholder under an expanded, still-loading group', () => {
+    const flat = buildLazyGroupRows(groups, {
+      isExpanded: (k) => k === 'Tech',
+      rowsOf: () => undefined,
+      isLoading: (k) => k === 'Tech',
+    });
+    expect(flat.map((r) => r.kind)).toEqual(['group', 'treeloading', 'group']);
+  });
+
+  it('renders loaded rows under an expanded group', () => {
+    const loaded = [{ id: 1 }, { id: 2 }] as unknown as GridRow[];
+    const flat = buildLazyGroupRows(groups, {
+      isExpanded: (k) => k === 'Tech',
+      rowsOf: (k) => (k === 'Tech' ? loaded : undefined),
+      isLoading: () => false,
+    });
+    expect(flat.map((r) => r.kind)).toEqual(['group', 'data', 'data', 'group']);
   });
 });

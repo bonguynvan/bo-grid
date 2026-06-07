@@ -381,6 +381,26 @@ Group headers are the same height as data rows, so virtual scrolling stays smoot
 over very large grouped sets. Subtotals recompute live as the feed ticks, and the
 current group's header stays pinned to the top as you scroll within it.
 
+### Server-side grouping
+
+When the data is grouped on the server (or too large to fetch upfront), pass
+**`lazyGroups`** (the group summaries) and **`loadGroup`** (load a group's rows on
+expand). Headers show the server-provided count and preformatted aggregates; rows
+load lazily with a loading row, then cache. See the **Server groups** example.
+
+```svelte
+<Grid
+  rows={[]}
+  {columns}
+  lazyGroups={[
+    { key: 'North America', count: 142, agg: { amount: '$2.4M' } },
+    { key: 'Europe', count: 98, agg: { amount: '$1.8M' } },
+  ]}
+  loadGroup={(key) => fetch(`/api/orders?group=${key}`).then((r) => r.json())}
+  height={520}
+/>
+```
+
 ## Theming
 
 Dark-first and self-contained — no CSS import required. Use the `theme` prop with

@@ -90,6 +90,12 @@ export const EXAMPLES: Example[] = [
     load: () => import('./LazyTree.svelte'),
   },
   {
+    id: 'servergroups',
+    title: 'Server groups',
+    blurb: 'Server-side grouping — group totals up front, rows load on expand.',
+    load: () => import('./ServerGroups.svelte'),
+  },
+  {
     id: 'tasks',
     title: 'Tasks',
     blurb: 'A drag-to-reorder task list (row reordering via a handle).',

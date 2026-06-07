@@ -996,6 +996,30 @@ for (let i = 0; i < 60; i++) {
 if (!(lazyAfter > lazyRootsCount)) fail(`lazy tree: children did not load (${lazyRootsCount} → ${lazyAfter})`);
 if (document.querySelector('.bo-grid .row.treeloading')) fail('lazy tree: loading row did not clear after load');
 
+// Server groups (v0.20): group summaries (count + total) up front; a group's rows
+// load async on expand.
+const sgTab = tab('Server groups');
+if (!sgTab) fail('Server groups example tab not found');
+click(sgTab);
+await waitFor('.sg-note', 'Server groups example did not mount');
+await waitFor('.bo-grid .group', 'Server groups did not render group headers');
+const sgGroups = document.querySelectorAll('.bo-grid .group').length;
+if (sgGroups < 4) fail(`server groups: expected 4 group headers (got ${sgGroups})`);
+// Server aggregate shows in a group header (preformatted "$x.xM").
+if (!/\$\d/.test(document.querySelector('.bo-grid .group')?.textContent || ''))
+  fail('server groups: server aggregate did not show in the group header');
+const sgRowsBefore = document.querySelectorAll('.bo-grid .row:not(.treeloading)').length;
+document.querySelector('.bo-grid .group .toggle').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(20);
+if (!document.querySelector('.bo-grid .row.treeloading')) fail('server groups: loading row did not appear on expand');
+let sgRowsAfter = sgRowsBefore;
+for (let i = 0; i < 60; i++) {
+  sgRowsAfter = document.querySelectorAll('.bo-grid .row:not(.treeloading)').length;
+  if (sgRowsAfter > sgRowsBefore && !document.querySelector('.bo-grid .row.treeloading')) break;
+  await wait(25);
+}
+if (!(sgRowsAfter > sgRowsBefore)) fail(`server groups: rows did not load on expand (${sgRowsBefore} → ${sgRowsAfter})`);
+
 // Row reorder: drag the first row's handle and drop it onto a later row.
 const tasksTab = tab('Tasks');
 if (!tasksTab) fail('Tasks example tab not found');
@@ -1039,7 +1063,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale + computed-col, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut/${dashStacked} stacked/${dashLegend} legend (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut/${dashStacked} stacked/${dashLegend} legend (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

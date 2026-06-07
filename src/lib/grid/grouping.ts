@@ -11,6 +11,20 @@ export interface GroupNode {
   rows: GridRow[];
   count: number;
   collapsed: boolean;
+  /** Server-provided aggregate display strings, keyed by column key (lazy groups).
+      When present, the group header shows these instead of computing from `rows`. */
+  aggText?: Record<string, string>;
+}
+
+/** A server-side group summary (lazy grouping): the header data without the leaf
+    rows, which load on expand via `loadGroup`. */
+export interface LazyGroup {
+  key: string;
+  /** Header label (defaults to `key`). */
+  label?: string;
+  count?: number;
+  /** Preformatted aggregate strings keyed by column key, shown in the header. */
+  agg?: Record<string, string>;
 }
 
 export type VisualRow =
@@ -79,4 +93,42 @@ export function activeGroupsAt(flat: VisualRow[], idx: number): GroupNode[] {
     if (item.group.depth === 0) break;
   }
   return [...found.values()].sort((a, b) => a.depth - b.depth);
+}
+
+/** How lazy grouping reads expand/loading state and the rows loaded per group. */
+export interface LazyGroupAccess {
+  isExpanded: (key: string) => boolean;
+  /** Loaded leaf rows for a group, or undefined when not yet loaded. */
+  rowsOf: (key: string) => readonly GridRow[] | undefined;
+  isLoading: (key: string) => boolean;
+}
+
+/**
+ * Flatten server-side group summaries into visual rows: a group header per group,
+ * then — when expanded — its loaded leaf rows, or a single `treeloading`
+ * placeholder while they load. Aggregates come from the summary (not computed).
+ * Pure; unit-tested.
+ */
+export function buildLazyGroupRows(groups: readonly LazyGroup[], access: LazyGroupAccess): VisualRow[] {
+  const out: VisualRow[] = [];
+  for (const g of groups) {
+    const expanded = access.isExpanded(g.key);
+    out.push({
+      kind: 'group',
+      group: {
+        path: g.key,
+        depth: 0,
+        value: g.label ?? g.key,
+        rows: [],
+        count: g.count ?? 0,
+        collapsed: !expanded,
+        aggText: g.agg,
+      },
+    });
+    if (!expanded) continue;
+    const loaded = access.rowsOf(g.key);
+    if (loaded) for (const row of loaded) out.push({ kind: 'data', row });
+    else if (access.isLoading(g.key)) out.push({ kind: 'treeloading', depth: 1 });
+  }
+  return out;
 }

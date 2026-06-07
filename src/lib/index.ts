@@ -9,6 +9,9 @@
 export { default as Grid } from './grid/Grid.svelte';
 export { default as Sparkline } from './sparkline/Sparkline.svelte';
 
+// Server-side (lazy) grouping summary type (for the `lazyGroups` prop)
+export type { LazyGroup } from './grid/grouping';
+
 // Column + grid configuration types
 export type {
   ColumnDef,

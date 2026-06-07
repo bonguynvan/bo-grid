@@ -157,13 +157,21 @@ Completes the conditional-formatting trio (data bars + icon sets + colour scales
   `<title>` **hover tooltips** on bar/stacked/donut — all in the companion (core
   untouched; charts ~3 KB). New stacked card in the **Dashboard** demo.
 
+## 0.20 · Server-side (lazy) grouping — done
+
+- [x] **`lazyGroups` + `loadGroup`**: server group summaries (count + aggregates)
+  render as collapsed headers; each group's rows load on expand (loading row +
+  cache), reusing the lazy-tree machinery. `buildLazyGroupRows` pure + tested.
+  New **Server groups** demo.
+
 ## Candidate themes for later versions
 
-Scaling to more domains (analytics, dashboards, general business):
+The roadmap's planned features are all shipped. Remaining ideas are polish or
+demand-driven:
 
-- **Server-side group loading** — lazy group expansion against a `RowSource`
-  (grouping is client-only today; lazy trees landed in 0.17).
-- **Polish** — a screen-reader + axe-core pass for a specific deployment; more demos.
+- **Polish** — a live screen-reader + axe-core pass for a specific deployment;
+  more demos; multi-level lazy groups.
+- Driven by real-world usage once published — open an issue with what's missing.
 
 Note: the eager grid core is ~97% of its 28 KB budget; the next sizable *core*
 feature should recalibrate it (still ~15× smaller than AG Grid). The charts
