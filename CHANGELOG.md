@@ -15,6 +15,14 @@ Theme: **smart import** — auto-detect pasted/loaded data. See [ROADMAP.md](./R
   JSON (falls through to delimited if it isn't valid JSON), a tab in the first line
   → TSV, otherwise CSV. The **CSV import** demo gains an **Auto-detect** option.
 
+### Changed (demo)
+
+- The example gallery now renders **all grids on a single scrolling page** instead
+  of one-at-a-time tabs. Each example lazy-mounts its grid as it scrolls into view
+  (`IntersectionObserver`, so a 17-grid page doesn't boot 17 realtime timers at
+  once), with a sticky side rail (scroll-spy) to jump between them. Library code
+  is unchanged.
+
 ## [0.24.0] — Unreleased
 
 Theme: **print / export view** — print or capture all rows (the live grid

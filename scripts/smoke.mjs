@@ -33,6 +33,34 @@ if (!globalThis.ResizeObserver) {
     disconnect() {}
   };
 }
+// IntersectionObserver: the demo now stacks every example on one page and
+// lazy-mounts each grid when it scrolls into view. jsdom has no IO (and no
+// layout to drive it), so stub one that records observers but never auto-fires;
+// the test mounts a section deterministically with show(id), which invokes the
+// matching observer's callback. (The page's scroll-spy IOs are recorded too but
+// never targeted by show(), so they stay inert.)
+const ioRegistry = [];
+globalThis.IntersectionObserver = window.IntersectionObserver = class {
+  constructor(cb) {
+    this.cb = cb;
+    this.els = new Set();
+    ioRegistry.push(this);
+  }
+  observe(el) { this.els.add(el); }
+  unobserve(el) { this.els.delete(el); }
+  takeRecords() { return []; }
+  disconnect() {
+    this.els.clear();
+    const i = ioRegistry.indexOf(this);
+    if (i >= 0) ioRegistry.splice(i, 1);
+  }
+};
+globalThis.__fireIO = (target) => {
+  if (!target) return;
+  for (const io of [...ioRegistry]) {
+    if (io.els.has(target)) io.cb([{ isIntersecting: true, target, intersectionRatio: 1 }], io);
+  }
+};
 window.requestAnimationFrame = globalThis.requestAnimationFrame;
 window.cancelAnimationFrame = globalThis.cancelAnimationFrame;
 window.devicePixelRatio = 2;
@@ -369,25 +397,31 @@ if (!pivotHeaders.includes('Total') || !pivotHeaders.includes('sector')) {
   fail(`pivot did not produce expected columns (got ${pivotHeaders.join(',')})`);
 }
 
-// Examples gallery: switch tabs and assert each alternative example actually
-// mounts a populated grid (the default "Trading desk" was exercised above).
-const tab = (label) =>
-  [...document.querySelectorAll('[role="tab"]')].find((b) => b.textContent.trim() === label);
-
-// The non-default examples are lazy chunks, so poll until the expected element
-// appears (chunk fetch + mount + reactive flush all settle asynchronously).
+// Examples gallery: every example now renders stacked on one page, each grid
+// lazy-mounting when scrolled into view. The assertions below use page-global
+// `.bo-grid` selectors, so solo(id) detaches the previously-exercised section —
+// keeping exactly one example grid in the DOM at a time (the invariant the old
+// tab UI gave us) — then fires that section's IntersectionObserver to mount it.
+// (The eager "Trading desk", exercised above, is the first to be detached.)
 const waitFor = async (selector, label) => {
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 80; i++) {
     if (document.querySelectorAll(selector).length > 0) return;
     await wait(25);
   }
   fail(`${label} (selector "${selector}" never appeared)`);
 };
+let lastSection = document.getElementById('ex-trading');
+const solo = async (id, marker, label) => {
+  if (lastSection) lastSection.remove();
+  const sec = document.getElementById(`ex-${id}`);
+  if (!sec) fail(`example section #ex-${id} not found`);
+  lastSection = sec;
+  globalThis.__fireIO(sec.querySelector(`[data-ex="${id}"]`));
+  if (marker) await waitFor(marker, label || `${id} example did not mount`);
+  return sec;
+};
 
-const portfolioTab = tab('Portfolio');
-if (!portfolioTab) fail('Portfolio example tab not found');
-click(portfolioTab);
-await waitFor('.bo-grid .row', 'Portfolio example rendered no rows');
+await solo('portfolio', '.bo-grid .row', 'Portfolio example rendered no rows');
 await waitFor('.bo-grid .group', 'Portfolio example did not group by sector');
 const portfolioRows = document.querySelectorAll('.bo-grid .row').length;
 const portfolioGroups = document.querySelectorAll('.bo-grid .group').length;
@@ -620,11 +654,7 @@ document
   .dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 await wait(20);
 
-const sheetTab = tab('Spreadsheet');
-if (!sheetTab) fail('Spreadsheet example tab not found');
-click(sheetTab);
-await wait(25);
-await waitFor('.bo-grid .row', 'Spreadsheet example rendered no rows');
+await solo('sheet', '.bo-grid .row', 'Spreadsheet example rendered no rows');
 const sheetRows = document.querySelectorAll('.bo-grid .row').length;
 if (sheetRows === 0) fail('Spreadsheet example rendered no rows');
 // Quick filter (built-in search box): an impossible query empties the grid;
@@ -817,11 +847,7 @@ if (!/Page 2 of/.test(document.querySelector('.bo-grid .pager')?.textContent || 
 }
 
 // Order book: per-row colour classes (ask/bid) via rowClass + custom depth cell.
-const obTab = tab('Order book');
-if (!obTab) fail('Order book example tab not found');
-click(obTab);
-await wait(50);
-await waitFor('.bo-grid .row.ask', 'Order book did not apply ask rowClass');
+await solo('orderbook', '.bo-grid .row.ask', 'Order book did not apply ask rowClass');
 const obAsk = document.querySelectorAll('.bo-grid .row.ask').length;
 const obBid = document.querySelectorAll('.bo-grid .row.bid').length;
 const obDepth = document.querySelectorAll('.bo-grid .row .depth .fill').length;
@@ -829,11 +855,7 @@ if (obBid === 0) fail('Order book did not apply bid rowClass');
 if (obDepth === 0) fail('Order book custom depth-bar cell did not render');
 
 // Correlation: an N×N heatmap matrix with a pinned label column.
-const corrTab = tab('Correlation');
-if (!corrTab) fail('Correlation example tab not found');
-click(corrTab);
-await wait(50);
-await waitFor('.bo-grid .row', 'Correlation example rendered no rows');
+await solo('correlation', '.bo-grid .row', 'Correlation example rendered no rows');
 const heatCells = [...document.querySelectorAll('.bo-grid .row .c')].filter((c) =>
   /background:\s*(rgb|#|hsl|oklch)/i.test(c.getAttribute('style') || ''),
 ).length;
@@ -844,11 +866,7 @@ if (heatCells === 0) fail('Correlation matrix rendered no heatmap-coloured cells
 if (corrPinned === 0) fail('Correlation matrix label column did not pin');
 
 // Leaderboard: custom rank/progress cells + podium row highlighting.
-const lbTab = tab('Leaderboard');
-if (!lbTab) fail('Leaderboard example tab not found');
-click(lbTab);
-await wait(50);
-await waitFor('.bo-grid .row', 'Leaderboard example rendered no rows');
+await solo('leaderboard', '.bo-grid .row', 'Leaderboard example rendered no rows');
 const lbBars = document.querySelectorAll('.bo-grid .row .bar .fill').length;
 const lbPodium = document.querySelectorAll('.bo-grid .row.podium-row').length;
 const lbPinned = document.querySelectorAll('.bo-grid .pinned-top .pinrow').length;
@@ -857,11 +875,7 @@ if (lbPodium === 0) fail('Leaderboard podium rowClass did not apply');
 if (lbPinned === 0) fail('Leaderboard pinned "You" row did not render');
 
 // Team: rich built-in cell types (avatar, badge, progress, rating, tags, boolean).
-const teamTab = tab('Team');
-if (!teamTab) fail('Team example tab not found');
-click(teamTab);
-await wait(50);
-await waitFor('.bo-grid .row', 'Team example rendered no rows');
+await solo('team', '.bo-grid .row', 'Team example rendered no rows');
 for (const [sel, label] of [
   ['.bo-grid .bo-avatar', 'avatar'],
   ['.bo-grid .bo-badge', 'badge'],
@@ -883,11 +897,7 @@ if (!/\$\d/.test(teamText)) fail('Team: currency column did not render');
 
 // Dashboard: the bo-grid/charts companion — KPI cards (standalone charts) plus
 // in-cell charts (a LineChart in each grid row's custom Trend cell).
-const dashTab = tab('Dashboard');
-if (!dashTab) fail('Dashboard example tab not found');
-click(dashTab);
-await wait(50);
-await waitFor('.boc-line', 'Dashboard charts did not render (lazy chunk)');
+await solo('dashboard', '.boc-line', 'Dashboard charts did not render (lazy chunk)');
 const dashLines = document.querySelectorAll('.boc-line').length;
 const dashBars = document.querySelectorAll('.boc-bar rect').length;
 const dashArcs = document.querySelectorAll('.boc-donut path').length;
@@ -906,9 +916,7 @@ if (dashLines < 2) fail(`Dashboard: in-cell line charts did not render (${dashLi
 // pinned label column. (Column windowing needs real layout + ResizeObserver,
 // which jsdom lacks, so it renders all columns here — windowing is unit-tested
 // in colvirt.test.ts. This asserts the wide layout mounts and pins correctly.)
-const wideTab = tab('Wide');
-if (!wideTab) fail('Wide example tab not found');
-click(wideTab);
+await solo('wide');
 // Poll until the Wide grid's own columns render (the lazy chunk loads after the
 // previous example tears down — avoid matching a transitional grid).
 let wideHeaders = 0;
@@ -924,10 +932,7 @@ const widePinned = [...document.querySelectorAll('.bo-grid .head .h')].filter((h
 if (widePinned === 0) fail('wide grid: pinned Account column not sticky in horizontal-scroll mode');
 
 // Themes (v0.18): the same grid re-themed by passing a preset object to `theme`.
-const themesTab = tab('Themes');
-if (!themesTab) fail('Themes example tab not found');
-click(themesTab);
-await waitFor('.theme-picker', 'Themes example did not mount');
+await solo('themes', '.theme-picker', 'Themes example did not mount');
 const themeGridStyle = () => document.querySelector('.bo-grid.grid')?.getAttribute('style') || '';
 // Default preset is midnight (#0f172a) — poll until the Themes grid is live.
 let themesOk = false;
@@ -948,10 +953,7 @@ if (!/--bo-grid-bg:\s*#0a0f0a/i.test(themeGridStyle()))
   fail('Themes: switching to the terminal preset did not re-theme the grid');
 
 // CSV import (v0.22): parseCSV renders the sample; editing + Load updates the grid.
-const csvTab = tab('CSV import');
-if (!csvTab) fail('CSV import example tab not found');
-click(csvTab);
-await waitFor('.csv-text', 'CSV example did not mount');
+await solo('csv', '.csv-text', 'CSV example did not mount');
 let csvRows = 0;
 for (let i = 0; i < 40; i++) {
   csvRows = document.querySelectorAll('.bo-grid .row').length;
@@ -986,10 +988,7 @@ const csvAuto = document.querySelectorAll('.bo-grid .row').length;
 if (csvAuto !== 3) fail(`CSV: auto-detect (parseRows) did not load the JSON (got ${csvAuto})`);
 
 // Print view (v0.24): toHTMLTable renders ALL rows, unlike the virtualized grid.
-const printTab = tab('Print');
-if (!printTab) fail('Print example tab not found');
-click(printTab);
-await waitFor('.print-preview-btn', 'Print example did not mount');
+await solo('print', '.print-preview-btn', 'Print example did not mount');
 const printGridRows = document.querySelectorAll('.bo-grid .row').length; // virtualized subset
 document.querySelector('.print-preview-btn').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 await wait(30);
@@ -998,11 +997,7 @@ if (printPreviewRows !== 50) fail(`print: printable table should render all 50 r
 if (!(printGridRows < 50)) fail(`print: grid should virtualize (rendered ${printGridRows}/50)`);
 
 // Tree data: roots render collapsed; expanding a folder reveals children.
-const treeTab = tab('Tree');
-if (!treeTab) fail('Tree example tab not found');
-click(treeTab);
-await wait(50);
-await waitFor('.bo-grid .row', 'Tree example rendered no rows');
+await solo('tree', '.bo-grid .row', 'Tree example rendered no rows');
 const treeRootsCount = document.querySelectorAll('.bo-grid .row').length;
 const treeToggle = document.querySelector('.bo-grid .tree-toggle');
 if (!treeToggle) fail('tree expand toggle did not render');
@@ -1025,12 +1020,7 @@ if (document.querySelectorAll('.bo-grid .row').length !== treeRootsCount) {
 
 // Lazy tree (v0.17): children load async on expand — a loading row appears, then
 // children replace it. (hasChildren shows the chevron without loading.)
-const lazyTab = tab('Lazy tree');
-if (!lazyTab) fail('Lazy tree example tab not found');
-click(lazyTab);
-// Wait for the LazyTree component itself (unique marker) — the previous Tree
-// example also has .tree-toggle, so don't race on that selector.
-await waitFor('.lazy-note', 'Lazy tree example did not mount');
+await solo('lazytree', '.lazy-note', 'Lazy tree example did not mount');
 await waitFor('.bo-grid .tree-toggle', 'Lazy tree did not render expandable roots');
 const lazyRootsCount = document.querySelectorAll('.bo-grid .row').length;
 document.querySelector('.bo-grid .tree-toggle').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -1048,10 +1038,7 @@ if (document.querySelector('.bo-grid .row.treeloading')) fail('lazy tree: loadin
 
 // Server groups (v0.20): group summaries (count + total) up front; a group's rows
 // load async on expand.
-const sgTab = tab('Server groups');
-if (!sgTab) fail('Server groups example tab not found');
-click(sgTab);
-await waitFor('.sg-note', 'Server groups example did not mount');
+await solo('servergroups', '.sg-note', 'Server groups example did not mount');
 await waitFor('.bo-grid .group', 'Server groups did not render group headers');
 const sgGroups = document.querySelectorAll('.bo-grid .group').length;
 if (sgGroups < 4) fail(`server groups: expected 4 group headers (got ${sgGroups})`);
@@ -1071,11 +1058,7 @@ for (let i = 0; i < 60; i++) {
 if (!(sgRowsAfter > sgRowsBefore)) fail(`server groups: rows did not load on expand (${sgRowsBefore} → ${sgRowsAfter})`);
 
 // Row reorder: drag the first row's handle and drop it onto a later row.
-const tasksTab = tab('Tasks');
-if (!tasksTab) fail('Tasks example tab not found');
-click(tasksTab);
-await wait(50);
-await waitFor('.bo-grid .row .drag-handle', 'Tasks drag handle did not render');
+await solo('tasks', '.bo-grid .row .drag-handle', 'Tasks drag handle did not render');
 const taskFirstBefore = document.querySelector('.bo-grid .row .c').textContent.trim();
 const taskRows = document.querySelectorAll('.bo-grid .row');
 taskRows[0].querySelector('.drag-handle').dispatchEvent(new window.Event('dragstart', { bubbles: true }));
@@ -1088,10 +1071,7 @@ if (taskFirstAfter === taskFirstBefore) fail(`row reorder did not change the ord
 
 // Big data: a 1,000,000-row windowed source. Assert real (non-skeleton) rows
 // load after the simulated latency and the scrollbar reflects the full total.
-const bigTab = tab('1M rows');
-if (!bigTab) fail('1M rows example tab not found');
-click(bigTab);
-await wait(50); // let the previous example tear down before we read the new grid
+await solo('bigdata'); // detaches the previous example, then mounts the 1M-row grid
 // Poll until the windowed source has resolved its total (spacer height grows to
 // cover all 1,000,000 rows) — total lands a tick after the first window.
 const bigHeightOf = () => parseInt(document.querySelector('.bo-grid .spacer')?.style.height || '0', 10);

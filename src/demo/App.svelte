@@ -1,14 +1,33 @@
 <script lang="ts">
   import { EXAMPLES } from './examples/registry';
+  import ExampleSection from './ExampleSection.svelte';
   import { ui, toggleTheme } from './theme.svelte';
 
+  // Every example renders stacked on one page; the rail highlights whichever
+  // section is currently in view (scroll-spy) and lets you jump to any of them.
   let activeId = $state(EXAMPLES[0].id);
-  const active = $derived(EXAMPLES.find((e) => e.id === activeId) ?? EXAMPLES[0]);
-  const Eager = $derived(active.component);
 
   // Drive the whole page (chrome + every grid) from one theme toggle.
   $effect(() => {
     document.documentElement.classList.toggle('light', ui.theme === 'light');
+  });
+
+  // Scroll-spy: mark the example nearest the top of the viewport as active so the
+  // side rail tracks the reader. Inert where IntersectionObserver is unavailable.
+  $effect(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
+    const sections = [...document.querySelectorAll<HTMLElement>('section.lp-ex')];
+    if (sections.length === 0) return;
+    const spy = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) activeId = e.target.id.replace(/^ex-/, '');
+        }
+      },
+      { rootMargin: '-25% 0px -65% 0px' },
+    );
+    sections.forEach((s) => spy.observe(s));
+    return () => spy.disconnect();
   });
 
   const REPO = 'https://github.com/bonguynvan/bo-grid';
@@ -101,35 +120,27 @@
 <section class="lp-examples" id="examples">
   <div class="lp-sec-head">
     <h2>Live examples</h2>
-    <p class="lp-sec-sub">{active.blurb}</p>
+    <p class="lp-sec-sub">All {EXAMPLES.length} on one page — scroll through, or jump from the rail.</p>
   </div>
 
-  <div class="tabs" role="tablist" aria-label="Examples">
-    {#each EXAMPLES as ex (ex.id)}
-      <button
-        role="tab"
-        aria-selected={ex.id === activeId}
-        class:on={ex.id === activeId}
-        onclick={() => (activeId = ex.id)}
-      >
-        {ex.title}
-      </button>
-    {/each}
-  </div>
+  <div class="lp-gallery">
+    <nav class="lp-toc" aria-label="Jump to example">
+      <ul>
+        {#each EXAMPLES as ex (ex.id)}
+          <li>
+            <a href={`#ex-${ex.id}`} class:on={ex.id === activeId} aria-current={ex.id === activeId}>
+              {ex.title}
+            </a>
+          </li>
+        {/each}
+      </ul>
+    </nav>
 
-  <div class="lp-demo">
-    {#key activeId}
-      {#if Eager}
-        <Eager />
-      {:else if active.load}
-        {#await active.load()}
-          <p class="lp-loading">Loading example…</p>
-        {:then mod}
-          {@const Lazy = mod.default}
-          <Lazy />
-        {/await}
-      {/if}
-    {/key}
+    <div class="lp-ex-list">
+      {#each EXAMPLES as ex, i (ex.id)}
+        <ExampleSection {ex} eager={i === 0} />
+      {/each}
+    </div>
   </div>
 </section>
 
@@ -420,37 +431,56 @@
     font-size: 13px;
     color: var(--text-dim);
   }
-  .tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 3px;
-    padding: 3px;
-    margin-bottom: 16px;
-    border: 0.5px solid var(--border);
-    border-radius: 12px;
-    background: var(--header-bg);
+  /* Gallery: a sticky jump rail beside a single vertical stack of examples. */
+  .lp-gallery {
+    display: grid;
+    grid-template-columns: 176px minmax(0, 1fr);
+    gap: 32px;
+    align-items: start;
   }
-  .tabs button {
-    padding: 7px 14px;
+  .lp-toc {
+    position: sticky;
+    top: 72px;
+    align-self: start;
+  }
+  .lp-toc ul {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-height: calc(100vh - 96px);
+    overflow: auto;
+  }
+  .lp-toc a {
+    display: block;
+    padding: 6px 10px;
     font-family: var(--mono);
     font-size: 12px;
     color: var(--text-dim);
-    background: transparent;
-    border: 0;
-    border-radius: 9px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: color 120ms, background 120ms;
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    border-radius: 0 8px 8px 0;
+    transition: color 120ms, background 120ms, border-color 120ms;
   }
-  .tabs button:hover {
+  .lp-toc a:hover {
     color: var(--text);
+    background: color-mix(in srgb, var(--text) 6%, transparent);
   }
-  .tabs button.on {
-    color: #0a0a0a;
-    background: var(--up);
+  .lp-toc a.on {
+    color: var(--text);
+    border-left-color: var(--up);
+    background: color-mix(in srgb, var(--up) 12%, transparent);
+  }
+  .lp-ex-list {
+    display: flex;
+    flex-direction: column;
+    gap: 44px;
+    min-width: 0;
   }
   /* Visible keyboard focus (WCAG 2.4.7) for the landing-page controls. */
-  .tabs button:focus-visible,
+  .lp-toc a:focus-visible,
   .lp-theme:focus-visible,
   .lp-copy:focus-visible,
   .lp-cta:focus-visible,
@@ -458,19 +488,13 @@
     outline: 2px solid var(--up);
     outline-offset: 2px;
   }
-  .lp-demo {
-    border: 0.5px solid var(--border);
-    border-radius: 14px;
-    background: var(--bg);
-    padding: 16px;
-    box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.8);
-    overflow: auto;
-  }
-  .lp-loading {
-    margin: 40px 4px;
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--text-dim);
+  @media (max-width: 720px) {
+    .lp-gallery {
+      grid-template-columns: 1fr;
+    }
+    .lp-toc {
+      display: none;
+    }
   }
 
   /* ---- footer ---- */

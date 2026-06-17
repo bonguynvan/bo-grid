@@ -13,8 +13,8 @@ grids that paywall these features.
 The demo is a gallery of grid types — a realtime **Trading desk**, a grouped
 **Portfolio** with subtotals and pivot, an editable **Spreadsheet**, a live
 **Order book**, a **Correlation** heatmap, a **Dashboard** with in-cell charts, a
-**Wide** 60-column grid, a server-backed **Lazy tree**, and more — switch between
-them with the tabs.
+**Wide** 60-column grid, a server-backed **Lazy tree**, and more — all on one
+page, each grid lazy-mounting as you scroll (jump between them from the side rail).
 
 > **Status: actively developed.** Working: config-driven columns, virtual scroll,
 > sort (single / multi / controlled), filtering (global, per-column row, header
