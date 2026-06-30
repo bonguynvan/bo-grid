@@ -7,10 +7,15 @@
   can't carry arrays/functions. `shadow: 'none'` renders to light DOM so page
   CSS variables (--bo-grid-*) and the grid's styles apply normally.
 
-  Limitation: the `cell` / `detail` *snippets* (custom cell rendering) can't be
-  passed from plain JS — use built-in column types, `format`, or computed `value`
-  instead. Everything else (sorting, filtering, grouping, selection, editing,
-  conditional formatting, virtualization, trees, themes…) works.
+  `config` is safe to set after the element attaches (the React `ref` +
+  `useEffect` pattern): the grid defaults to empty `rows`/`columns` and renders a
+  blank grid until `config` arrives, then reacts.
+
+  For rich cells from plain JS, give a column a `render(ctx)` function returning
+  an `HTMLElement` or HTML string — the framework-agnostic alternative to the
+  Svelte `cell` snippet. Everything else (sorting, filtering, grouping,
+  selection, editing, conditional formatting, virtualization, trees, themes…)
+  works.
 -->
 <svelte:options
   customElement={{ tag: 'bo-grid', shadow: 'none', props: { config: { type: 'Object' } } }}

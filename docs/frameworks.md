@@ -108,8 +108,33 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 </script>
 ```
 
+## Custom cells from JS
+
+Svelte `cell`/`detail` snippets can't be passed from plain JS, so give a column a
+**`render(ctx)`** function — return a DOM `Node` (appended as-is) or an HTML
+string (set as innerHTML; sanitize untrusted data yourself). `ctx` is
+`{ value, row, column }`:
+
+```js
+const columns = [
+  { type: 'text', key: 'name', header: 'Name' },
+  { type: 'custom', key: 'status', header: 'Status', render: ({ value }) => {
+      const dot = document.createElement('span');
+      dot.textContent = value === 'up' ? '● Live' : '○ Idle';
+      dot.style.color = value === 'up' ? 'var(--bo-grid-up)' : 'var(--bo-grid-text-dim)';
+      return dot;
+    } },
+];
+```
+
+Sort, filter, tooltip, copy and export still use the value / `format` — `render`
+only controls how the cell looks.
+
 ## Notes
 
+- `config` is safe to set **after** the element attaches (the React `ref` +
+  `useEffect` pattern above): the grid defaults to empty `rows`/`columns` and
+  renders a blank grid until `config` arrives, then reacts — no crash.
 - The element renders to **light DOM** (`shadow: 'none'`), so your `--bo-grid-*`
   CSS variables and page styles apply normally, and the bundle injects its own
   styles on import — no separate stylesheet to include.

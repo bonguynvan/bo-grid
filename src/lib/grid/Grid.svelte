@@ -36,8 +36,8 @@
   import RowMenu from './RowMenu.svelte';
 
   let {
-    rows,
-    columns,
+    rows = [],
+    columns = [],
     height,
     filter = '',
     groupBy = [],

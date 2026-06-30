@@ -63,6 +63,13 @@ interface ColBase {
       to display, tooltip, copy and (formatted) export. `row` is absent for
       aggregate cells. */
   format?: (value: unknown, row?: GridRow) => string;
+  /** JS cell renderer — the framework-agnostic alternative to the `cell`
+      snippet, for React/Vue/vanilla (and the `<bo-grid>` web component). Return
+      an `HTMLElement`/`Node` (safe — appended as-is) or an HTML **string**
+      (inserted as innerHTML — YOU must sanitize any untrusted data; prefer
+      returning a Node for that). Overrides the cell's display only — sort,
+      filter, tooltip, copy and export still use the value/`format`. */
+  render?: (ctx: CellRenderContext) => string | Node | null | undefined;
   /** Set false to disable drag-to-resize on this column (default on). */
   resizable?: boolean;
   /** Parent header label. Consecutive columns sharing a `group` render under a
@@ -128,6 +135,13 @@ export interface DataBarGeom {
   width: number;
   /** The value is negative (use the bar's `negative` colour). */
   negative: boolean;
+}
+
+/** Context passed to a column's JS `render` hook. */
+export interface CellRenderContext {
+  value: unknown;
+  row: GridRow;
+  column: ColumnDef;
 }
 
 export interface CellEditEvent {

@@ -160,6 +160,22 @@ buttons, links. The snippet receives `{ row, column, value }`:
 <Grid {rows} {columns} {cell} height={640} />
 ```
 
+**From plain JS (React/Vue/vanilla, `<bo-grid>`):** snippets are Svelte-only, so
+give a column a **`render(ctx)`** function instead. Return an `HTMLElement`/`Node`
+(appended as-is — safe) or an HTML **string** (inserted as innerHTML — sanitize
+any untrusted data yourself; prefer a Node for that). `ctx` is `{ value, row,
+column }`. Display only — sort, filter, tooltip, copy and export still use the
+value / `format`:
+
+```js
+{ type: 'custom', key: 'trend', header: 'Trend', render: ({ row }) => {
+    const el = document.createElement('span');
+    el.textContent = row.changePct > 0 ? '▲' : '▼';
+    el.style.color = row.changePct > 0 ? 'var(--bo-grid-up)' : 'var(--bo-grid-down)';
+    return el;
+  } }
+```
+
 ### Tooltips & truncation
 
 Long cell values truncate with an **ellipsis** by default. Set `tooltip` on a

@@ -10,6 +10,12 @@ See [ROADMAP.md](./ROADMAP.md).
 
 ### Added
 
+- **JS cell renderer** — a column's **`render(ctx)`** function is the
+  framework-agnostic alternative to the `cell` snippet, for React/Vue/vanilla and
+  the `<bo-grid>` web component. Return a DOM `Node` (appended as-is — safe) or an
+  HTML string (innerHTML — sanitize untrusted data yourself). `ctx` is
+  `{ value, row, column }`; display-only (sort/filter/tooltip/copy/export still
+  use the value/`format`). New `CellRenderContext` type exported.
 - **Styled floating tooltips**: a column's `tooltip` now renders a themed, instant
   hover bubble (replacing the native `title` — no OS delay, matches the grid
   theme, escapes cell clipping). `tooltip: true` shows the formatted value;
@@ -24,6 +30,10 @@ See [ROADMAP.md](./ROADMAP.md).
 
 ### Fixed
 
+- **`<bo-grid>` no longer crashes when `config` is set after the element attaches**
+  (the React `ref` + `useEffect` pattern). `<Grid>` now defaults `rows`/`columns`
+  to `[]`, so a config-less mount renders a blank grid and reacts when config
+  arrives instead of throwing on `undefined.length`.
 - Plain text/number cells now truncate with a real **ellipsis** when they overflow
   (a bare text node in the flex cell didn't honour `text-overflow`; values now
   render through a truncating span). Affects all simple value columns.

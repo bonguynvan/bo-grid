@@ -20,6 +20,7 @@ export type {
   SortDir,
   SortState,
   CellEditEvent,
+  CellRenderContext,
   BadgeTone,
   DataBarConfig,
   IconRule,

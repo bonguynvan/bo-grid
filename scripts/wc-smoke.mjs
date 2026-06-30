@@ -54,15 +54,34 @@ try {
 if (!window.customElements.get('bo-grid')) fail('<bo-grid> was not registered with customElements');
 
 const el = document.createElement('bo-grid');
+// Attach FIRST, set `config` LATER — the React `ref` + `useEffect` pattern.
+// The grid must render a blank grid (defaulted empty rows/columns) instead of
+// crashing on `undefined.length` when connectedCallback runs pre-config.
 document.body.appendChild(el);
-// The whole prop API goes through the `config` property (arrays/functions can't
-// be attributes) — exactly how a framework consumer drives it.
+await new Promise((r) => setTimeout(r, 120)); // let the initial (config-less) render flush
+if (!el.querySelector('.bo-grid')) fail('config-less <bo-grid> did not render a (blank) grid after attach');
+if (el.querySelectorAll('.bo-grid .row').length !== 0) fail('config-less <bo-grid> unexpectedly rendered rows');
+
+// Now drive it through the `config` property (arrays/functions can't be
+// attributes) — exactly how a framework consumer does after mount. Includes a
+// JS `render` column (the framework-agnostic custom-cell hook).
 el.config = {
   height: 300,
   columns: [
     { type: 'text', key: 'sym', header: 'Symbol' },
     { type: 'price', key: 'px', header: 'Price' },
     { type: 'number', key: 'qty', header: 'Qty', decimals: 0 },
+    {
+      type: 'custom',
+      key: 'dot',
+      header: 'Live',
+      render: ({ row }) => {
+        const b = document.createElement('span');
+        b.className = 'js-dot';
+        b.textContent = row.qty > 50 ? '● hot' : '○ cold';
+        return b;
+      },
+    },
   ],
   rows: Array.from({ length: 20 }, (_, id) => ({ id, flashSeq: 0, flashDir: 'up', sym: `S${id}`, px: id + 0.5, qty: id * 10 })),
 };
@@ -71,8 +90,11 @@ await new Promise((r) => setTimeout(r, 200));
 
 const rows = el.querySelectorAll('.bo-grid .row').length;
 const headers = el.querySelectorAll('.bo-grid .head .h').length;
-if (headers < 3) fail(`custom element rendered no headers (got ${headers})`);
+if (headers < 4) fail(`custom element rendered no headers (got ${headers})`);
 if (rows === 0) fail('custom element rendered no rows');
+// JS render hook: the custom column mounted real DOM nodes from plain JS.
+const dots = el.querySelectorAll('.bo-grid .js-dot').length;
+if (dots === 0) fail('JS render() hook produced no cell nodes in the web component');
 
 // Reactive update through the property: replace the rows, expect the DOM to follow.
 el.config = { ...el.config, rows: el.config.rows.slice(0, 5) };
@@ -80,5 +102,5 @@ await new Promise((r) => setTimeout(r, 120));
 const rows2 = el.querySelectorAll('.bo-grid .row').length;
 if (!(rows2 > 0 && rows2 <= rows)) fail(`custom element did not react to a config update (${rows} → ${rows2})`);
 
-console.log(`✓ wc-smoke: <bo-grid> registered + rendered ${rows} rows / ${headers} headers; reactive config update ok (${rows}→${rows2})`);
+console.log(`✓ wc-smoke: <bo-grid> registered; config-after-attach safe (blank→${rows} rows / ${headers} headers); ${dots} JS render() nodes; reactive config update ok (${rows}→${rows2})`);
 process.exit(0);

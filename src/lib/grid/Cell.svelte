@@ -151,6 +151,19 @@
   // renders the actual tooltip from this cell's `data-bo-tip` attribute.
   const tip = $derived(tooltipText(col, value, row));
 
+  // JS cell renderer (framework-agnostic alt to the `cell` snippet). Returns an
+  // HTML string ({@html}) or a DOM Node (mounted via the action below).
+  const rendered = $derived(col.render ? col.render({ value, row, column: col }) : undefined);
+  // Mount/replace a Node return value; updates when the derived node changes.
+  function renderNode(host: HTMLElement, node: Node | string | null | undefined) {
+    const set = (n: Node | string | null | undefined) => {
+      if (n instanceof Node) host.replaceChildren(n);
+      else host.textContent = n == null ? '' : String(n);
+    };
+    set(node);
+    return { update: set };
+  }
+
   // ---- Conditional formatting (v0.10): data bar + icon set ----
   // Geometry/threshold logic lives in column.ts (pure, unit-tested); here we map
   // it to CSS (left/width %, tone → colour).
@@ -268,6 +281,12 @@
       onclick={(e) => e.stopPropagation()}
       ondblclick={(e) => e.stopPropagation()}
     />
+  {:else if col.render}
+    {#if typeof rendered === 'string'}
+      <span class="bo-render">{@html rendered}</span>
+    {:else}
+      <span class="bo-render" use:renderNode={rendered}></span>
+    {/if}
   {:else if col.type === 'custom'}
     {#if cellSnippet}{@render cellSnippet({ row, column: col, value })}{:else}{value ?? ''}{/if}
   {:else if col.type === 'sparkline'}
@@ -362,6 +381,16 @@
     min-width: 0;
     overflow: hidden;
     white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  /* Host for a JS `render` return (string HTML or a DOM node). Lays out inline
+     and truncates like a normal cell; consumer markup controls the rest. */
+  .bo-render {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    overflow: hidden;
     text-overflow: ellipsis;
   }
   /* Opt-in multi-line wrap (col.wrap) — pair with a taller rowHeight. */
