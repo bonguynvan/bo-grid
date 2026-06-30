@@ -100,22 +100,26 @@ keep frames smooth.
 
 ### React, Vue, Angular & vanilla
 
-bo-grid also ships a framework-agnostic **custom element**. Import it and drive
-the whole API through a `config` property:
+bo-grid also ships a framework-agnostic **custom element**, fully typed. Import it
+and drive the whole API through a `config` property:
 
-```js
-import 'bo-grid/element'; // registers <bo-grid>, injects styles
+```ts
+import { createBoGrid } from 'bo-grid/element'; // registers <bo-grid>, injects styles
+import type { BoGridConfig } from 'bo-grid/element';
 
-const el = document.querySelector('bo-grid');
-el.config = { columns, rows, theme: 'dark', height: 520 };
+const config: BoGridConfig = { columns, rows, theme: 'dark', height: 520 };
+document.body.append(createBoGrid(config)); // or set `el.config` on an existing element
 ```
 
-It works in React, Vue, Angular and plain HTML — see
+`bo-grid/element` exports `BoGridConfig` (every `<Grid>` prop), a typed
+`BoGridElement`, and the `createBoGrid` helper. `config` is safe to set **after**
+the element attaches (the React `ref` + `useEffect` pattern won't crash). It works
+in React, Vue, Angular and plain HTML — see
 **[docs/frameworks.md](./docs/frameworks.md)** for per-framework recipes and
-**[examples/](./examples/)** for runnable, build-free starters. (Custom
-`cell`/`detail` snippets are Svelte-only; use built-in types, `format`, or computed
-`value` from other frameworks. Native Svelte users should import `Grid` directly —
-smaller, and snippets work.)
+**[examples/](./examples/)** for runnable, build-free starters. (Svelte `cell`/
+`detail` snippets are Svelte-only; from other frameworks use a column's
+`render(ctx)` hook, built-in types, or `format`. Native Svelte users should import
+`Grid` directly — smaller, and snippets work.)
 
 ## Column types
 

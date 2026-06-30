@@ -14,12 +14,12 @@
     <h1>bo-grid in plain HTML/JS — the <code>&lt;bo-grid&gt;</code> custom element</h1>
     <p>No build step. See <a href="../docs/frameworks.md">docs/frameworks.md</a>.</p>
 
-    <bo-grid id="grid" style="display:block"></bo-grid>
+    <div id="host"></div>
 
     <script type="module">
       // Published package via a CDN (works once `bo-grid` is on npm). For local
       // dev against this repo, swap to: import '../dist/bo-grid.element.js';
-      import 'https://esm.sh/bo-grid/element';
+      import { createBoGrid } from 'https://esm.sh/bo-grid/element';
 
       const rows = Array.from({ length: 200 }, (_, id) => ({
         id,
@@ -30,21 +30,31 @@
         changePct: Math.round((Math.sin(id * 1.3) * 8) * 100) / 100,
       }));
 
-      const grid = document.getElementById('grid');
-      // The whole API goes through the `config` property (set in JS).
-      grid.config = {
+      // createBoGrid() builds the element with `config` preset, then you attach
+      // it (safe create-before-attach — no crash if attached before config).
+      const grid = createBoGrid({
         theme: 'dark',
         height: 480,
         rowSelection: true,
         filterMenu: true,
         columns: [
           { type: 'text', key: 'symbol', header: 'Symbol', width: 120 },
-          { type: 'price', key: 'price', header: 'Price', width: 100 },
+          { type: 'price', key: 'price', header: 'Price', width: 100,
+            headerTooltip: 'Last traded price (USD).', headerInfo: true },
           { type: 'percent', key: 'changePct', header: 'Chg %', width: 100, colorScale: { mid: 0 } },
+          // JS render() hook: rich cells from plain JS (no Svelte snippet).
+          { type: 'custom', key: 'dir', header: 'Trend', width: 90, render: ({ row }) => {
+              const el = document.createElement('span');
+              el.textContent = row.changePct >= 0 ? '▲ up' : '▼ down';
+              el.style.color = row.changePct >= 0 ? 'var(--bo-grid-up)' : 'var(--bo-grid-down)';
+              return el;
+            } },
         ],
         rows,
         onCellEdit: (e) => console.log('edit', e),
-      };
+      });
+      grid.style.display = 'block';
+      document.getElementById('host').append(grid);
 
       // Updating `config` re-renders reactively:
       // grid.config = { ...grid.config, theme: 'midnight' };

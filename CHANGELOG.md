@@ -22,6 +22,11 @@ See [ROADMAP.md](./ROADMAP.md).
   `tooltip: (value, row) => string` returns custom text for any column type
   (including `custom`). Return `''` to suppress per cell. Opt-in per column, so a
   grid with no tooltips wires no hover handlers.
+- **Typed `bo-grid/element`** — the web-component entry now ships TypeScript
+  declarations: `BoGridConfig` (every `<Grid>` prop), a `BoGridElement` interface
+  (typed `config`), and a **`createBoGrid(config)`** helper for the safe
+  create-before-attach pattern. New `GridProps` type exported from the main entry.
+  React/Vue/vanilla recipes in `docs/frameworks.md` updated to the typed surface.
 - **Header tooltips** — `headerTooltip` (column) shows the styled bubble on the
   column header (describe the metric, units, caveats); `headerInfo: true` adds a
   small ⓘ cue. Reuses the same floating-tooltip rail.

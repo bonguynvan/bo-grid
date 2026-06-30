@@ -6,8 +6,14 @@
 // exported; they can change freely between versions.
 
 // Components
+import type { ComponentProps } from 'svelte';
+import type GridComponent from './grid/Grid.svelte';
 export { default as Grid } from './grid/Grid.svelte';
 export { default as Sparkline } from './sparkline/Sparkline.svelte';
+
+/** Every `<Grid>` prop, as one object type. Use it to type a config object —
+    especially the `<bo-grid>` web component's `config` (see `bo-grid/element`). */
+export type GridProps = ComponentProps<typeof GridComponent>;
 
 // Server-side (lazy) grouping summary type (for the `lazyGroups` prop)
 export type { LazyGroup } from './grid/grouping';

@@ -45,13 +45,15 @@ process.on('unhandledRejection', (e) => fail(`unhandled rejection: ${e?.stack ||
 const entry = resolve('dist/bo-grid.element.js');
 if (!existsSync(entry)) fail('dist/bo-grid.element.js not found — run the WC build first');
 
+let createBoGrid;
 try {
-  await import(pathToFileURL(entry).href); // registers <bo-grid>
+  ({ createBoGrid } = await import(pathToFileURL(entry).href)); // registers <bo-grid>
 } catch (e) {
   fail(`importing the element bundle threw: ${e?.stack || e}`);
 }
 
 if (!window.customElements.get('bo-grid')) fail('<bo-grid> was not registered with customElements');
+if (typeof createBoGrid !== 'function') fail('the element bundle does not export createBoGrid()');
 
 const el = document.createElement('bo-grid');
 // Attach FIRST, set `config` LATER — the React `ref` + `useEffect` pattern.
@@ -102,5 +104,13 @@ await new Promise((r) => setTimeout(r, 120));
 const rows2 = el.querySelectorAll('.bo-grid .row').length;
 if (!(rows2 > 0 && rows2 <= rows)) fail(`custom element did not react to a config update (${rows} → ${rows2})`);
 
-console.log(`✓ wc-smoke: <bo-grid> registered; config-after-attach safe (blank→${rows} rows / ${headers} headers); ${dots} JS render() nodes; reactive config update ok (${rows}→${rows2})`);
+// createBoGrid() convenience: element with config preset, then attached.
+const made = createBoGrid({ height: 200, columns: el.config.columns, rows: el.config.rows.slice(0, 3) });
+if (made.tagName.toLowerCase() !== 'bo-grid') fail('createBoGrid did not return a <bo-grid> element');
+document.body.appendChild(made);
+await new Promise((r) => setTimeout(r, 120));
+const made3 = made.querySelectorAll('.bo-grid .row').length;
+if (made3 !== 3) fail(`createBoGrid preset config did not render (got ${made3} rows, want 3)`);
+
+console.log(`✓ wc-smoke: <bo-grid> registered + createBoGrid(); config-after-attach safe (blank→${rows} rows / ${headers} headers); ${dots} JS render() nodes; reactive update ok (${rows}→${rows2}); createBoGrid preset ${made3} rows`);
 process.exit(0);

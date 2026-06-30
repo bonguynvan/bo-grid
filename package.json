@@ -39,6 +39,7 @@
       "default": "./dist/charts/index.js"
     },
     "./element": {
+      "types": "./dist/bo-grid.element.d.ts",
       "default": "./dist/bo-grid.element.js"
     },
     "./package.json": "./package.json"
@@ -61,7 +62,7 @@
     "demo:build": "vite build",
     "pages:build": "vite build --base=/bo-grid/ --outDir demo-dist",
     "preview": "vite preview",
-    "package": "svelte-package -i src/lib -o dist && node scripts/clean-dist.mjs && pnpm run build:wc",
+    "package": "svelte-package -i src/lib -o dist && node scripts/clean-dist.mjs && pnpm run build:wc && node scripts/emit-element-dts.mjs",
     "build:wc": "vite build --config vite.wc.config.ts",
     "prepublishOnly": "pnpm run package",
     "check": "svelte-check --tsconfig ./tsconfig.json",

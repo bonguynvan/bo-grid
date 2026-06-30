@@ -39,31 +39,49 @@ el.config = {
 > selection, inline editing, conditional formatting, computed columns, rich types,
 > column virtualization, trees, lazy/server data, theming — works.
 
+The `bo-grid/element` entry ships TypeScript types: a `BoGridConfig` (every
+`<Grid>` prop), a `BoGridElement` interface (`HTMLElement` with a typed `config`),
+and a `createBoGrid(config)` helper for the safe create-before-attach pattern.
+
 ## React
+
+A small typed wrapper. `config` is safe to set after mount — the grid renders
+blank until it arrives, then reacts:
 
 ```tsx
 import { useEffect, useRef } from 'react';
 import 'bo-grid/element';
+import type { BoGridConfig, BoGridElement } from 'bo-grid/element';
 
-export function Grid({ columns, rows, ...rest }) {
-  const ref = useRef<HTMLElement & { config?: unknown }>(null);
+export function BoGrid(config: BoGridConfig) {
+  const ref = useRef<BoGridElement>(null);
   useEffect(() => {
-    if (ref.current) ref.current.config = { columns, rows, ...rest };
-  }, [columns, rows, rest]);
+    if (ref.current) ref.current.config = config;
+  }, [config]);
   return <bo-grid ref={ref} style={{ display: 'block' }} />;
 }
 ```
 
-In TypeScript, declare the tag once:
+Declare the tag once so JSX accepts `<bo-grid>`:
 
 ```tsx
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      'bo-grid': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+      'bo-grid': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        ref?: React.Ref<import('bo-grid/element').BoGridElement>;
+      };
     }
   }
 }
+```
+
+Or skip JSX entirely with the helper:
+
+```ts
+import { createBoGrid } from 'bo-grid/element';
+const el = createBoGrid({ columns, rows, height: 520 });
+container.append(el);
 ```
 
 ## Vue 3
@@ -73,9 +91,10 @@ Tell Vue `bo-grid` is a custom element (in `vite.config`:
 then bind `config` as a property:
 
 ```vue
-<script setup>
+<script setup lang="ts">
 import 'bo-grid/element';
-const config = { columns, rows, theme: 'dark', filterMenu: true };
+import type { BoGridConfig } from 'bo-grid/element';
+const config: BoGridConfig = { columns, rows, theme: 'dark', filterMenu: true };
 </script>
 
 <template>
@@ -101,10 +120,8 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 
 ```html
 <script type="module">
-  import 'bo-grid/element';
-  const el = document.createElement('bo-grid');
-  el.config = { columns, rows, height: 520 };
-  document.body.append(el);
+  import { createBoGrid } from 'bo-grid/element';
+  document.body.append(createBoGrid({ columns, rows, height: 520 }));
 </script>
 ```
 
