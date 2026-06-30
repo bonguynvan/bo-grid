@@ -30,6 +30,13 @@ interface ColBase {
   cellClass?: string | ((value: unknown, row: GridRow) => string | undefined);
   /** Extra class(es) for this column's header. Target via `:global`. */
   headerClass?: string;
+  /** Show a styled tooltip on the column header (the same themed bubble as cell
+      `tooltip`) — describe what the column means, units, caveats. Hovering
+      anywhere on the header reveals it. */
+  headerTooltip?: string;
+  /** Render a small ⓘ info icon in the header as a visible cue that a
+      `headerTooltip` is available. Ignored without `headerTooltip`. */
+  headerInfo?: boolean;
   /** Amber flash on value change (drives off the row's flashSeq/flashDir). */
   flash?: boolean;
   /** Set false to disable header-click sorting on this column. */

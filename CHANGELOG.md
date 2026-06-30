@@ -22,6 +22,9 @@ See [ROADMAP.md](./ROADMAP.md).
   `tooltip: (value, row) => string` returns custom text for any column type
   (including `custom`). Return `''` to suppress per cell. Opt-in per column, so a
   grid with no tooltips wires no hover handlers.
+- **Header tooltips** — `headerTooltip` (column) shows the styled bubble on the
+  column header (describe the metric, units, caveats); `headerInfo: true` adds a
+  small ⓘ cue. Reuses the same floating-tooltip rail.
 - **`wrap`** (column): let long content wrap onto multiple lines instead of
   truncating with an ellipsis (pair with a taller `rowHeight`). Default off.
 - **`cellSelection`** (`<Grid>`, default `true`): set `false` for a read-only /
@@ -41,8 +44,8 @@ See [ROADMAP.md](./ROADMAP.md).
 ### Changed (demo)
 
 - The **Team** example showcases the new tooltips (full name on the avatar, a
-  computed status tooltip), an ellipsis-truncated Notes column, and a live
-  cell-selection on/off toggle.
+  computed status tooltip, header tooltips with ⓘ cues on Rate/Workload), an
+  ellipsis-truncated Notes column, and a live cell-selection on/off toggle.
 
 ## [0.25.0] — Unreleased
 

@@ -248,7 +248,7 @@
   // Styled floating tooltip (opt-in via column `tooltip`): a single fixed-
   // position bubble driven by the hovered cell's `data-bo-tip`. Fixed escapes
   // the cell/viewport overflow:hidden without a portal.
-  const hasTooltips = $derived(columns.some((c) => !!c.tooltip));
+  const hasTooltips = $derived(columns.some((c) => !!c.tooltip || !!c.headerTooltip));
   let tip = $state<{ x: number; y: number; text: string; below: boolean } | null>(null);
   // Sort order, primary first. Empty = unsorted. Multiple keys via Shift-click.
   // Controlled by the `sort` prop when provided, else internal state.
@@ -1153,9 +1153,10 @@
     if (tip) tip = null; // a stale fixed-position bubble would float away on scroll
   }
 
-  // Tooltip hover delegation (only wired when a column opts in).
+  // Tooltip hover delegation (only wired when a column opts in). Matches both
+  // data cells (`.c[data-bo-tip]`) and column headers (`.h[data-bo-tip]`).
   function onTipOver(e: PointerEvent) {
-    const cell = (e.target as HTMLElement | null)?.closest?.('.c[data-bo-tip]') as HTMLElement | null;
+    const cell = (e.target as HTMLElement | null)?.closest?.('[data-bo-tip]') as HTMLElement | null;
     const text = cell?.dataset.boTip;
     if (!cell || !text) {
       if (tip) tip = null;
@@ -1168,7 +1169,7 @@
   }
   function onTipOut(e: PointerEvent) {
     const to = e.relatedTarget as HTMLElement | null;
-    if (to?.closest?.('.c[data-bo-tip]')) return; // moved within the same tipped cell
+    if (to?.closest?.('[data-bo-tip]')) return; // moved within the same tipped cell/header
     if (tip) tip = null;
   }
 
@@ -1656,7 +1657,17 @@
       {/each}
     </div>
   {/if}
-  <div class="head" role="row" aria-rowindex={1} bind:this={headEl} style={hScroll ? 'overflow:hidden;' : ''}>
+  <!-- Tooltip hover delegation; header semantics live on the columnheader buttons. -->
+  <!-- svelte-ignore a11y_interactive_supports_focus -->
+  <div
+    class="head"
+    role="row"
+    aria-rowindex={1}
+    bind:this={headEl}
+    style={hScroll ? 'overflow:hidden;' : ''}
+    onpointerover={hasTooltips ? onTipOver : undefined}
+    onpointerout={hasTooltips ? onTipOut : undefined}
+  >
     {#if expandable}
       <span class="expandcell selhead" role="columnheader" aria-colindex={1} style={expandCellStyle(true)}></span>
     {/if}
@@ -1685,6 +1696,7 @@
         type="button"
         role="columnheader"
         aria-colindex={ci + 1 + leadCols}
+        data-bo-tip={col.headerTooltip}
         draggable="true"
         aria-sort={isSortable(col) && sortInfo(col.key)
           ? sortInfo(col.key)?.dir === 'asc'
@@ -1715,6 +1727,9 @@
         }}
       >
         <span class="label">{col.header}</span>
+        {#if col.headerTooltip && col.headerInfo}
+          <span class="hinfo" aria-hidden="true">i</span>
+        {/if}
         {#if isSortable(col) && sortInfo(col.key)}
           {@const si = sortInfo(col.key)}
           <span class="ind">
@@ -2282,6 +2297,28 @@
     gap: 1px;
     font-size: 9px;
     color: var(--bo-text);
+  }
+  /* Header info cue: a small circled "i" signalling a headerTooltip. */
+  .h .hinfo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 12px;
+    height: 12px;
+    margin-left: 1px;
+    font-size: 8px;
+    font-style: italic;
+    font-family: var(--bo-mono);
+    line-height: 1;
+    color: var(--bo-text-dim);
+    border: 0.5px solid var(--bo-text-dim);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .h:hover .hinfo {
+    color: var(--bo-text);
+    border-color: var(--bo-text);
   }
   .h .ind .ord {
     font-size: 8px;

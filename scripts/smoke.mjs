@@ -896,6 +896,11 @@ if (!/^mailto:/.test(teamLink?.getAttribute('href') || '')) fail('Team: link hre
 const teamText = document.querySelector('.bo-grid')?.textContent || '';
 if (!/ ago|just now|^in |\bin \d/.test(teamText)) fail('Team: relative-time column did not render');
 if (!/\$\d/.test(teamText)) fail('Team: currency column did not render');
+// Header tooltips: columns opt into a styled header tooltip (data-bo-tip on the
+// columnheader) + an ⓘ info-icon cue.
+const teamHeadTip = document.querySelector('.bo-grid .head .h[data-bo-tip]');
+if (!teamHeadTip) fail('Team: header tooltip did not set data-bo-tip on a columnheader');
+if (!document.querySelector('.bo-grid .head .h .hinfo')) fail('Team: headerInfo icon not rendered');
 
 // Dashboard: the bo-grid/charts companion — KPI cards (standalone charts) plus
 // in-cell charts (a LineChart in each grid row's custom Trend cell).

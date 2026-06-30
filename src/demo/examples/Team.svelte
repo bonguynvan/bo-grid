@@ -81,8 +81,26 @@
       tooltip: (value, row) => `${value} · ${row.role} · ${row.remote ? 'Remote' : 'Office'}`,
     },
     { type: 'relative', key: 'lastActive', header: 'Last active', width: 124 },
-    { type: 'currency', key: 'rate', header: 'Rate/hr', width: 96, currency: 'USD', decimals: 0 },
-    { type: 'progress', key: 'workload', header: 'Workload', width: 140, min: 0, max: 100 },
+    {
+      type: 'currency',
+      key: 'rate',
+      header: 'Rate/hr',
+      width: 96,
+      currency: 'USD',
+      decimals: 0,
+      headerTooltip: 'Billable rate in USD, excluding taxes and platform fees.',
+      headerInfo: true,
+    },
+    {
+      type: 'progress',
+      key: 'workload',
+      header: 'Workload',
+      width: 140,
+      min: 0,
+      max: 100,
+      headerTooltip: 'Share of capacity allocated this sprint (0–100%).',
+      headerInfo: true,
+    },
     { type: 'rating', key: 'rating', header: 'Rating', width: 110, max: 5 },
     // Long free text in a narrow column: truncates with an ellipsis, full text
     // on hover via the styled floating tooltip.

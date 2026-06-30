@@ -196,6 +196,16 @@ const columns: ColumnDef[] = [
 Set `wrap: true` to let a column wrap onto multiple lines instead of truncating
 (pair with a taller `rowHeight`).
 
+**Header tooltips:** `headerTooltip` shows the same styled bubble on the column
+header (describe the metric, units, caveats); add `headerInfo: true` for a small
+ⓘ cue:
+
+```ts
+{ type: 'progress', key: 'workload', header: 'Workload', min: 0, max: 100,
+  headerTooltip: 'Share of capacity allocated this sprint (0–100%).',
+  headerInfo: true }
+```
+
 ## Conditional formatting
 
 Paint analytics cues straight into numeric cells — no custom snippet needed.
