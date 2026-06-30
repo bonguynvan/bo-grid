@@ -847,6 +847,20 @@ await wait(30);
 if (!/Page 2 of/.test(document.querySelector('.bo-grid .pager')?.textContent || '')) {
   fail('pager Next did not advance the page');
 }
+// Page-size dropdown (pageSizeOptions): switch 12 → 48 and expect fewer pages.
+const sizeSel = document.querySelector('.bo-grid .pager .pgsize select');
+if (!sizeSel) fail('pageSizeOptions dropdown did not render in the pager');
+const pagesOf = () => Number((document.querySelector('.bo-grid .pager')?.textContent.match(/of (\d+)/) || [])[1]);
+const pagesBefore = pagesOf();
+sizeSel.value = '48';
+sizeSel.dispatchEvent(new window.Event('change', { bubbles: true }));
+await wait(30);
+if (!(pagesOf() < pagesBefore)) fail(`page-size change did not reduce page count (${pagesBefore} → ${pagesOf()})`);
+
+// Controlled active-row highlight (selectedRowId): clicking a row marks it active.
+document.querySelectorAll('.bo-grid .row')[1]?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(30);
+if (!document.querySelector('.bo-grid .row.rowactive')) fail('selectedRowId highlight not applied after row click');
 
 // Order book: per-row colour classes (ask/bid) via rowClass + custom depth cell.
 await solo('orderbook', '.bo-grid .row.ask', 'Order book did not apply ask rowClass');

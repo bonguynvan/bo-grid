@@ -14,13 +14,15 @@ const DIR = 'lib-dist';
 // grid: 16 → 20 (sort/selection/footer/…), 20 → 24 (master-detail, pagination,
 // tree), 24 → 28 (filtering, column management, spreadsheet power), then 28 → 32
 // for the analytics + scale wave (conditional formatting, computed columns, more
-// rich types, column virtualization). At ~28 KB gzip it is still ~15× smaller than
+// rich types, column virtualization). 32 → 35 for the 1.0 adopter-experience wave
+// (styled tooltips, JS render hook, header tooltips, auto-fit height, controlled
+// active row, pager page-size). At ~32 KB gzip it is still ~15× smaller than
 // typical heavyweight grids (~500 KB) — the "tiny" claim holds. Heavy optional UI
 // (filter menu, tool panel) stays lazy and is excluded below — the always-loaded core.
 // The grid core (`js`) is the always-loaded promise. The optional charts
 // companion (`bo-grid/charts`) is a separate entry a consumer only pays for if
 // they import it — budgeted on its own so it also stays tiny.
-const BUDGET_KB = { js: 32, css: 6, charts: 8 }; // gzipped, Svelte excluded
+const BUDGET_KB = { js: 35, css: 6, charts: 8 }; // gzipped, Svelte excluded
 
 const gzipKb = (path) => gzipSync(readFileSync(path)).length / 1024;
 const jsFiles = readdirSync(DIR).filter((f) => f.endsWith('.js'));

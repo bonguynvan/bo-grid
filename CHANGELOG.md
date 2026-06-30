@@ -3,13 +3,27 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
-## [0.26.0] — Unreleased
+## [1.0.0] — 2026-06-30
 
-Theme: **richer cells** — styled tooltips, truncation control, display-grid mode.
-See [ROADMAP.md](./ROADMAP.md).
+**1.0 — stable API.** A full, free Svelte 5 data grid (virtual scroll, sort /
+filter / group / pivot, trees, master-detail, server `RowSource`, spreadsheet
+editing, CSV/Excel, conditional formatting, charts companion) plus a typed,
+framework-agnostic `<bo-grid>` web component. This release rounds out the
+adopter experience: rich cells from plain JS, styled tooltips, auto-fit sizing,
+and controlled active-row / page-size. All changes are additive — no breaking
+API changes from 0.25.
 
 ### Added
 
+- **Auto-fit `height`** — `height` now accepts a CSS **string** (`'100%'`,
+  `'80vh'`, …): it sizes the whole element and the scroll viewport auto-fits the
+  space left after the header/pager/footer chrome (measured), instead of you
+  hand-subtracting it. A **number** keeps the prior pixel-viewport behaviour.
+- **`selectedRowId`** (`<Grid>`) — controlled active-row highlight (keyed by
+  `getRowId`) for list-detail / master-detail, independent of the checkbox
+  `rowSelection` and the cell range selection.
+- **`pageSizeOptions`** (`<Grid>`) — a rows-per-page dropdown in the pager (e.g.
+  `[25, 50, 100]`); picking one re-pages from page 0. `onPageSizeChange` reports it.
 - **JS cell renderer** — a column's **`render(ctx)`** function is the
   framework-agnostic alternative to the `cell` snippet, for React/Vue/vanilla and
   the `<bo-grid>` web component. Return a DOM `Node` (appended as-is — safe) or an
@@ -50,7 +64,12 @@ See [ROADMAP.md](./ROADMAP.md).
 
 - The **Team** example showcases the new tooltips (full name on the avatar, a
   computed status tooltip, header tooltips with ⓘ cues on Rate/Workload), an
-  ellipsis-truncated Notes column, and a live cell-selection on/off toggle.
+  ellipsis-truncated Notes column, and a live cell-selection on/off toggle. The
+  **Spreadsheet** example adds a `selectedRowId` active-row highlight and a pager
+  page-size dropdown; the **vanilla** starter uses `createBoGrid` + a `render`
+  cell.
+- Library bundle budget raised 32 → 35 KB gzip for the 1.0 feature wave (core is
+  ~32 KB; still ~15× smaller than typical heavyweight grids).
 
 ## [0.25.0] — Unreleased
 

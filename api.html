@@ -154,6 +154,7 @@
         <a href="./">Demo</a>
         <a href="#grid">Grid</a>
         <a href="#columns">Columns</a>
+        <a href="#element">Web&nbsp;component</a>
         <a href="#charts">Charts</a>
         <a href="#source">Source</a>
         <a href="#theming">Theming</a>
@@ -182,7 +183,7 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
         <tbody>
           <tr><td>rows<span class="req">*</span></td><td><span class="type">GridRow[]</span></td><td>Row data (in-memory mode). Pass <code>[]</code> when using <code>source</code>.</td></tr>
           <tr><td>columns<span class="req">*</span></td><td><span class="type">ColumnDef[]</span></td><td>Column configuration. See <a href="#columns">Columns</a>.</td></tr>
-          <tr><td>height<span class="req">*</span></td><td><span class="type">number</span></td><td>Viewport height in px.</td></tr>
+          <tr><td>height<span class="req">*</span></td><td><span class="type">number | string</span></td><td>A <strong>number</strong> is the scroll viewport's pixel height (element = that + chrome). A CSS <strong>string</strong> (<code>'100%'</code>, <code>'80vh'</code>) sizes the whole element and the viewport auto-fits the leftover space — give it a sized parent.</td></tr>
           <tr><td>filter</td><td><span class="type">string</span></td><td>Quick-filter; matches across column values. Default <code>''</code>.</td></tr>
           <tr><td>filterRow</td><td><span class="type">boolean</span></td><td>Per-column filter input row under the header (AND across columns). In-memory mode only.</td></tr>
           <tr><td>filterMenu</td><td><span class="type">boolean</span></td><td>Header filter menu (funnel per column) with type-aware controls (text/number/date) + set filter (<code>col.filter: 'set'</code>). Lazy-loaded on first open. In-memory mode only.</td></tr>
@@ -204,6 +205,8 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>loadGroup</td><td><span class="type">(key) =&gt; Promise&lt;GridRow[]&gt;</span></td><td>Load a lazy group's rows on expand (loading row, then cached). Required with <code>lazyGroups</code>.</td></tr>
           <tr><td>onRowReorder</td><td><span class="type">(from, to) =&gt; void</span></td><td>Drag-to-reorder rows via a first-column handle; reorder your own data. Flat unsorted lists.</td></tr>
           <tr><td>pageSize</td><td><span class="type">number</span></td><td>Rows per page (&gt; 0 shows a pager instead of one long scroll). In-memory mode. Default 0.</td></tr>
+          <tr><td>pageSizeOptions</td><td><span class="type">number[]</span></td><td>Rows-per-page dropdown in the pager (e.g. <code>[25, 50, 100]</code>); picking one re-pages from 0.</td></tr>
+          <tr><td>onPageSizeChange</td><td><span class="type">(size: number) =&gt; void</span></td><td>Called with the new page size when the pager's size dropdown changes.</td></tr>
           <tr><td>page / onPageChange</td><td><span class="type">number / (page) =&gt; void</span></td><td>Controlled current page (0-based) + change callback (URL-sync paging).</td></tr>
           <tr><td>ariaLabel</td><td><span class="type">string</span></td><td>Accessible name for the grid (<code>aria-label</code> on the role="grid" root).</td></tr>
           <tr><td>onColumnReorder</td><td><span class="type">(keys: string[]) =&gt; void</span></td><td>New column-key order after a header drag-reorder.</td></tr>
@@ -216,6 +219,8 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>rowSelection</td><td><span class="type">boolean</span></td><td>Show a leading checkbox column for whole-row selection (keyed by <code>getRowId</code>); <kbd>Space</kbd> toggles the focused row. Default <code>false</code>.</td></tr>
           <tr><td>getRowId</td><td><span class="type">(row) =&gt; string | number</span></td><td>Identity key for selection. Defaults to <code>row.id</code>; override for string/composite keys.</td></tr>
           <tr><td>onRowSelectionChange</td><td><span class="type">(ids: number[]) =&gt; void</span></td><td>Called with the selected row ids whenever the selection changes.</td></tr>
+          <tr><td>cellSelection</td><td><span class="type">boolean</span></td><td>Highlight cells/ranges on click-drag (fill + focus ring). Set <code>false</code> for a read-only/display grid — clicks pass through to <code>onRowClick</code>/<code>onCellClick</code>. Default <code>true</code>.</td></tr>
+          <tr><td>selectedRowId</td><td><span class="type">string | number | null</span></td><td>Controlled active-row highlight (keyed by <code>getRowId</code>) for list-detail. Independent of <code>rowSelection</code> and the range selection.</td></tr>
           <tr><td>hiddenColumns</td><td><span class="type">string[]</span></td><td>Column keys to hide (controlled). Drive your own column-picker UI. Default <code>[]</code>.</td></tr>
           <tr><td>rowClass</td><td><span class="type">(row: GridRow) =&gt; string</span></td><td>Extra CSS class(es) per data row. Target with <code>:global(.bo-grid .row.your-class)</code>.</td></tr>
           <tr><td>onRowClick</td><td><span class="type">(row, event) =&gt; void</span></td><td>Fired when a data row is activated by click or <kbd>Enter</kbd>.</td></tr>
@@ -272,7 +277,11 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>editable</td><td><span class="type">boolean</span></td><td>Allow inline editing (double-click / Enter, or type-to-edit). Numeric columns use a number input, <code>date</code> columns a date picker.</td></tr>
           <tr><td>validate</td><td><span class="type">(value, row) =&gt; boolean</span></td><td>Reject an edit (return false) to keep the old value.</td></tr>
           <tr><td>options</td><td><span class="type">string[]</span></td><td>Edit via a <code>&lt;select&gt;</code> of these choices (enum columns).</td></tr>
-          <tr><td>tooltip</td><td><span class="type">boolean</span></td><td>Set a native <code>title</code> tooltip (full value) on each cell.</td></tr>
+          <tr><td>tooltip</td><td><span class="type">boolean | (value, row) =&gt; string</span></td><td>Styled floating tooltip on each cell. <code>true</code> shows the formatted value; a function returns custom text (any type). Return <code>''</code> to suppress.</td></tr>
+          <tr><td>headerTooltip</td><td><span class="type">string</span></td><td>Styled tooltip on the column header (describe the metric/units). Hovering the header reveals it.</td></tr>
+          <tr><td>headerInfo</td><td><span class="type">boolean</span></td><td>Show a small ⓘ cue in the header signalling a <code>headerTooltip</code>.</td></tr>
+          <tr><td>wrap</td><td><span class="type">boolean</span></td><td>Let long content wrap to multiple lines instead of an ellipsis (pair with a taller <code>rowHeight</code>). Default <code>false</code>.</td></tr>
+          <tr><td>render</td><td><span class="type">(ctx) =&gt; Node | string</span></td><td>JS cell renderer (framework-agnostic alt to the <code>cell</code> snippet). Return a DOM <code>Node</code> (safe) or HTML string (sanitize yourself). <code>ctx</code> = <code>{ value, row, column }</code>; display-only.</td></tr>
           <tr><td>format</td><td><span class="type">(value, row?) =&gt; string</span></td><td>Custom display formatter (overrides the type formatter; applies to copy/export too).</td></tr>
           <tr><td>value</td><td><span class="type">(row) =&gt; unknown</span></td><td>Computed column: derive the cell's value from the whole row (KPIs, ratios). Flows through sort/filter/aggregation/export. Not editable; in-memory.</td></tr>
           <tr><td>dataBar</td><td><span class="type">{ min?; max?; color?; negative? }</span></td><td>Conditional formatting: in-cell bar behind the value, auto-ranged over the view (or explicit <code>min</code>/<code>max</code>); diverges around zero for signed columns.</td></tr>
@@ -332,6 +341,22 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
       <p>Set <code>value: (row) =&gt; …</code> to derive a column from the whole row (KPIs, ratios, deltas). The derived value flows through display, sort, filter, group/footer aggregation, conditional formatting, export and copy — like a real column. <code>key</code> still names the column but need not be a real field; computed columns aren't editable. In-memory mode; keep <code>value()</code> cheap and pure (it runs during sort/filter).</p>
       <pre><code>{ type: <span class="tok-str">'price'</span>, key: <span class="tok-str">'total'</span>, header: <span class="tok-str">'Total'</span>,
   value: (row) =&gt; row.qty * row.price, groupAgg: <span class="tok-str">'sum'</span> }</code></pre>
+
+      <!-- ============ WEB COMPONENT ============ -->
+      <h2 id="element">Web component <span class="tag">bo-grid/element</span></h2>
+      <p>A framework-agnostic, fully-typed custom element for React / Vue / Angular / vanilla. Import registers <code>&lt;bo-grid&gt;</code> and injects its styles; drive the whole <code>&lt;Grid&gt;</code> API through the <code>config</code> property. <code>config</code> is safe to set <strong>after</strong> the element attaches (the React <code>ref</code> + <code>useEffect</code> pattern won't crash). See <a href="https://github.com/bonguynvan/bo-grid/blob/main/docs/frameworks.md">docs/frameworks.md</a> for per-framework recipes.</p>
+      <table>
+        <thead><tr><th>Export</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>createBoGrid</td><td><span class="type">(config?) =&gt; BoGridElement</span></td><td>Create a <code>&lt;bo-grid&gt;</code> with <code>config</code> preset, then attach it (safe create-before-attach).</td></tr>
+          <tr><td>BoGridConfig</td><td><span class="type">type</span></td><td>The <code>config</code> object — every <code>&lt;Grid&gt;</code> prop (alias of <code>GridProps</code>).</td></tr>
+          <tr><td>BoGridElement</td><td><span class="type">interface</span></td><td><code>HTMLElement</code> with a typed <code>config</code> property.</td></tr>
+        </tbody>
+      </table>
+      <p>The main entry also exports a <code>GridProps</code> type (every <code>&lt;Grid&gt;</code> prop). For rich cells from plain JS, use a column's <code>render(ctx)</code> hook (see <a href="#columns">Columns</a>) — the alternative to the Svelte <code>cell</code> snippet.</p>
+      <pre><code>import { createBoGrid, type BoGridConfig } from 'bo-grid/element';
+const config: BoGridConfig = { columns, rows, height: '100%' };
+document.body.append(createBoGrid(config));</code></pre>
 
       <!-- ============ CHARTS ============ -->
       <h2 id="charts">Charts <span class="tag">companion</span></h2>
@@ -445,8 +470,10 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <h3 style="font-size:14px">Data source</h3>
           <span class="pill">createArraySource</span>
           <h3 style="font-size:14px">Types</h3>
-          <span class="pill">ColumnDef</span><span class="pill">GridRow</span><span class="pill">SortState</span>
-          <span class="pill">AggKind</span><span class="pill">Candle</span><span class="pill">RowSource</span>
+          <span class="pill">ColumnDef</span><span class="pill">GridProps</span><span class="pill">GridRow</span><span class="pill">SortState</span>
+          <span class="pill">CellRenderContext</span><span class="pill">AggKind</span><span class="pill">Candle</span><span class="pill">RowSource</span>
+          <h3 style="font-size:14px">Web component <span style="font-weight:400;color:var(--dim)">(bo-grid/element)</span></h3>
+          <span class="pill">createBoGrid</span><span class="pill">BoGridConfig</span><span class="pill">BoGridElement</span>
         </div>
       </div>
 

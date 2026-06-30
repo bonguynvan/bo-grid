@@ -1,7 +1,7 @@
 # bo-grid
 
 Tiny, fast **Svelte 5** data grid for fintech UIs — canvas sparklines, batched
-realtime cell updates, and virtual scrolling, with a core that gzips to ~31 KB
+realtime cell updates, and virtual scrolling, with a core that gzips to ~32 KB
 (Svelte external; unused exports tree-shake). A free alternative to the heavyweight
 grids that paywall these features.
 
@@ -37,7 +37,7 @@ page, each grid lazy-mounting as you scroll (jump between them from the side rai
 | Price | $$$ / dev / year | Free (MIT) |
 | Sparklines | paid tier | built in |
 | Realtime cell updates | DIY / complex | built-in primitive |
-| Bundle | hundreds of KB | **~31 KB gzip core** ([benchmarks](./BENCHMARKS.md)) |
+| Bundle | hundreds of KB | **~32 KB gzip core** ([benchmarks](./BENCHMARKS.md)) |
 | Svelte | wrapper | native Svelte 5 |
 
 bo-grid ships most of the features other grids put behind a **paid (Enterprise)**
@@ -311,13 +311,28 @@ a function for variable per-row heights (in-memory mode):
 Variable heights use a prefix-sum + binary-search virtualizer, so scrolling stays
 O(log n). Source mode is uniform-only (unloaded row heights aren't known).
 
+### Sizing the grid
+
+`height` as a **number** is the scroll viewport's pixel height (the element is
+that plus header/pager/footer chrome). Pass a **CSS string** to size the whole
+element instead and let the viewport auto-fit the space left over — ideal for
+filling a flex/grid cell:
+
+```svelte
+<Grid {rows} {columns} height={640} />        <!-- 640px viewport -->
+<Grid {rows} {columns} height="100%" />        <!-- fill a sized parent -->
+<Grid {rows} {columns} height="80vh" />
+```
+
 ## Pagination
 
 Prefer pages over one long scroll? Set `pageSize` (> 0) for a paged view with a
-first/prev/next/last pager; rows still virtualize within each page. In-memory mode.
+first/prev/next/last pager; rows still virtualize within each page. Add
+`pageSizeOptions` for a **rows-per-page dropdown** in the pager (observe changes
+via `onPageSizeChange`). In-memory mode.
 
 ```svelte
-<Grid {rows} {columns} height={640} pageSize={25} />
+<Grid {rows} {columns} height={640} pageSize={25} pageSizeOptions={[25, 50, 100]} />
 ```
 
 ## Sort & filter
@@ -386,6 +401,14 @@ through to `onRowClick` / `onCellClick`:
 
 ```svelte
 <Grid {rows} {columns} height={640} cellSelection={false} onRowClick={open} />
+```
+
+For a **list-detail / master-detail** layout, drive `selectedRowId` (keyed by
+`getRowId`) to highlight the active row — independent of the checkbox selection:
+
+```svelte
+<Grid {rows} {columns} height={640}
+  selectedRowId={active?.id} onRowClick={(r) => (active = r)} />
 ```
 
 When more than one cell is selected, a footer bar shows live **Sum / Avg / Count /

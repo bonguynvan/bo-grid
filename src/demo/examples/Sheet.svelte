@@ -60,6 +60,7 @@
   let selectedCount = $state(0);
   let lastCell = $state('');
   let pageMode = $state(false);
+  let activeRow = $state<string | null>(null); // controlled active-row highlight
 
   // Column show/hide: a controlled list of hidden keys + a little picker menu.
   let hidden = $state<string[]>([]);
@@ -155,12 +156,15 @@
     height={620}
     rowSelection
     getRowId={(r) => `emp-${r.id}`}
+    selectedRowId={activeRow}
+    onRowClick={(r) => (activeRow = `emp-${r.id}`)}
     onRowSelectionChange={(ids) => (selectedCount = ids.length)}
     onCellClick={({ column, value }) => (lastCell = `${column.header} = ${value}`)}
     onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}
     detail={detailPanel}
     detailHeight={84}
     pageSize={pageMode ? 12 : 0}
+    pageSizeOptions={[12, 24, 48]}
   />
 </div>
 

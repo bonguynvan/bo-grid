@@ -58,6 +58,7 @@
     virtualizeColumns = false,
     rowClass,
     getRowId = (r: GridRow) => r.id,
+    selectedRowId = null,
     onRowClick,
     sort,
     onSortChange,
@@ -82,6 +83,8 @@
     loadGroup,
     onRowReorder,
     pageSize = 0,
+    pageSizeOptions,
+    onPageSizeChange,
     page,
     onPageChange,
     onColumnReorder,
@@ -91,7 +94,12 @@
   }: {
     rows: GridRow[];
     columns: ColumnDef[];
-    height: number;
+    /** Viewport height. A **number** is the scroll viewport's pixel height (the
+        grid's total height is that plus header/toolbar/footer chrome). A **CSS
+        string** (e.g. `'100%'`, `'80vh'`, `'480px'`) sizes the whole grid element
+        and the viewport auto-fits the space left after the chrome — give the grid
+        a sized parent (or use `'100%'` inside a flex/grid cell). */
+    height: number | string;
     /** Row height in px (uniform), or a function for variable heights
         (in-memory mode only). Default 36. */
     rowHeight?: number | ((row: GridRow, index: number) => number);
@@ -134,6 +142,10 @@
     /** Identity key for row selection. Defaults to `row.id`; override for
         string/UUID/composite keys. */
     getRowId?: (row: GridRow) => string | number;
+    /** Controlled "active row" highlight (keyed by `getRowId`) — for
+        master-detail / list-detail where one row is selected. Independent of the
+        checkbox `rowSelection` and the cell range selection. `null` = none. */
+    selectedRowId?: string | number | null;
     /** Called when a data row is activated by click or Enter (open a detail
         view, navigate, …). Edit-input and checkbox clicks are excluded. */
     onRowClick?: (row: GridRow, event: MouseEvent | KeyboardEvent) => void;
@@ -216,6 +228,12 @@
     /** Rows per page. When > 0 (in-memory mode), shows a pager instead of one
         long scroll; rows still virtualize within a page. Default 0 (off). */
     pageSize?: number;
+    /** Page-size choices for a dropdown in the pager (e.g. `[25, 50, 100]`).
+        Picking one re-pages from page 0. Uncontrolled unless you also drive
+        `pageSize` and update it from `onPageSizeChange`. */
+    pageSizeOptions?: number[];
+    /** Called with the new page size when the pager's size dropdown changes. */
+    onPageSizeChange?: (size: number) => void;
     /** Controlled current page (0-based). Omit for uncontrolled paging. */
     page?: number;
     /** Called with the new page index when the pager is used. */
@@ -523,6 +541,12 @@
   const COL_OVERSCAN = 320; // px
   let scrollLeft = $state(0);
   let viewW = $state(0);
+  // Viewport height in px for row virtualization. A numeric `height` is that
+  // value directly; a CSS-string `height` (auto-fit) is the measured viewport
+  // height (clientHeight), with a sane fallback before the first measure.
+  const heightIsPx = $derived(typeof height === 'number');
+  let viewH = $state(0);
+  const viewPx = $derived(heightIsPx ? (height as number) : viewH || 400);
   type ColItem = { kind: 'cell'; ci: number; key: string } | { kind: 'spacer'; w: number; key: string };
   const colItems = $derived.by<ColItem[]>(() => {
     const n = cols.length;
@@ -913,15 +937,24 @@
   });
 
   // Pagination (in-memory only): slice the view into pages; rows still
-  // virtualize within a page. Off when pageSize <= 0.
-  const paged = $derived(pageSize > 0 && !source);
+  // virtualize within a page. Off when the page size is <= 0.
+  // Effective page size: a runtime pick from `pageSizeOptions` (uncontrolled),
+  // else the `pageSize` prop.
+  let internalPageSize = $state<number | null>(null);
+  const effPageSize = $derived(internalPageSize ?? pageSize);
+  function setPageSize(size: number): void {
+    internalPageSize = size;
+    onPageSizeChange?.(size);
+    setPage(0); // a new page size invalidates the current page index
+  }
+  const paged = $derived(effPageSize > 0 && !source);
   let internalPage = $state(0);
   const currentPage = $derived(page ?? internalPage); // controlled by `page` prop, else internal
   function setPage(p: number): void {
     if (page === undefined) internalPage = p; // uncontrolled: own the state
     onPageChange?.(p); // always notify
   }
-  const pageCount = $derived(paged ? Math.max(1, Math.ceil(view.length / pageSize)) : 1);
+  const pageCount = $derived(paged ? Math.max(1, Math.ceil(view.length / effPageSize)) : 1);
   // Keep the page in range when the view shrinks (filter/sort changes).
   $effect(() => {
     const max = pageCount - 1;
@@ -930,7 +963,7 @@
     });
   });
   const pageRows = $derived(
-    paged ? view.slice(currentPage * pageSize, currentPage * pageSize + pageSize) : view,
+    paged ? view.slice(currentPage * effPageSize, currentPage * effPageSize + effPageSize) : view,
   );
 
   const treeData = $derived(!!(getChildren || loadChildren) && !source);
@@ -940,7 +973,7 @@
   // Drag-to-reorder rows (flat, unsorted, in-memory only). The handle lives in
   // the first cell; the dragged/drop indices are tracked in component state.
   const reorderable = $derived(
-    !!onRowReorder && !source && !treeData && groupBy.length === 0 && pageSize <= 0,
+    !!onRowReorder && !source && !treeData && groupBy.length === 0 && effPageSize <= 0,
   );
   let dragRowVr = $state(-1);
   let dropRowVr = $state(-1);
@@ -1070,12 +1103,12 @@
   const rowWidthStyle = $derived(
     hScroll ? `width:${layout.totalWidth + leadPx}px;right:auto;` : '',
   );
-  const visibleCount = $derived(Math.ceil(height / baseH) + OVERSCAN * 2);
+  const visibleCount = $derived(Math.ceil(viewPx / baseH) + OVERSCAN * 2);
   const start = $derived(Math.max(0, hm.indexAt(scrollTop) - OVERSCAN));
   const renderEnd = $derived(
     source
       ? (controller && controller.total > 0 ? Math.min(start + visibleCount, controller.total) : start + visibleCount)
-      : Math.min(flat.length, hm.indexAt(scrollTop + height) + OVERSCAN + 1),
+      : Math.min(flat.length, hm.indexAt(scrollTop + viewPx) + OVERSCAN + 1),
   );
 
   type RenderItem =
@@ -1388,7 +1421,7 @@
     const top = hm.offsetOf(f.r);
     const h = hm.heightOf(f.r);
     if (top < viewportEl.scrollTop) viewportEl.scrollTop = top;
-    else if (top + h > viewportEl.scrollTop + height) viewportEl.scrollTop = top + h - height;
+    else if (top + h > viewportEl.scrollTop + viewPx) viewportEl.scrollTop = top + h - viewPx;
   }
 
   async function copySelection() {
@@ -1574,7 +1607,7 @@
     const f = sel.focus;
     if (f && (e.key === 'Home' || e.key === 'End' || e.key === 'PageUp' || e.key === 'PageDown')) {
       e.preventDefault();
-      const page = Math.max(1, Math.floor(height / baseH) - 1);
+      const page = Math.max(1, Math.floor(viewPx / baseH) - 1);
       if (e.key === 'Home') focusTo(mod ? 0 : f.r, 0, e.shiftKey);
       else if (e.key === 'End') focusTo(mod ? maxR : f.r, maxC, e.shiftKey);
       else if (e.key === 'PageDown') focusTo(f.r + page, f.c, e.shiftKey);
@@ -1628,7 +1661,7 @@
   aria-colcount={cols.length + leadCols}
   aria-multiselectable="true"
   aria-activedescendant={activeId}
-  style={themeStyle}
+  style="{themeStyle}{heightIsPx ? '' : `;height:${height};min-height:0`}"
   bind:this={gridEl}
   onkeydown={onKeydown}
 >
@@ -1815,9 +1848,10 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="viewport"
-    style="height:{height}px;{hScroll ? 'overflow-x:auto;' : ''}"
+    style="{heightIsPx ? `height:${height}px` : 'flex:1 1 auto;min-height:0'};{hScroll ? 'overflow-x:auto;' : ''}"
     bind:this={viewportEl}
     bind:clientWidth={viewW}
+    bind:clientHeight={viewH}
     onscroll={onScroll}
     onpointerover={hasTooltips ? onTipOver : undefined}
     onpointerout={hasTooltips ? onTipOut : undefined}
@@ -1892,7 +1926,7 @@
         {:else}
           <!-- Row activation is keyboard-accessible at the grid level: Enter on the focused cell fires onRowClick (focus is via aria-activedescendant). -->
           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:clickable={!!onRowClick} class:droptarget={reorderable && dropRowVr === item.vr && dragRowVr !== item.vr} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : undefined} aria-level={treeData ? (item.depth ?? 0) + 1 : undefined} aria-expanded={treeData && item.hasChildren ? isExpanded(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{expandable ? baseH : hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)} oncontextmenu={(e) => openRowMenu(item.row, e)} ondragover={reorderable ? (e) => { if (dragRowVr < 0) return; e.preventDefault(); dropRowVr = item.vr; } : undefined} ondrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(); } : undefined}>
+          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:rowactive={selectedRowId != null && getRowId(item.row) === selectedRowId} class:clickable={!!onRowClick} class:droptarget={reorderable && dropRowVr === item.vr && dragRowVr !== item.vr} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : undefined} aria-level={treeData ? (item.depth ?? 0) + 1 : undefined} aria-expanded={treeData && item.hasChildren ? isExpanded(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{expandable ? baseH : hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)} oncontextmenu={(e) => openRowMenu(item.row, e)} ondragover={reorderable ? (e) => { if (dragRowVr < 0) return; e.preventDefault(); dropRowVr = item.vr; } : undefined} ondrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(); } : undefined}>
             {#if expandable}
               <span class="expandcell" style={expandCellStyle(false)}>
                 <button
@@ -1998,7 +2032,15 @@
   <AggregationBar result={agg} kinds={aggregations} />
 
   {#if paged}
-    <Pager page={currentPage} {pageCount} total={view.length} onGoto={goToPage} />
+    <Pager
+      page={currentPage}
+      {pageCount}
+      total={view.length}
+      onGoto={goToPage}
+      pageSize={effPageSize}
+      {pageSizeOptions}
+      onPageSize={setPageSize}
+    />
   {/if}
 
   {#if menu}
@@ -2519,6 +2561,12 @@
   }
   .row.rowsel {
     background: var(--bo-sel-fill);
+  }
+  /* Controlled active-row highlight (selectedRowId) — a tint + an accent bar so
+     it reads distinctly from the checkbox selection and hover. */
+  .row.rowactive {
+    background: var(--bo-sel-fill);
+    box-shadow: inset 2px 0 0 var(--bo-sel-border);
   }
   .row.clickable {
     cursor: pointer;
