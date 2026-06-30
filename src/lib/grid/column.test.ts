@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   formatCell,
+  tooltipText,
   isNumeric,
   isEditable,
   isSortable,
@@ -19,6 +20,32 @@ import {
 
 const row = (over: Record<string, unknown> = {}): GridRow =>
   ({ id: 0, flashSeq: 0, flashDir: 'up', ...over }) as GridRow;
+
+describe('tooltipText', () => {
+  it('returns undefined when tooltip is off', () => {
+    expect(tooltipText({ type: 'text', key: 't', header: 'T' }, 'hi', row())).toBeUndefined();
+  });
+
+  it('boolean tooltip shows the formatted value', () => {
+    expect(tooltipText({ type: 'number', key: 'n', header: 'N', tooltip: true }, 3.14159, row())).toBe('3.14');
+    expect(tooltipText({ type: 'text', key: 't', header: 'T', tooltip: true }, 'Apple Inc.', row())).toBe('Apple Inc.');
+  });
+
+  it('boolean tooltip is skipped for sparkline and custom (no text form)', () => {
+    expect(tooltipText({ type: 'sparkline', key: 's', header: 'S', sparkKey: 'c', tooltip: true }, [], row())).toBeUndefined();
+    expect(tooltipText({ type: 'custom', key: 'x', header: 'X', tooltip: true }, 'v', row())).toBeUndefined();
+  });
+
+  it('function tooltip returns custom text for any type', () => {
+    const col: ColumnDef = { type: 'custom', key: 'x', header: 'X', tooltip: (v, r) => `${r.name}: ${v}` };
+    expect(tooltipText(col, 42, row({ name: 'Row' }))).toBe('Row: 42');
+  });
+
+  it('empty/whitespace text suppresses the tooltip', () => {
+    expect(tooltipText({ type: 'text', key: 't', header: 'T', tooltip: () => '' }, 'x', row())).toBeUndefined();
+    expect(tooltipText({ type: 'text', key: 't', header: 'T', tooltip: () => '   ' }, 'x', row())).toBeUndefined();
+  });
+});
 
 describe('formatCell', () => {
   it('formats numeric types to deterministic strings', () => {

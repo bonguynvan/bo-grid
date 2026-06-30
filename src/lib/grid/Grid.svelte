@@ -48,6 +48,7 @@
     rowHeight,
     theme,
     resizable = true,
+    cellSelection = true,
     rowSelection = false,
     onRowSelectionChange,
     hiddenColumns = [],
@@ -99,6 +100,11 @@
     /** Allow drag-to-resize column widths. Default true; opt out per column
         with `resizable: false`. */
     resizable?: boolean;
+    /** Highlight cells/ranges on click-drag (the blue selection fill + focus
+        ring + fill handle). Set false for a read-only/display grid where clicks
+        should pass straight through to `onRowClick`/`onCellClick` without a
+        selection highlight. Default true. */
+    cellSelection?: boolean;
     /** Show a leading checkbox column for whole-row selection (keyed by row id,
         stable across sort/filter). Default false. */
     rowSelection?: boolean;
@@ -239,6 +245,11 @@
   const gid = `bo-grid-${uid++}`;
 
   let scrollTop = $state(0);
+  // Styled floating tooltip (opt-in via column `tooltip`): a single fixed-
+  // position bubble driven by the hovered cell's `data-bo-tip`. Fixed escapes
+  // the cell/viewport overflow:hidden without a portal.
+  const hasTooltips = $derived(columns.some((c) => !!c.tooltip));
+  let tip = $state<{ x: number; y: number; text: string; below: boolean } | null>(null);
   // Sort order, primary first. Empty = unsorted. Multiple keys via Shift-click.
   // Controlled by the `sort` prop when provided, else internal state.
   let internalSorts = $state<SortState[]>([]);
@@ -1139,6 +1150,26 @@
     if (hScroll && headEl) headEl.scrollLeft = el.scrollLeft; // keep header in sync
     if (hScroll && filterRowEl) filterRowEl.scrollLeft = el.scrollLeft; // and the filter row
     if (hScroll && groupHeadEl) groupHeadEl.scrollLeft = el.scrollLeft; // and group headers
+    if (tip) tip = null; // a stale fixed-position bubble would float away on scroll
+  }
+
+  // Tooltip hover delegation (only wired when a column opts in).
+  function onTipOver(e: PointerEvent) {
+    const cell = (e.target as HTMLElement | null)?.closest?.('.c[data-bo-tip]') as HTMLElement | null;
+    const text = cell?.dataset.boTip;
+    if (!cell || !text) {
+      if (tip) tip = null;
+      return;
+    }
+    const rect = cell.getBoundingClientRect();
+    const below = rect.top < 72; // not enough room above near the header — flip down
+    const x = Math.min(Math.max(rect.left + rect.width / 2, 96), window.innerWidth - 96);
+    tip = { text, x, y: below ? rect.bottom + 7 : rect.top - 7, below };
+  }
+  function onTipOut(e: PointerEvent) {
+    const to = e.relatedTarget as HTMLElement | null;
+    if (to?.closest?.('.c[data-bo-tip]')) return; // moved within the same tipped cell
+    if (tip) tip = null;
   }
 
   function toggleGroup(path: string) {
@@ -1150,6 +1181,8 @@
 
   function onCellDown(r: number, c: number, e: PointerEvent) {
     if (e.button !== 0) return;
+    // Display grid: skip range selection but let onclick (row/cell click) fire.
+    if (!cellSelection) return;
     e.preventDefault();
     gridEl?.focus();
     if (e.shiftKey) sel.extendTo(r, c);
@@ -1762,12 +1795,17 @@
     </div>
   {/if}
 
+  <!-- Tooltip hover delegation lives on the scroll container; the grid's
+       interactive semantics are on the role="grid" root. -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="viewport"
     style="height:{height}px;{hScroll ? 'overflow-x:auto;' : ''}"
     bind:this={viewportEl}
     bind:clientWidth={viewW}
     onscroll={onScroll}
+    onpointerover={hasTooltips ? onTipOver : undefined}
+    onpointerout={hasTooltips ? onTipOut : undefined}
   >
     {#if pinnedRows.length > 0}
       <div class="pinned-top">
@@ -1882,8 +1920,8 @@
                   colIndex={ci + 1 + leadCols}
                   cellId={`${gid}-r${item.vr}-c${ci}`}
                   cellSnippet={cell}
-                  selected={sel.contains(item.vr, ci)}
-                  focused={sel.isFocus(item.vr, ci)}
+                  selected={cellSelection && sel.contains(item.vr, ci)}
+                  focused={cellSelection && sel.isFocus(item.vr, ci)}
                   pinned={pinned && layout.info[ci].pinned}
                   pinSide={layout.info[ci].side ?? 'left'}
                   pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right : layout.info[ci].left + leadPx}
@@ -1979,6 +2017,18 @@
       onClose={() => (panelXY = null)}
     />
   {/if}
+
+  {#if tip}
+    <div
+      class="bo-tip"
+      class:below={tip.below}
+      role="tooltip"
+      aria-hidden="true"
+      style="left:{tip.x}px;top:{tip.y}px"
+    >
+      {tip.text}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -2021,6 +2071,65 @@
   }
   .grid:focus-visible {
     border-color: var(--bo-sel-border);
+  }
+  /* Styled floating tooltip (opt-in via column `tooltip`). Fixed-positioned so
+     it escapes the cell/viewport overflow; centred on the cell, flips below
+     near the header. */
+  .bo-tip {
+    position: fixed;
+    z-index: 60;
+    max-width: 280px;
+    padding: 5px 9px;
+    font-family: var(--bo-sans);
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--bo-text);
+    background: var(--bo-header-bg);
+    border: 0.5px solid var(--bo-border);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    white-space: normal;
+    overflow-wrap: anywhere;
+    pointer-events: none;
+    transform: translate(-50%, -100%);
+    animation: bo-tip-in 90ms ease-out;
+  }
+  .bo-tip.below {
+    transform: translate(-50%, 0);
+  }
+  /* Caret. */
+  .bo-tip::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    width: 7px;
+    height: 7px;
+    background: var(--bo-header-bg);
+    border: 0.5px solid var(--bo-border);
+    transform: translateX(-50%) rotate(45deg);
+  }
+  .bo-tip:not(.below)::after {
+    bottom: -4px;
+    border-top: 0;
+    border-left: 0;
+  }
+  .bo-tip.below::after {
+    top: -4px;
+    border-bottom: 0;
+    border-right: 0;
+  }
+  @keyframes bo-tip-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bo-tip {
+      animation: none;
+    }
   }
   /* Built-in quick-filter toolbar (opt-in via `quickFilter`). */
   .bo-toolbar {

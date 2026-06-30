@@ -3,6 +3,37 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.26.0] — Unreleased
+
+Theme: **richer cells** — styled tooltips, truncation control, display-grid mode.
+See [ROADMAP.md](./ROADMAP.md).
+
+### Added
+
+- **Styled floating tooltips**: a column's `tooltip` now renders a themed, instant
+  hover bubble (replacing the native `title` — no OS delay, matches the grid
+  theme, escapes cell clipping). `tooltip: true` shows the formatted value;
+  `tooltip: (value, row) => string` returns custom text for any column type
+  (including `custom`). Return `''` to suppress per cell. Opt-in per column, so a
+  grid with no tooltips wires no hover handlers.
+- **`wrap`** (column): let long content wrap onto multiple lines instead of
+  truncating with an ellipsis (pair with a taller `rowHeight`). Default off.
+- **`cellSelection`** (`<Grid>`, default `true`): set `false` for a read-only /
+  display grid — drops the range-selection highlight, focus ring and fill handle;
+  clicks pass straight through to `onRowClick` / `onCellClick`.
+
+### Fixed
+
+- Plain text/number cells now truncate with a real **ellipsis** when they overflow
+  (a bare text node in the flex cell didn't honour `text-overflow`; values now
+  render through a truncating span). Affects all simple value columns.
+
+### Changed (demo)
+
+- The **Team** example showcases the new tooltips (full name on the avatar, a
+  computed status tooltip), an ellipsis-truncated Notes column, and a live
+  cell-selection on/off toggle.
+
 ## [0.25.0] — Unreleased
 
 Theme: **smart import** — auto-detect pasted/loaded data. See [ROADMAP.md](./ROADMAP.md).

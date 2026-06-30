@@ -3,6 +3,7 @@
   import type { ColumnDef, GridRow } from './column';
   import {
     formatCell,
+    tooltipText,
     colStyle,
     candlesOf,
     isNumeric,
@@ -146,12 +147,9 @@
   const extraClass = $derived(
     typeof col.cellClass === 'function' ? (col.cellClass(value, row) ?? '') : (col.cellClass ?? ''),
   );
-  // Native tooltip of the full value (opt-in via column `tooltip`).
-  const tip = $derived(
-    col.tooltip && col.type !== 'sparkline' && col.type !== 'custom'
-      ? formatCell(col, value, row)
-      : undefined,
-  );
+  // Styled floating tooltip text (opt-in via column `tooltip`); the grid root
+  // renders the actual tooltip from this cell's `data-bo-tip` attribute.
+  const tip = $derived(tooltipText(col, value, row));
 
   // ---- Conditional formatting (v0.10): data bar + icon set ----
   // Geometry/threshold logic lives in column.ts (pure, unit-tested); here we map
@@ -193,6 +191,7 @@
 <span
   class="c {kind} {extraClass}"
   class:dim={col.type === 'volume'}
+  class:wrap={col.wrap}
   class:pos={col.type === 'percent' && Number(value) >= 0}
   class:neg={col.type === 'percent' && Number(value) < 0}
   class:sel={selected}
@@ -202,7 +201,7 @@
   role="gridcell"
   tabindex="-1"
   id={cellId}
-  title={tip}
+  data-bo-tip={tip}
   aria-colindex={colIndex}
   aria-selected={selected}
   onpointerdown={(e) => onCellDown?.(r, c, e)}
@@ -324,10 +323,10 @@
     {/key}
   {:else if col.flash}
     {#key row.flashSeq}
-      <span class="flash {row.flashDir}">{formatCell(col, value, row)}</span>
+      <span class="flash bo-cell-text {row.flashDir}">{formatCell(col, value, row)}</span>
     {/key}
   {:else}
-    {formatCell(col, value, row)}
+    <span class="bo-cell-text">{formatCell(col, value, row)}</span>
   {/if}
   {#if fillCorner}
     <span
@@ -355,6 +354,25 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+  /* Truncating text node inside the flex cell: a bare text child of a flex
+     container won't honour text-overflow, so plain values render through this
+     span to get a real ellipsis when they overflow. */
+  .bo-cell-text {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  /* Opt-in multi-line wrap (col.wrap) — pair with a taller rowHeight. */
+  .c.wrap {
+    white-space: normal;
+  }
+  .c.wrap .bo-cell-text,
+  .c.wrap strong {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
   }
   .num {
     justify-content: flex-end;
@@ -500,10 +518,15 @@
     line-height: 1;
   }
   .text strong {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     font-family: var(--bo-mono);
     font-weight: 600;
   }
   .text em {
+    flex: none;
     font-style: normal;
     font-size: 10px;
     color: var(--bo-text-dim);

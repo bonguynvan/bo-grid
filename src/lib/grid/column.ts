@@ -50,9 +50,15 @@ interface ColBase {
   /** Editable choices: when set, editing renders a `<select>` of these options
       instead of a text input (enum/status columns). */
   options?: string[];
-  /** Set a native `title` tooltip on each cell (the full formatted value) — handy
-      when content truncates. */
-  tooltip?: boolean;
+  /** Show a styled floating tooltip on each cell (themed, instant — replaces the
+      native `title`). `true` shows the full formatted value (handy when content
+      truncates); a function returns custom text per value/row (any column type,
+      including `custom`). Return '' to suppress for a given cell. */
+  tooltip?: boolean | ((value: unknown, row: GridRow) => string);
+  /** Let long content wrap to multiple lines instead of truncating with an
+      ellipsis. Pair with a taller `rowHeight`. Default false (single-line +
+      ellipsis). */
+  wrap?: boolean;
   /** Custom display formatter, overriding the built-in type formatter. Applies
       to display, tooltip, copy and (formatted) export. `row` is absent for
       aggregate cells. */
@@ -214,6 +220,24 @@ export function formatCell(col: ColumnDef, value: unknown, row?: GridRow): strin
       // progress / badge / avatar / link / text and friends.
       return value == null ? '' : String(value);
   }
+}
+
+/**
+ * Resolve a cell's tooltip text for the styled floating tooltip. A boolean
+ * `tooltip` shows the formatted value (skipped for sparkline/custom — no text
+ * form); a function returns custom text for any column type. Empty/whitespace →
+ * no tooltip. Pure; unit-tested.
+ */
+export function tooltipText(col: ColumnDef, value: unknown, row: GridRow): string | undefined {
+  const t = col.tooltip;
+  if (!t) return undefined;
+  const text =
+    typeof t === 'function'
+      ? t(value, row)
+      : col.type === 'sparkline' || col.type === 'custom'
+        ? ''
+        : formatCell(col, value, row);
+  return text && text.trim() ? text : undefined;
 }
 
 export function isSortable(col: ColumnDef): boolean {

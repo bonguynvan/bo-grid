@@ -741,9 +741,11 @@ await wait(40);
 const dateAfter = document.querySelectorAll('.bo-grid .row')[0].querySelectorAll('.c')[6].textContent.trim();
 if (dateAfter === dateBefore) fail(`date edit did not commit (cell still "${dateAfter}")`);
 
-// Cell tooltip: the Name column sets a title attribute of the full value.
+// Cell tooltip: the Name column opts into the styled floating tooltip, exposed
+// as a `data-bo-tip` attribute carrying the full value (the grid renders the
+// bubble from it on hover).
 const nameCell = document.querySelectorAll('.bo-grid .row')[0].querySelectorAll('.c')[0];
-if (!nameCell.getAttribute('title')) fail('tooltip column did not set a cell title');
+if (!nameCell.getAttribute('data-bo-tip')) fail('tooltip column did not set data-bo-tip');
 
 // Custom formatter: the Salary column renders via format() ($-prefixed).
 const salaryCell = document.querySelectorAll('.bo-grid .row')[0].querySelectorAll('.c')[3];

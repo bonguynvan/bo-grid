@@ -16,6 +16,7 @@
     rating: number;
     skills: string[];
     remote: boolean;
+    note: string;
   }
 
   const FIRST = ['Ava', 'Liam', 'Mia', 'Noah', 'Zoe', 'Ravi', 'Yuki', 'Omar', 'Lena', 'Theo', 'Ines', 'Kai'];
@@ -23,6 +24,15 @@
   const ROLES = ['Engineer', 'Designer', 'PM', 'Analyst', 'Researcher', 'Writer'];
   const STATUS = ['Active', 'Away', 'Offline'];
   const SKILLS = ['TypeScript', 'Svelte', 'Design', 'SQL', 'Rust', 'Figma', 'Python', 'Go', 'CSS', 'Data viz'];
+  // Deliberately long so the Notes column truncates with an ellipsis and reveals
+  // the full text in the styled floating tooltip on hover.
+  const NOTES = [
+    'Leading the Q3 platform migration; pairing with the data team on the new ingestion pipeline.',
+    'On rotation for on-call this week — slower to respond on non-urgent threads.',
+    'Owns the design system refresh; gathering feedback before the component freeze.',
+    'Back from leave Monday; ramping on the billing rewrite and the new pricing model.',
+    'Driving the accessibility audit; tracking 40+ open issues across the dashboard surfaces.',
+  ];
 
   function build(n: number): Member[] {
     const now = Date.now();
@@ -45,6 +55,7 @@
         rating: 1 + ((id * 3) % 5),
         skills,
         remote: id % 3 !== 0,
+        note: NOTES[id % NOTES.length],
       };
     });
   }
@@ -52,9 +63,13 @@
   const rows = $state<Member[]>(build(40));
   const gridRows = $derived(rows as unknown as GridRow[]);
 
+  // Toggle the blue range-selection highlight on/off (display vs. spreadsheet feel).
+  let cellSelection = $state(true);
+
   const columns: ColumnDef[] = [
     // Pinned so the wide board scrolls horizontally with the person in view.
-    { type: 'avatar', key: 'name', sub: 'role', header: 'Member', width: 200, pinned: true },
+    // `tooltip: true` reveals the full name + role if the cell ever truncates.
+    { type: 'avatar', key: 'name', sub: 'role', header: 'Member', width: 200, pinned: true, tooltip: true },
     { type: 'link', key: 'email', header: 'Email', width: 196, href: (row) => `mailto:${row.email}` },
     {
       type: 'badge',
@@ -62,20 +77,30 @@
       header: 'Status',
       width: 104,
       tones: { Active: 'up', Away: 'amber', Offline: 'neutral' },
+      // Function tooltip: custom text built from other fields on the row.
+      tooltip: (value, row) => `${value} · ${row.role} · ${row.remote ? 'Remote' : 'Office'}`,
     },
     { type: 'relative', key: 'lastActive', header: 'Last active', width: 124 },
     { type: 'currency', key: 'rate', header: 'Rate/hr', width: 96, currency: 'USD', decimals: 0 },
     { type: 'progress', key: 'workload', header: 'Workload', width: 140, min: 0, max: 100 },
     { type: 'rating', key: 'rating', header: 'Rating', width: 110, max: 5 },
+    // Long free text in a narrow column: truncates with an ellipsis, full text
+    // on hover via the styled floating tooltip.
+    { type: 'text', key: 'note', header: 'Notes', width: 220, tooltip: true },
     { type: 'tags', key: 'skills', header: 'Skills', flex: 1, minWidth: 160 },
     { type: 'boolean', key: 'remote', header: 'Remote', width: 104, trueLabel: 'Remote', falseLabel: 'Office' },
   ];
 </script>
 
 <div class="gridwrap">
+  <label class="opt">
+    <input type="checkbox" bind:checked={cellSelection} />
+    Cell selection ({cellSelection ? 'on' : 'off'})
+  </label>
   <Grid
     rows={gridRows}
     {columns}
+    {cellSelection}
     theme={ui.theme}
     filterMenu
     columnMenu
@@ -87,5 +112,14 @@
 <style>
   .gridwrap {
     max-width: 920px;
+  }
+  .opt {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: var(--text-dim, #8a8a8a);
+    cursor: pointer;
   }
 </style>

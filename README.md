@@ -160,6 +160,26 @@ buttons, links. The snippet receives `{ row, column, value }`:
 <Grid {rows} {columns} {cell} height={640} />
 ```
 
+### Tooltips & truncation
+
+Long cell values truncate with an **ellipsis** by default. Set `tooltip` on a
+column to reveal the full text in a **styled floating tooltip** on hover (themed,
+instant — not the native `title`). `tooltip: true` shows the formatted value;
+pass a function for custom text built from the whole row (works for any type,
+including `custom`):
+
+```ts
+const columns: ColumnDef[] = [
+  { type: 'text', key: 'note', header: 'Notes', width: 220, tooltip: true },
+  { type: 'badge', key: 'status', header: 'Status',
+    tooltip: (value, row) => `${value} · ${row.role}` },     // custom text
+  { type: 'text', key: 'bio', header: 'Bio', flex: 1, wrap: true }, // wrap, no ellipsis
+];
+```
+
+Set `wrap: true` to let a column wrap onto multiple lines instead of truncating
+(pair with a taller `rowHeight`).
+
 ## Conditional formatting
 
 Paint analytics cues straight into numeric cells — no custom snippet needed.
@@ -329,6 +349,14 @@ value(s) across the extended range (editable columns; multi-cell selections tile
 
 Edits, paste and fill are **undoable** with <kbd>Ctrl/⌘</kbd>+<kbd>Z</kbd> (redo
 with <kbd>Ctrl/⌘</kbd>+<kbd>Y</kbd>). A paste or fill undoes as a single step.
+
+For a read-only / display grid, set `cellSelection={false}` to drop the blue
+range-selection highlight (and fill handle) entirely — clicks pass straight
+through to `onRowClick` / `onCellClick`:
+
+```svelte
+<Grid {rows} {columns} height={640} cellSelection={false} onRowClick={open} />
+```
 
 When more than one cell is selected, a footer bar shows live **Sum / Avg / Count /
 Min / Max** over the numeric cells in the range — and it keeps updating as a

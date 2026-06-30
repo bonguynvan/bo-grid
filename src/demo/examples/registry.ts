@@ -56,7 +56,7 @@ export const EXAMPLES: Example[] = [
   {
     id: 'team',
     title: 'Team',
-    blurb: 'A people/CRM board — avatars, status badges, progress, ratings, tags (rich cell types).',
+    blurb: 'A people/CRM board — rich cell types, plus styled hover tooltips, ellipsis truncation and a cell-selection toggle.',
     load: () => import('./Team.svelte'),
   },
   {
