@@ -23,7 +23,9 @@
     "virtual-scroll",
     "realtime",
     "fintech",
-    "trading"
+    "trading",
+    "chart",
+    "trading-chart"
   ],
   "svelte": "./dist/index.js",
   "types": "./dist/index.d.ts",

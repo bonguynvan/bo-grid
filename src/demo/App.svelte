@@ -157,6 +157,7 @@
       <a href="{REPO}/blob/main/docs/sveltekit.md">SvelteKit guide</a>
       <a href={NPM} target="_blank" rel="noreferrer">npm</a>
       <a href={REPO} target="_blank" rel="noreferrer">GitHub</a>
+      <a href="https://bonguynvan.github.io/tradecanvas/" target="_blank" rel="noreferrer">TradeCanvas ↗</a>
     </nav>
   </div>
   <p class="lp-foot-note">Built with Svelte 5 · MIT © 2026</p>
