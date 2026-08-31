@@ -916,6 +916,10 @@ pnpm package   # build the publishable library into dist/
 Formal WCAG 2.1 AA audit → multi-measure pivots → more themes. Contributions
 welcome.
 
+## Related projects
+
+- **[TradeCanvas](https://github.com/bonguynvan/tradecanvas)** — high-performance **canvas** trading charts: 33 built-in indicators, 24 drawing tools, 17 chart types, real-time streaming adapters, and a draggable trading overlay, with zero external dependencies. The chart half of the same toolkit — pair it with bo-grid for a full trading desk. **[Live demo](https://bonguynvan.github.io/tradecanvas/)**
+
 ## License
 
 MIT

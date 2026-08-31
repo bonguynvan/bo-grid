@@ -3,6 +3,15 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [Unreleased]
+
+### Changed
+
+- **docs** — added a "Related projects" cross-link to
+  [TradeCanvas](https://github.com/bonguynvan/tradecanvas) (the sibling Svelte 5
+  canvas charting library) in the README and demo footer; added `chart` /
+  `trading-chart` keywords for npm discovery.
+
 ## [1.0.0] — 2026-06-30
 
 **1.0 — stable API.** A full, free Svelte 5 data grid (virtual scroll, sort /
