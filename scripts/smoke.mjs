@@ -870,6 +870,28 @@ const obDepth = document.querySelectorAll('.bo-grid .row .depth .fill').length;
 if (obBid === 0) fail('Order book did not apply bid rowClass');
 if (obDepth === 0) fail('Order book custom depth-bar cell did not render');
 
+// Derived per-cell flash (`flash: 'auto'`): the grid works out the direction
+// itself from the previous value — the demo bumps no flashSeq. A cell must be
+// quiet on first paint and flash only once a value actually moves.
+if (document.querySelector('.bo-grid .row .c .flash')) {
+  fail('Derived flash fired on first paint — cells must start quiet');
+}
+const liveBtn = [...document.querySelectorAll('button.live')].find((b) => b.offsetParent !== null)
+  ?? document.querySelector('button.live');
+if (!liveBtn) fail('Order book live toggle not found');
+liveBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+let flashed = 0;
+for (let i = 0; i < 40 && flashed === 0; i++) {
+  await wait(100);
+  flashed = document.querySelectorAll('.bo-grid .row .c .flash').length;
+}
+liveBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+if (flashed === 0) fail('Derived flash never fired after live size updates');
+const obDirected = document.querySelectorAll(
+  '.bo-grid .row .c .flash.up, .bo-grid .row .c .flash.down',
+).length;
+if (obDirected === 0) fail('Derived flash fired without an up/down direction');
+
 // Correlation: an N×N heatmap matrix with a pinned label column.
 await solo('correlation', '.bo-grid .row', 'Correlation example rendered no rows');
 const heatCells = [...document.querySelectorAll('.bo-grid .row .c')].filter((c) =>
@@ -1114,7 +1136,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale + computed-col, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut/${dashStacked} stacked/${dashLegend} legend (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), csv ${csvRows}→${csvAfter} rows + json ${csvJson} + auto ${csvAuto} (csv/tsv/json/auto import), print ${printGridRows} virt/${printPreviewRows} all-rows, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars + ${obDirected} derived flashes, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut/${dashStacked} stacked/${dashLegend} legend (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), csv ${csvRows}→${csvAfter} rows + json ${csvJson} + auto ${csvAuto} (csv/tsv/json/auto import), print ${printGridRows} virt/${printPreviewRows} all-rows, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

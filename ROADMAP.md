@@ -193,19 +193,44 @@ Completes the conditional-formatting trio (data bars + icon sets + colour scales
 - [x] **`parseRows`**: auto-detect JSON / TSV / CSV and parse to rows — ideal for a
   paste handler. **CSV import** demo gains an Auto-detect option.
 
+## 1.1 · Realtime, properly — done
+
+The trading-desk wave. bo-grid already claimed "realtime"; this makes the claim
+structural rather than something every consumer re-implements.
+
+- [x] **Derived per-cell flash** (`col.flash: 'auto' | 'change'`, `col.flashMs`):
+  the grid tracks each cell's last value and flashes green up / red down by
+  itself — no `flashSeq` bookkeeping, and independent per column within a row
+  (bid green while ask goes red). Keyed on (row id, column) so recycled cells
+  don't flash on scroll. `flash: true` stays as the legacy row-driven mode.
+- [x] **`bo-grid/realtime`** — `createTickStream` / `TickBuffer` /
+  `createRowIndex` / `applyPatches`: coalesce a feed per key, drain a bounded
+  slice per frame, apply patches in O(1) skipping unchanged fields. A separate
+  entry on its own 2 KB budget; the core is untouched.
+- [x] **Realtime benchmarks** + live ticks/sec and queue depth in the demo.
+
 ## Candidate themes for later versions
 
 The roadmap's planned features are all shipped, plus cross-framework support and
 CSV round-trip. Remaining ideas are polish or demand-driven:
 
+- **Market conventions** (`bo-grid/trading`) — tick-size-aware price scales, and
+  ceiling / floor / reference colouring, which is how APAC boards signal price
+  rather than up/down. Session state (ATO/ATC/break). Its own budget, like
+  charts and realtime.
+- **Trading surfaces** — a price ladder / DOM mode (centre on mid, scroll-lock)
+  and a capped append-at-top time & sales tape; a candlestick + depth chart in
+  the charts companion (the canvas primitives are already there).
 - **Polish** — a live screen-reader + axe-core pass; framework starter repos;
   multi-level lazy groups; custom-cell bridging for the Web Component.
 - Driven by real-world usage now that it's published — open an issue with what's
   missing.
 
-Note: the eager grid core is ~97% of its 28 KB budget; the next sizable *core*
-feature should recalibrate it (still ~15× smaller than heavyweight grids). The charts
-companion (its own 8 KB budget) is the model for keeping the core tiny.
+Note: the eager grid core is ~94% of its 35 KB budget; the next sizable *core*
+feature should recalibrate it (still ~15× smaller than heavyweight grids). The
+charts (8 KB) and realtime (2 KB) companions, each on its own budget, are the
+model for keeping the core tiny — a new capability belongs in a subpath unless it
+is genuinely part of the grid's identity.
 
 Out of scope by design (they fight the "tiny" positioning): a heavyweight
 integrated-charting engine in the core (the companion package is the answer),

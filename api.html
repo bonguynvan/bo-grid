@@ -156,6 +156,7 @@
         <a href="#columns">Columns</a>
         <a href="#element">Web&nbsp;component</a>
         <a href="#charts">Charts</a>
+        <a href="#realtime">Realtime</a>
         <a href="#source">Source</a>
         <a href="#theming">Theming</a>
         <a href="https://github.com/bonguynvan/bo-grid">GitHub</a>
@@ -242,14 +243,15 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
       <p>The minimal contract every row must satisfy; add your own data fields alongside.</p>
       <pre><code><span class="tok-key">interface</span> GridRow {
   id: number;            <span class="tok-com">// stable identity (used as the render key)</span>
-  flashSeq: number;      <span class="tok-com">// increment to trigger a cell flash</span>
-  flashDir: <span class="tok-str">'up'</span> | <span class="tok-str">'down'</span>;
+  flashSeq?: number;     <span class="tok-com">// legacy row-driven flash only (flash: true)</span>
+  flashDir?: <span class="tok-str">'up'</span> | <span class="tok-str">'down'</span>;
   [field: string]: unknown;
 }</code></pre>
       <div class="note">
         Make hot fields (price, volume…) reactive <code>$state</code> so updates flash and re-render
-        only the changed cell — not the whole table. Bump <code>flashSeq</code> on each tick to flash a
-        <code>flash: true</code> column.
+        only the changed cell — not the whole table. With <code>flash: 'auto'</code> the grid derives the
+        flash itself — write the new value and nothing else; <code>flashSeq</code>/<code>flashDir</code>
+        are needed only by the legacy <code>flash: true</code> mode.
       </div>
 
       <!-- ============ COLUMNS ============ -->
@@ -266,7 +268,8 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>align</td><td><span class="type">'left' | 'right'</span></td><td>Header/text alignment.</td></tr>
           <tr><td>cellClass</td><td><span class="type">string | (value, row) =&gt; string</span></td><td>Extra class(es) on the column's cells (static or conditional). Target via <code>:global</code>.</td></tr>
           <tr><td>headerClass</td><td><span class="type">string</span></td><td>Extra class(es) on the column header.</td></tr>
-          <tr><td>flash</td><td><span class="type">boolean</span></td><td>Amber flash on value change (drives off <code>flashSeq</code>).</td></tr>
+          <tr><td>flash</td><td><span class="type">'auto' | 'change' | boolean</span></td><td>Flash the cell on a value change. <code>'auto'</code> (alias <code>'up-down'</code>): the grid derives it <em>per cell</em> — green up, red down, nothing to maintain. <code>'change'</code>: neutral flash on any change. <code>true</code>: legacy row-driven mode via <code>flashSeq</code>/<code>flashDir</code>.</td></tr>
+          <tr><td>flashMs</td><td><span class="type">number</span></td><td>Flash duration for the derived modes (default 300).</td></tr>
           <tr><td>sortable</td><td><span class="type">boolean</span></td><td>Set <code>false</code> to disable header-click sorting.</td></tr>
           <tr><td>compare</td><td><span class="type">(a, b) =&gt; number</span></td><td>Custom ascending comparator (enum priority, natural sort). In-memory mode.</td></tr>
           <tr><td>group</td><td><span class="type">string</span></td><td>Parent header label; consecutive columns sharing it render under one spanning header.</td></tr>
@@ -315,7 +318,7 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
       </table>
       <pre><code><span class="tok-key">const</span> columns: ColumnDef[] = [
   { type: <span class="tok-str">'text'</span>,      key: <span class="tok-str">'symbol'</span>, sub: <span class="tok-str">'sector'</span>, header: <span class="tok-str">'Symbol'</span>, pinned: <span class="tok-key">true</span> },
-  { type: <span class="tok-str">'price'</span>,     key: <span class="tok-str">'price'</span>,  header: <span class="tok-str">'Price'</span>, flash: <span class="tok-key">true</span>, groupAgg: <span class="tok-str">'avg'</span> },
+  { type: <span class="tok-str">'price'</span>,     key: <span class="tok-str">'price'</span>,  header: <span class="tok-str">'Price'</span>, flash: <span class="tok-str">'auto'</span>, groupAgg: <span class="tok-str">'avg'</span> },
   { type: <span class="tok-str">'percent'</span>,   key: <span class="tok-str">'changePct'</span>, header: <span class="tok-str">'Chg %'</span> },
   { type: <span class="tok-str">'heatmap'</span>,   key: <span class="tok-str">'changePct'</span>, header: <span class="tok-str">'Heat'</span>, min: -5, max: 5 },
   { type: <span class="tok-str">'volume'</span>,    key: <span class="tok-str">'volume'</span>, header: <span class="tok-str">'Volume'</span>, groupAgg: <span class="tok-str">'sum'</span> },
@@ -377,6 +380,35 @@ document.body.append(createBoGrid(config));</code></pre>
 &lt;LineChart data={[3, 5, 4, 8, 6, 9]} area /&gt;
 &lt;DonutChart data={[{ value: 5 }, { value: 3 }]} /&gt;</code></pre>
       <p>The SVG geometry helpers (<code>linePoints</code>, <code>barRects</code>, <code>donutArcs</code>, <code>extent</code>, …) are exported too, for building your own charts.</p>
+
+      <!-- ============ REALTIME ============ -->
+      <h2 id="realtime">Realtime <span class="tag">bo-grid/realtime</span></h2>
+      <p>The pipeline between a market-data socket and the grid. A feed pushes far more messages than a screen can show; writing each one straight into reactive state means thousands of updates to paint 60 frames. This coalesces raw messages per key (cheap, no reactive writes), then drains a bounded slice once per animation frame. A <strong>separate import</strong> on its own size budget — it adds nothing to the grid core (~1&nbsp;KB gzip), and it is framework-agnostic: the frame scheduler is injectable.</p>
+      <table>
+        <thead><tr><th>Export</th><th>Signature</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>createTickStream</td><td><span class="type">(opts) =&gt; TickStream</span></td><td>Coalescing buffer + frame-budgeted drain. <code>push(key, patch)</code> to ingest, <code>start()</code>/<code>stop()</code> to run, <code>flushNow()</code> to drain everything, <code>pending</code>/<code>applied</code> for feed health.</td></tr>
+          <tr><td>TickBuffer</td><td><span class="type">new TickBuffer(opts?)</span></td><td>The coalescing buffer on its own (<code>push</code>, <code>drain(cap)</code>, <code>size</code>) when you own the scheduling.</td></tr>
+          <tr><td>createRowIndex</td><td><span class="type">(rows, getRowId) =&gt; Map</span></td><td>Index rows by id so a patch finds its row in O(1). Rebuild when the row set changes, not per tick.</td></tr>
+          <tr><td>applyPatches</td><td><span class="type">(index, batch) =&gt; number</span></td><td>Write a frame's patches onto their rows in place, skipping unchanged fields (no spurious re-render or flash).</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Options:</strong> <code>apply</code> (required — called once per frame with at most <code>cap</code> entries), <code>cap</code> (row writes per frame, default 400), <code>merge</code> (how two patches for one key combine; default field-wise for plain objects), <code>schedule</code> (frame scheduler, default <code>requestAnimationFrame</code>), <code>onError</code> (called if <code>apply</code> throws — that frame's batch is lost either way, since it's already off the buffer, but the loop keeps running; default re-throws asynchronously so the error isn't silently swallowed). A batch that throws is not counted in <code>stream.applied</code>.</p>
+      <pre><code><span class="tok-key">import</span> { createTickStream, createRowIndex, applyPatches } <span class="tok-key">from</span> <span class="tok-str">'bo-grid/realtime'</span>;
+
+<span class="tok-key">const</span> index = createRowIndex(rows, (r) =&gt; r.symbol);
+<span class="tok-key">const</span> stream = createTickStream({
+  apply: (batch) =&gt; applyPatches(index, batch),  <span class="tok-com">// once per frame, ≤ cap entries</span>
+  cap: 400,
+});
+stream.start();
+socket.onmessage = (e) =&gt; stream.push(JSON.parse(e.data).symbol, JSON.parse(e.data));</code></pre>
+      <div class="note">
+        Per key only the <strong>latest</strong> state is applied — intermediate ticks collapse, which is what a price
+        board wants (append a trade tape directly instead). A sustained overload shows up as a climbing
+        <code>stream.pending</code> rather than dropped frames. Pair it with <code>flash: 'auto'</code> columns and the
+        grid flashes each changed cell in the right direction on its own.
+      </div>
 
       <!-- ============ SELECTION ============ -->
       <h2 id="selection">Selection &amp; keyboard</h2>
@@ -472,6 +504,8 @@ document.body.append(createBoGrid(config));</code></pre>
           <h3 style="font-size:14px">Types</h3>
           <span class="pill">ColumnDef</span><span class="pill">GridProps</span><span class="pill">GridRow</span><span class="pill">SortState</span>
           <span class="pill">CellRenderContext</span><span class="pill">AggKind</span><span class="pill">Candle</span><span class="pill">RowSource</span>
+          <h3 style="font-size:14px">Realtime <span style="font-weight:400;color:var(--dim)">(bo-grid/realtime)</span></h3>
+          <span class="pill">createTickStream</span><span class="pill">TickBuffer</span><span class="pill">createRowIndex</span><span class="pill">applyPatches</span>
           <h3 style="font-size:14px">Web component <span style="font-weight:400;color:var(--dim)">(bo-grid/element)</span></h3>
           <span class="pill">createBoGrid</span><span class="pill">BoGridConfig</span><span class="pill">BoGridElement</span>
         </div>

@@ -15,6 +15,7 @@
     safeHref,
   } from './column';
   import { heatColor } from './heatmap';
+  import { FlashTracker, resolveFlashMode, isFresh, FLASH_MS } from './flash';
   import Sparkline from '../sparkline/Sparkline.svelte';
 
   let {
@@ -34,6 +35,8 @@
     fillCorner = false,
     fillpreview = false,
     cfRange = null,
+    rowKey = null,
+    flashTracker = null,
     colIndex,
     cellId,
     cellSnippet,
@@ -70,6 +73,12 @@
     /** Conditional-formatting data extent (min/max over the view) for this
         column; null when the column has no `dataBar`/`colorScale`. */
     cfRange?: { min: number; max: number } | null;
+    /** Stable identity of this cell's row, for derived flash. Cells are recycled
+        by visual index as you scroll, so flash state cannot live in the
+        component — it is keyed on (rowKey, column) in the grid's tracker. */
+    rowKey?: string | number | null;
+    /** The grid's flash tracker; null when no column uses derived flash. */
+    flashTracker?: FlashTracker | null;
     colIndex?: number;
     cellId?: string;
     cellSnippet?: Snippet<[{ row: GridRow; column: ColumnDef; value: unknown }]>;
@@ -151,6 +160,28 @@
   // renders the actual tooltip from this cell's `data-bo-tip` attribute.
   const tip = $derived(tooltipText(col, value, row));
 
+  // ---- Flash ----
+  // `'row'` keeps the legacy behaviour (the row owns flashSeq/flashDir). The
+  // derived modes ask the grid's tracker whether THIS cell's value just moved.
+  // `observe` is idempotent, so re-rendering for an unrelated reason (selection,
+  // resize, a sibling column ticking) never re-flashes this cell.
+  const flashMode = $derived(resolveFlashMode(col.flash));
+  const flash = $derived.by(() => {
+    if (flashMode === null) return null;
+    if (flashMode === 'row') {
+      return { key: row.flashSeq ?? 0, dir: row.flashDir ?? 'up', on: true };
+    }
+    if (!flashTracker || rowKey == null) return null;
+    const state = flashTracker.observe(rowKey, col.key, value, flashMode, Date.now());
+    // Re-key on row identity too: a recycled cell must build a fresh element
+    // rather than inherit the previous row's animation state.
+    return {
+      key: `${rowKey}:${state.seq}`,
+      dir: state.dir,
+      on: isFresh(state, Date.now(), col.flashMs ?? FLASH_MS),
+    };
+  });
+
   // JS cell renderer (framework-agnostic alt to the `cell` snippet). Returns an
   // HTML string ({@html}) or a DOM Node (mounted via the action below).
   const rendered = $derived(col.render ? col.render({ value, row, column: col }) : undefined);
@@ -181,6 +212,12 @@
   });
   // Colour-scale cell tint (applied as a cell background in cellStyle).
   const scaleBg = $derived(col.colorScale && cfRange ? colorScaleBackground(value, cfRange, col.colorScale) : null);
+
+  // Only emit the custom-property override when it differs from the stylesheet
+  // default, so the common case adds no inline style at all.
+  function flashDuration(c: ColumnDef): string | undefined {
+    return c.flashMs && c.flashMs !== FLASH_MS ? `--bo-flash-ms:${c.flashMs}ms` : undefined;
+  }
 
   function cellStyle(): string {
     let s = width != null ? `flex:0 0 ${width}px;width:${width}px;` : colStyle(col);
@@ -330,19 +367,26 @@
     <strong>{formatCell(col, value, row)}</strong>{#if col.sub}<em>{row[col.sub]}</em>{/if}
   {:else if hasCf}
     {#if bar}<span class="bo-databar" style="left:{bar.left};width:{bar.width};background:{bar.color}"></span>{/if}
-    {#key col.flash ? row.flashSeq : 0}
+    {#key flash ? flash.key : 0}
       <span
         class="bo-cf-val"
-        class:flash={col.flash}
-        class:up={col.flash && row.flashDir === 'up'}
-        class:down={col.flash && row.flashDir === 'down'}
+        class:flash={flash?.on}
+        class:up={flash?.on && flash.dir === 'up'}
+        class:down={flash?.on && flash.dir === 'down'}
+        style={flash?.on ? flashDuration(col) : undefined}
       >
         {#if icon}<span class="bo-cf-icon" style="color:{icon.color}">{icon.icon}</span>{/if}{formatCell(col, value, row)}
       </span>
     {/key}
-  {:else if col.flash}
-    {#key row.flashSeq}
-      <span class="flash bo-cell-text {row.flashDir}">{formatCell(col, value, row)}</span>
+  {:else if flash}
+    {#key flash.key}
+      <span
+        class="bo-cell-text"
+        class:flash={flash.on}
+        class:up={flash.on && flash.dir === 'up'}
+        class:down={flash.on && flash.dir === 'down'}
+        style={flash.on ? flashDuration(col) : undefined}
+      >{formatCell(col, value, row)}</span>
     {/key}
   {:else}
     <span class="bo-cell-text">{formatCell(col, value, row)}</span>
@@ -658,18 +702,24 @@
     box-shadow: inset 0 0 0 1px var(--bo-sel-border);
   }
 
+  /* One keyframe, tinted per direction: amber for a neutral change, up/down
+     colours for a derived tick — the convention on every trading screen. */
   .flash {
-    animation: flash 0.3s linear;
+    --bo-flash-ms: 300ms;
+    --bo-flash-tint: var(--bo-amber);
+    animation: flash var(--bo-flash-ms) linear;
   }
   .flash.up {
+    --bo-flash-tint: var(--bo-up);
     color: var(--bo-up);
   }
   .flash.down {
+    --bo-flash-tint: var(--bo-down);
     color: var(--bo-down);
   }
   @keyframes flash {
     0% {
-      background: color-mix(in srgb, var(--bo-amber) 38%, transparent);
+      background: color-mix(in srgb, var(--bo-flash-tint) 38%, transparent);
     }
     100% {
       background: transparent;

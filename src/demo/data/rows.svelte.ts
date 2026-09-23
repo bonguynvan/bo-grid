@@ -1,8 +1,6 @@
 import type { Candle } from '../../lib/types';
 import type { TickerSeed } from '../types';
 
-export type FlashDir = 'up' | 'down';
-
 /**
  * One ticker row. Hot fields are individually reactive ($state) so a price tick
  * mutates exactly one cell's dependency graph — not the whole table. Static
@@ -22,11 +20,6 @@ export class TickerRow {
   volume = $state(0);
   target = $state(0); // user-editable target price (inline editing demo)
   candles = $state<Candle[]>([]);
-
-  // Flash trigger: dir + a monotonically increasing seq the cell keys on to
-  // re-fire its CSS animation even when the price lands on the same value.
-  flashDir = $state<FlashDir>('up');
-  flashSeq = $state(0);
 
   constructor(seed: TickerSeed) {
     this.id = seed.id;
@@ -49,11 +42,9 @@ export class TickerRow {
 
   /** Apply a coalesced tick. Updates the live ("intraday") last candle in place. */
   applyTick(price: number, volume: number): void {
-    this.flashDir = price >= this.price ? 'up' : 'down';
     this.price = price;
     this.volume = volume;
     this.recompute();
-    this.flashSeq++;
 
     const last = this.candles[this.candles.length - 1];
     const updated: Candle = {

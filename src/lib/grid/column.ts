@@ -37,8 +37,21 @@ interface ColBase {
   /** Render a small ⓘ info icon in the header as a visible cue that a
       `headerTooltip` is available. Ignored without `headerTooltip`. */
   headerInfo?: boolean;
-  /** Amber flash on value change (drives off the row's flashSeq/flashDir). */
-  flash?: boolean;
+  /** Flash the cell when its value changes.
+      - `'auto'` (alias `'up-down'`) — the grid derives it: green on a rise, red
+        on a fall, per cell. Nothing to maintain in app code; just stream new
+        values in. This is what you want for a live price board.
+      - `'change'` — a neutral flash on any change, numeric or not (status, qty).
+      - `true` — legacy row-driven mode: the flash follows the row's own
+        `flashSeq`/`flashDir`, so every `flash: true` column in a row flashes
+        together, in one direction, and you bump the counter yourself.
+      Derived modes never flash on first paint or when a row scrolls into view. */
+  flash?: boolean | 'auto' | 'up-down' | 'change';
+  /** Flash duration in ms — **derived modes only** (`'auto'`/`'up-down'`/
+      `'change'`); has no effect on legacy `flash: true`, which flashes for the
+      CSS animation's fixed duration regardless. Default 300. Raise it for a
+      slow feed, lower it for a fast one so flashes don't smear together. */
+  flashMs?: number;
   /** Set false to disable header-click sorting on this column. */
   sortable?: boolean;
   /** Custom ascending comparator for this column's values (e.g. enum priority or
@@ -197,8 +210,10 @@ export interface SortState {
 /** Minimal row contract the grid relies on. Concrete rows add their own fields. */
 export interface GridRow {
   id: number;
-  flashSeq: number;
-  flashDir: 'up' | 'down';
+  /** Legacy row-driven flash counter — only needed for `flash: true` columns.
+      Derived flash (`flash: 'auto' | 'change'`) requires neither field. */
+  flashSeq?: number;
+  flashDir?: 'up' | 'down';
   [field: string]: unknown;
 }
 

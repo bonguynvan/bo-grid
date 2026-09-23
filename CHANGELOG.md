@@ -5,7 +5,46 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Derived per-cell tick flash** (`col.flash: 'auto' | 'change'`) — the grid now
+  works out the flash itself: it remembers each cell's last value and flashes
+  green on a rise, red on a fall. No `flashSeq`/`flashDir` bookkeeping in app
+  code; just write the new value. The flash is **per cell**, so bid can flash
+  green while ask flashes red in the same row on the same frame — the legacy
+  `flash: true` mode flashes every such column in a row together, in one
+  direction. `'change'` gives a neutral flash on any change, numeric or not.
+  `col.flashMs` sets the duration (default 300).
+  Flash state is keyed on (row id, column key) rather than held in the cell
+  component, because the row loop is keyed by visual index and recycles mounted
+  cells across rows while scrolling — so a cell now stays quiet on first paint
+  and when it scrolls back into view, and only a real value change flashes.
+- **`bo-grid/realtime`** — the tick pipeline between a market-data socket and the
+  grid, as a separate entry on its own size budget (~1 KB gzip; nothing is added
+  to the grid core). `createTickStream` coalesces raw messages per key with no
+  reactive writes, then drains at most `cap` of them per animation frame, so a
+  burst can't blow the frame budget — a sustained overload shows as a climbing
+  `pending` depth rather than dropped frames. `TickBuffer` is the coalescing
+  buffer alone; `createRowIndex` + `applyPatches` apply a frame's patches to rows
+  in O(1), skipping unchanged fields so an idle-but-chatty feed neither
+  re-renders nor flashes. Framework-agnostic — the frame scheduler is injectable,
+  which is also how it's unit-tested without a browser.
+- **Realtime benchmarks** (`pnpm bench`) — tick coalescing, keyed row writes and
+  derived-flash observation, with regression ceilings like the other hot paths.
+  The **Trading desk** demo now shows applied ticks/sec and queue depth beside
+  the FPS meter.
+
 ### Changed
+
+- **`GridRow.flashSeq` / `flashDir` are now optional** — only the legacy
+  `flash: true` mode needs them. Existing rows that set them keep working.
+- **`FlashTracker` eviction is now true LRU** (least-recently-touched, not
+  insertion order) — a cell that keeps ticking is no longer the first thing
+  dropped once the tracker's 20k-cell cache fills on a long session.
+- **`createTickStream` no longer lets a throwing `apply` corrupt the health
+  counters** — a failed batch isn't counted in `applied`, and the error is
+  reported via the new `onError` option (default: re-thrown asynchronously)
+  instead of propagating into the scheduler.
 
 - **docs** — added a "Related projects" cross-link to
   [TradeCanvas](https://github.com/bonguynvan/tradecanvas) (the sibling Svelte 5

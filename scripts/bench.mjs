@@ -44,6 +44,10 @@ try {
   const { aggregate } = await server.ssrLoadModule('/src/lib/grid/aggregate.ts');
   const { compareBySorts } = await server.ssrLoadModule('/src/lib/grid/column.ts');
   const { buildTreeRows } = await server.ssrLoadModule('/src/lib/grid/tree.ts');
+  const { TickBuffer, createRowIndex, applyPatches } = await server.ssrLoadModule(
+    '/src/lib/realtime/ticks.ts',
+  );
+  const { FlashTracker } = await server.ssrLoadModule('/src/lib/grid/flash.ts');
 
   const N = 1_000_000;
 
@@ -108,6 +112,43 @@ try {
     });
   }, 300);
 
+  // --- Realtime: tick ingestion (bo-grid/realtime) ---
+  // A feed pushes far more messages than the screen can show. These measure the
+  // library's own overhead on the path from socket message to reactive write:
+  // coalescing many messages per symbol, then applying one frame's worth.
+  const SYMBOLS = 5_000;
+  const TICKS = 1_000_000;
+  const buffer = new TickBuffer();
+  time('TickBuffer.push()', `${fmt(TICKS)} ticks coalescing onto ${fmt(SYMBOLS)} symbols`, () => {
+    for (let i = 0; i < TICKS; i++) {
+      buffer.push(i % SYMBOLS, { last: i * 0.01, volume: i });
+    }
+  }, 2000);
+  const coalesced = buffer.size;
+
+  const feedRows = new Array(SYMBOLS);
+  for (let i = 0; i < SYMBOLS; i++) feedRows[i] = { id: i, last: 0, volume: 0 };
+  const index = createRowIndex(feedRows, (r) => r.id);
+  const frameBatch = buffer.drain(SYMBOLS);
+  const FRAMES = 200;
+  time('applyPatches()', `${fmt(FRAMES)} frames × ${fmt(SYMBOLS)} keyed row writes`, () => {
+    for (let f = 0; f < FRAMES; f++) {
+      // Vary the value so the unchanged-field skip doesn't make this a no-op.
+      for (const entry of frameBatch) entry[1].last += 0.01;
+      applyPatches(index, frameBatch);
+    }
+  }, 2000);
+
+  // --- Realtime: derived per-cell flash ---
+  // Runs once per rendered cell per update, so it has to stay trivial.
+  const tracker = new FlashTracker();
+  const OBSERVES = 1_000_000;
+  time('FlashTracker.observe()', `${fmt(OBSERVES)} cell observations`, () => {
+    for (let i = 0; i < OBSERVES; i++) {
+      tracker.observe(i % SYMBOLS, 'last', i * 0.01, 'up-down', i);
+    }
+  }, 2500);
+
   // --- Report ---
   const wLabel = Math.max(...results.map((r) => r.label.length));
   console.log('\nbo-grid hot-path benchmarks — Node, single thread, deterministic inputs\n');
@@ -124,6 +165,17 @@ try {
       `(the per-frame cost of finding the first visible row at any scroll position).`,
   );
   console.log(`  → tree rows flattened: ${fmt(flat.length)}`);
+  const push = results.find((r) => r.label === 'TickBuffer.push()');
+  console.log(
+    `  → ${fmt(Math.round((TICKS / push.t) * 1000))} ticks/sec ingested and coalesced ` +
+      `(${fmt(TICKS)} messages collapsed to ${fmt(coalesced)} pending writes — ` +
+      `the work a frame is spared).`,
+  );
+  const apply = results.find((r) => r.label === 'applyPatches()');
+  console.log(
+    `  → ${(apply.t / FRAMES).toFixed(2)} ms to apply a ${fmt(SYMBOLS)}-row frame ` +
+      `(a 16.7 ms frame budget; the default cap is 400 rows/frame).`,
+  );
   console.log(
     failed
       ? '\n✗ bench: a hot path exceeded its regression ceiling — likely an algorithmic regression.\n'

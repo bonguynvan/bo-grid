@@ -36,14 +36,14 @@
     for (let i = 1; i <= LEVELS; i++) {
       const size = 40 + Math.floor(rng() * 900);
       cum += size;
-      asks.push({ id: id++, flashSeq: 0, flashDir: 'up', side: 'ask', price: MID + i * TICK, size, total: cum });
+      asks.push({ id: id++, side: 'ask', price: MID + i * TICK, size, total: cum });
     }
     const bids: Level[] = [];
     cum = 0;
     for (let i = 1; i <= LEVELS; i++) {
       const size = 40 + Math.floor(rng() * 900);
       cum += size;
-      bids.push({ id: id++, flashSeq: 0, flashDir: 'up', side: 'bid', price: MID - i * TICK, size, total: cum });
+      bids.push({ id: id++, side: 'bid', price: MID - i * TICK, size, total: cum });
     }
     // Display top→bottom: farthest ask … best ask, best bid … farthest bid.
     return [...asks.reverse(), ...bids];
@@ -58,7 +58,7 @@
 
   const columns: ColumnDef[] = [
     { type: 'price', key: 'price', header: 'Price', width: 110, sortable: false },
-    { type: 'volume', key: 'size', header: 'Size', width: 100, flash: true, sortable: false },
+    { type: 'volume', key: 'size', header: 'Size', width: 100, flash: 'auto', sortable: false },
     { type: 'custom', key: 'total', header: 'Depth', flex: 1, sortable: false },
   ];
 
@@ -66,13 +66,11 @@
   $effect(() => {
     if (!live) return;
     const tick = () => {
-      // Nudge a handful of random levels and flash them.
+      // Nudge a handful of random levels. With `flash: 'auto'` the grid works
+      // out the direction per cell — no flashSeq/flashDir bookkeeping here.
       for (let n = 0; n < 5; n++) {
         const r = rows[Math.floor(Math.random() * rows.length)];
-        const next = Math.max(10, r.size + Math.floor((Math.random() - 0.5) * 400));
-        r.flashDir = next >= r.size ? 'up' : 'down';
-        r.size = next;
-        r.flashSeq++;
+        r.size = Math.max(10, r.size + Math.floor((Math.random() - 0.5) * 400));
       }
     };
     const h = setInterval(tick, 500);
