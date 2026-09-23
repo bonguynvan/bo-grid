@@ -189,6 +189,41 @@ of this is required to use `resolveTone`/`toneColor` — pass your own
 `{ ref, ceiling, floor }` for any other market's limit-price rule. See the **VN
 board** demo for it composed with `bo-grid/realtime`.
 
+#### Price ladder & time & sales
+
+Two more pieces of `bo-grid/realtime` for the surfaces every trading desk
+needs, both pure — no ladder/tape component of their own, just the data
+structure or math that makes building one straightforward:
+
+```ts
+import { centeredWindow } from 'bo-grid/realtime';
+
+// 120 price levels, 16 visible, centred on the spread (index 60):
+const { start, end } = centeredWindow(120, 60, 16); // { start: 52, end: 68 }
+const visible = levels.slice(start, end);           // hand THIS to <Grid rows>
+```
+
+A ladder shows more levels than fit on screen, kept centred on the spread as
+the book moves. `centeredWindow` is the windowing math — feed the grid a
+different slice of the same levels array each tick instead of fighting virtual
+scroll to physically scroll to a position. "Scroll-lock" (follow the market vs.
+hold position because the viewer paged away) is UI state you keep yourself —
+see the **Price ladder** demo for the pattern (a `lockedCenter: number | null`:
+`null` follows live, a number freezes the window until "Recenter").
+
+```ts
+import { TradeTape } from 'bo-grid/realtime';
+
+const tape = new TradeTape<Trade>(500); // capped ring buffer, O(1) per push
+socket.onmessage = (e) => tape.push(JSON.parse(e.data));
+rows = tape.toArray(); // newest trade first — call once per render, not per trade
+```
+
+A time & sales tape is the opposite discipline from a price feed: nothing
+coalesces (every trade must show), so what it needs is a bound instead — drop
+the oldest trade once `capacity` is reached, O(1) regardless of session length.
+See the **Time & sales** demo.
+
 ### React, Vue, Angular & vanilla
 
 bo-grid also ships a framework-agnostic **custom element**, fully typed. Import it

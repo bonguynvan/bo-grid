@@ -384,7 +384,7 @@ document.body.append(createBoGrid(config));</code></pre>
 
       <!-- ============ REALTIME ============ -->
       <h2 id="realtime">Realtime <span class="tag">bo-grid/realtime</span></h2>
-      <p>The pipeline between a market-data socket and the grid. A feed pushes far more messages than a screen can show; writing each one straight into reactive state means thousands of updates to paint 60 frames. This coalesces raw messages per key (cheap, no reactive writes), then drains a bounded slice once per animation frame. A <strong>separate import</strong> on its own size budget — it adds nothing to the grid core (~1&nbsp;KB gzip), and it is framework-agnostic: the frame scheduler is injectable.</p>
+      <p>The pipeline between a market-data socket and the grid. A feed pushes far more messages than a screen can show; writing each one straight into reactive state means thousands of updates to paint 60 frames. This coalesces raw messages per key (cheap, no reactive writes), then drains a bounded slice once per animation frame. A <strong>separate import</strong> on its own size budget — it adds nothing to the grid core (~1.6&nbsp;KB gzip), and it is framework-agnostic: the frame scheduler is injectable.</p>
       <table>
         <thead><tr><th>Export</th><th>Signature</th><th>Purpose</th></tr></thead>
         <tbody>
@@ -406,9 +406,34 @@ stream.start();
 socket.onmessage = (e) =&gt; stream.push(JSON.parse(e.data).symbol, JSON.parse(e.data));</code></pre>
       <div class="note">
         Per key only the <strong>latest</strong> state is applied — intermediate ticks collapse, which is what a price
-        board wants (append a trade tape directly instead). A sustained overload shows up as a climbing
+        board wants (append a trade tape directly instead — see below). A sustained overload shows up as a climbing
         <code>stream.pending</code> rather than dropped frames. Pair it with <code>flash: 'auto'</code> columns and the
         grid flashes each changed cell in the right direction on its own.
+      </div>
+      <h3>Price ladder &amp; time &amp; sales</h3>
+      <p>Two more pure pieces for the trading-desk surfaces — no component of their own, just the math/structure a ladder or a tape needs.</p>
+      <table>
+        <thead><tr><th>Export</th><th>Signature</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>centeredWindow</td><td><span class="type">(totalCount, centerIndex, visibleCount) =&gt; {'{'} start, end {'}'}</span></td><td>The <code>[start, end)</code> slice of <code>visibleCount</code> contiguous indices centred on <code>centerIndex</code>, clamped to bounds. Feed <code>levels.slice(start, end)</code> to <code>&lt;Grid rows&gt;</code> instead of scrolling — centring is array slicing, not scroll control. Even <code>visibleCount</code> puts the extra row on the lower-index side.</td></tr>
+          <tr><td>TradeTape</td><td><span class="type">new TradeTape(capacity?)</span></td><td>Capped ring buffer for a trade log — <code>push(trade)</code> O(1) regardless of session length, <code>toArray()</code> a fresh snapshot newest-first (call once per render), <code>size</code>/<code>capacity</code>, <code>clear()</code>. Default capacity 500. Unlike a price update, a trade is never coalesced — every one shows.</td></tr>
+        </tbody>
+      </table>
+      <pre><code><span class="tok-key">import</span> { centeredWindow, TradeTape } <span class="tok-key">from</span> <span class="tok-str">'bo-grid/realtime'</span>;
+
+<span class="tok-com">// Ladder: 120 levels, 16 visible, centred on the spread (index 60)</span>
+<span class="tok-key">const</span> { start, end } = centeredWindow(<span class="tok-num">120</span>, <span class="tok-num">60</span>, <span class="tok-num">16</span>);
+<span class="tok-key">const</span> visible = levels.slice(start, end);
+
+<span class="tok-com">// Tape: capped, newest trade first</span>
+<span class="tok-key">const</span> tape = <span class="tok-key">new</span> TradeTape(<span class="tok-num">500</span>);
+socket.onmessage = (e) =&gt; tape.push(JSON.parse(e.data));
+rows = tape.toArray();</code></pre>
+      <div class="note">
+        "Scroll-lock" (follow the market vs. hold position because the viewer paged away) is UI state you keep
+        yourself — a <code>lockedCenter: number | null</code> works well: <code>null</code> follows the live centre, a
+        number freezes the window there until the viewer re-locks. See the <strong>Price ladder</strong> and
+        <strong>Time &amp; sales</strong> demos.
       </div>
 
       <!-- ============ TRADING ============ -->
@@ -557,6 +582,7 @@ socket.onmessage = (e) =&gt; stream.push(JSON.parse(e.data).symbol, JSON.parse(e
           <span class="pill">CellRenderContext</span><span class="pill">AggKind</span><span class="pill">Candle</span><span class="pill">RowSource</span>
           <h3 style="font-size:14px">Realtime <span style="font-weight:400;color:var(--dim)">(bo-grid/realtime)</span></h3>
           <span class="pill">createTickStream</span><span class="pill">TickBuffer</span><span class="pill">createRowIndex</span><span class="pill">applyPatches</span>
+          <span class="pill">centeredWindow</span><span class="pill">TradeTape</span>
           <h3 style="font-size:14px">Trading <span style="font-weight:400;color:var(--dim)">(bo-grid/trading)</span></h3>
           <span class="pill">resolveTone</span><span class="pill">toneColor</span><span class="pill">vnBands</span><span class="pill">vnTickSize</span>
           <span class="pill">roundToTick</span><span class="pill">fmtTradingPrice</span><span class="pill">sessionStateAt</span><span class="pill">sessionLabel</span>

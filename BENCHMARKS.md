@@ -61,6 +61,8 @@ don't):
 | `TickBuffer.push()` (coalesce) | 1,000,000 ticks → 5,000 symbols | ~54 ms |
 | `applyPatches()` (keyed row writes) | 200 frames × 5,000 rows | ~42 ms |
 | `FlashTracker.observe()` (derived flash) | 1,000,000 cell observations | ~52 ms |
+| `TradeTape.push()` (time & sales) | 1,000,000 trades → 500-cap ring buffer | ~9 ms |
+| `TradeTape.toArray()` (tape snapshot) | 10,000 snapshots of a full 500-trade tape | ~14 ms |
 
 The headline: **~79 ns to locate the first visible row at any scroll position in
 a million-row variable-height dataset.** A 60 fps frame budget is 16.7 ms, so that
@@ -73,7 +75,9 @@ pipeline: a million raw messages collapse into 5,000 pending writes, so the fram
 pays for what changed, not for what arrived. The default `cap` of 400 rows per
 frame keeps a burst well inside the 16.7 ms budget. Derived per-cell flash costs
 ~52 ns per rendered cell per update — it runs on every visible cell, so it has to
-be, and is, negligible.
+be, and is, negligible. `TradeTape` appends at **~88M trades/sec** (a true ring
+buffer — O(1) regardless of how long the session runs) and snapshots a full
+500-trade tape in ~1.4 µs, call it once per render rather than per trade.
 
 ```sh
 pnpm bench   # runs the hot-path benchmarks above

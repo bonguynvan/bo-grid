@@ -48,6 +48,7 @@ try {
     '/src/lib/realtime/ticks.ts',
   );
   const { FlashTracker } = await server.ssrLoadModule('/src/lib/grid/flash.ts');
+  const { TradeTape } = await server.ssrLoadModule('/src/lib/realtime/tape.ts');
 
   const N = 1_000_000;
 
@@ -149,6 +150,20 @@ try {
     }
   }, 2500);
 
+  // --- Realtime: capped trade tape (time & sales) ---
+  // push() must stay O(1) regardless of how long a session runs — a ring
+  // buffer, not a shift-and-truncate array. toArray() is O(capacity), meant to
+  // be called once per render, not per trade.
+  const tape = new TradeTape(500);
+  const TRADES = 1_000_000;
+  time('TradeTape.push()', `${fmt(TRADES)} trades into a 500-cap ring buffer`, () => {
+    for (let i = 0; i < TRADES; i++) tape.push({ price: i * 0.01, size: i });
+  }, 300);
+  const TOARRAY_CALLS = 10_000;
+  time('TradeTape.toArray()', `${fmt(TOARRAY_CALLS)} snapshots of a full 500-trade tape`, () => {
+    for (let i = 0; i < TOARRAY_CALLS; i++) tape.toArray();
+  }, 500);
+
   // --- Report ---
   const wLabel = Math.max(...results.map((r) => r.label.length));
   console.log('\nbo-grid hot-path benchmarks — Node, single thread, deterministic inputs\n');
@@ -176,6 +191,8 @@ try {
     `  → ${(apply.t / FRAMES).toFixed(2)} ms to apply a ${fmt(SYMBOLS)}-row frame ` +
       `(a 16.7 ms frame budget; the default cap is 400 rows/frame).`,
   );
+  const tapePush = results.find((r) => r.label === 'TradeTape.push()');
+  console.log(`  → ${fmt(Math.round((TRADES / tapePush.t) * 1000))} trades/sec appended to the tape (O(1) per push).`);
   console.log(
     failed
       ? '\n✗ bench: a hot path exceeded its regression ceiling — likely an algorithmic regression.\n'

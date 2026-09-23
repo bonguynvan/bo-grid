@@ -59,6 +59,26 @@ All notable changes to this project are documented here. Format follows
     time zone, so it's correct for a viewer anywhere — not just one in Vietnam.
   - New **VN board** demo: price-limit tone, tick-aware formatting and the live
     session badge, composed with `bo-grid/realtime` for price motion.
+- **`centeredWindow`** (`bo-grid/realtime`) — the windowing math for a
+  centred/scroll-locked price ladder: the `[start, end)` slice of
+  `visibleCount` contiguous levels centred on a given index, clamped to
+  bounds. Feed `<Grid rows>` a different slice of the same levels array each
+  tick instead of scrolling to a position — centring becomes array slicing.
+  A non-finite/negative `visibleCount` or a non-finite `centerIndex` returns a
+  safe empty/rounded result rather than propagating `NaN` or an inverted
+  window. New **Price ladder** demo (120 levels, 16 visible, manual page +
+  recenter) — the demo's smoke test reads a rendered cell's value to confirm
+  paging/recentring actually moves the window, not just its lock-state UI.
+- **`TradeTape`** (`bo-grid/realtime`) — a capped, append-only ring buffer for
+  a time & sales feed: `push` is O(1) regardless of session length (a true
+  ring buffer, not shift-and-truncate), `toArray()` gives a newest-first
+  snapshot. The opposite discipline from `TickBuffer`: nothing coalesces,
+  every trade shows. A non-positive capacity throws at construction instead
+  of silently corrupting the ring's modulo arithmetic. New **Time & sales**
+  demo.
+- **Realtime benchmarks** — `TradeTape.push()`/`toArray()` added, with
+  regression ceilings like the other hot paths (~88M trades/sec appended,
+  measuring the ring buffer's own O(1) cost).
 
 ### Changed
 

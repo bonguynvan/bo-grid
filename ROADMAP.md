@@ -235,14 +235,35 @@ consumer who doesn't import `bo-grid/trading` pays nothing.
 - [x] **`bo-grid/trading`** — a separate entry on its own 2 KB budget; the core
   is untouched. New **VN board** demo, composing it with `bo-grid/realtime`.
 
+## 1.3 · Trading surfaces — done
+
+The two live-desk surfaces a generic grid can't give you out of the box — both
+pure math/data-structure, added to `bo-grid/realtime` (order-book and
+trade-stream handling, not APAC-specific, so they stay out of `bo-grid/trading`)
+with no Grid/Cell changes.
+
+- [x] **Price ladder windowing** (`centeredWindow`): the `[start, end)` slice of
+  `visibleCount` contiguous levels centred on a given index, clamped to bounds.
+  Centring becomes array slicing — feed `<Grid rows>` a different window each
+  tick instead of fighting virtual scroll to physically scroll to a position.
+  "Scroll-lock" (follow the market vs. hold position) is documented as
+  component-level UI state, not something the helper decides. New **Price
+  ladder** demo: 120 levels, 16 visible, page + recenter.
+- [x] **`TradeTape`**: a capped, append-only ring buffer for a time & sales
+  feed — O(1) `push` regardless of session length (a true ring, not
+  shift-and-truncate), `toArray()` a newest-first snapshot. The opposite
+  discipline from `TickBuffer`: nothing coalesces, every trade shows. New
+  **Time & sales** demo.
+- [x] Fits inside realtime's existing 2 KB budget (now ~1.6/2 KB, ~79%) — the
+  next realtime feature should recalibrate it.
+
 ## Candidate themes for later versions
 
 The roadmap's planned features are all shipped, plus cross-framework support and
 CSV round-trip. Remaining ideas are polish or demand-driven:
 
-- **Trading surfaces** — a price ladder / DOM mode (centre on mid, scroll-lock)
-  and a capped append-at-top time & sales tape; a candlestick + depth chart in
-  the charts companion (the canvas primitives are already there).
+- **Candlestick + depth chart** in the charts companion — the canvas
+  primitives (`drawCandles`) are already there.
 - **Polish** — a live screen-reader + axe-core pass; framework starter repos;
   multi-level lazy groups; custom-cell bridging for the Web Component.
 - Driven by real-world usage now that it's published — open an issue with what's

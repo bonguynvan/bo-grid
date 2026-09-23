@@ -913,6 +913,56 @@ await wait(500);
 vnLiveBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 const vnRows = document.querySelectorAll('.bo-grid .row').length;
 
+// Price ladder: bo-grid/realtime's centeredWindow — 16 of 120 levels visible,
+// centred on the spread; paging away disables the lock, recenter re-enables it.
+await solo('ladder', '.bo-grid .row', 'Price ladder example rendered no rows');
+const ladderRowsInitial = document.querySelectorAll('.bo-grid .row').length;
+if (ladderRowsInitial !== 16) fail(`Price ladder did not render exactly 16 visible rows (got ${ladderRowsInitial})`);
+const recenterBtn = document.querySelector('button.recenter');
+if (!recenterBtn) fail('Price ladder recenter control not found');
+if (!recenterBtn.disabled) fail('Price ladder should start locked to the spread (recenter disabled)');
+const pageBtn = document.querySelector('.nav button[aria-label="Page down"]');
+if (!pageBtn) fail('Price ladder page-down control not found');
+// Read the first row's price cell before/after — proves the WINDOW CONTENT
+// actually moved, not just that the lock-state UI toggled.
+const firstCellText = () => document.querySelector('.bo-grid .row .c')?.textContent?.trim();
+const priceBeforePage = firstCellText();
+pageBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(30);
+if (recenterBtn.disabled) fail('Price ladder did not unlock after manual paging');
+const priceAfterPage = firstCellText();
+if (priceAfterPage === priceBeforePage) {
+  fail(`Price ladder paging toggled the lock UI but the visible window did not change (still "${priceAfterPage}")`);
+}
+recenterBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(30);
+if (!recenterBtn.disabled) fail('Price ladder did not re-lock after Recenter');
+const priceAfterRecenter = firstCellText();
+if (priceAfterRecenter !== priceBeforePage) {
+  fail(`Price ladder did not return to the original spread-centred window after Recenter (expected "${priceBeforePage}", got "${priceAfterRecenter}")`);
+}
+const ladderRowsAfter = document.querySelectorAll('.bo-grid .row').length;
+if (ladderRowsAfter !== 16) fail(`Price ladder lost its 16-row window after paging/recenter (got ${ladderRowsAfter})`);
+
+// Time & sales: bo-grid/realtime's TradeTape — capped, newest trade first.
+// Starts with zero trades (an empty grid, no `.row` yet), so solo() waits on
+// the grid container rather than a row.
+await solo('timesales', '.bo-grid', 'Time & sales example did not mount');
+const tsLiveBtn = document.querySelector('button.live');
+if (!tsLiveBtn) fail('Time & sales live toggle not found');
+tsLiveBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await waitFor('.bo-grid .row', 'Time & sales did not render any trade rows once live');
+await wait(600);
+tsLiveBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+const tsRows = document.querySelectorAll('.bo-grid .row').length;
+if (tsRows === 0) fail('Time & sales rendered no trade rows after going live');
+// A ~600ms run at 180ms/trade never gets near the 200-trade cap — the cap
+// itself is exhaustively unit-tested (src/lib/realtime/tape.test.ts). This is
+// just a sanity bound proving the demo is wired to TradeTape's output at all
+// (a broken wiring that free-grew an unrelated array would still likely stay
+// under 200 this briefly, so treat this as a smoke check, not a cap proof).
+if (tsRows > 200) fail(`Time & sales exceeded its 200-trade cap (got ${tsRows} rows)`);
+
 // Correlation: an N×N heatmap matrix with a pinned label column.
 await solo('correlation', '.bo-grid .row', 'Correlation example rendered no rows');
 const heatCells = [...document.querySelectorAll('.bo-grid .row .c')].filter((c) =>
@@ -1157,7 +1207,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale + computed-col, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars + ${obDirected} derived flashes, vnboard ${vnRows} rows + ${vnSession.textContent?.trim()} session (bo-grid/trading), correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut/${dashStacked} stacked/${dashLegend} legend (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), csv ${csvRows}→${csvAfter} rows + json ${csvJson} + auto ${csvAuto} (csv/tsv/json/auto import), print ${printGridRows} virt/${printPreviewRows} all-rows, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars + ${obDirected} derived flashes, vnboard ${vnRows} rows + ${vnSession.textContent?.trim()} session (bo-grid/trading), ladder ${ladderRowsInitial}/120 visible + lock/page/recenter ok, timesales ${tsRows} trades (capped, newest-first), correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut/${dashStacked} stacked/${dashLegend} legend (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), csv ${csvRows}→${csvAfter} rows + json ${csvJson} + auto ${csvAuto} (csv/tsv/json/auto import), print ${printGridRows} virt/${printPreviewRows} all-rows, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);
