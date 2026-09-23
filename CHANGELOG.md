@@ -33,6 +33,32 @@ All notable changes to this project are documented here. Format follows
   derived-flash observation, with regression ceilings like the other hot paths.
   The **Trading desk** demo now shows applied ticks/sec and queue depth beside
   the FPS meter.
+- **`bo-grid/trading`** — market-convention helpers for APAC trading screens, as
+  a separate entry on its own size budget (~1 KB gzip; nothing added to the
+  grid core). Pure functions only — wire them into a column via the `cell`
+  snippet or a JS `render(ctx)` hook you already have, no `ColumnDef` changes.
+  - **Price-limit tone** (`resolveTone`, `toneColor`): classify a value against
+    `{ ref, ceiling?, floor? }` → `'ceiling' | 'floor' | 'ref' | 'up' | 'down'`,
+    the ceiling/floor/reference colour convention every VN/TH terminal uses
+    (not just up/down) — `ceiling`/`floor` are optional, so it works for any
+    market's limit-price rule, or none. `toneColor` maps a tone to a default
+    purple/cyan/yellow/green/red palette, overridable per deployment.
+  - **Vietnam bands** (`vnBands`, `vnTickSize`, `vnBandPercent`, `roundToTick`):
+    HOSE's price-step schedule (10 → 50 → 100 VND by price) and HOSE/HNX/UPCOM's
+    daily band widths (7%/10%/15%). `vnBands` rounds the ceiling down and the
+    floor up to a tradable tick — re-rounding with the tick valid *at the
+    rounded price itself* when the band crosses a tier boundary (10,000 /
+    50,000 VND), so the result is always both within the true regulatory limit
+    and a price its own tier would actually trade at.
+  - **Tick-aware price formatting** (`fmtTradingPrice`, `decimalsForTick`):
+    decimals derived from the instrument's tick — 0 for whole-VND, 4 for an FX
+    pip, correctly down to an 8-decimal crypto tick — where the built-in
+    `price` type's fixed 2 decimals is wrong.
+  - **Session state** (`sessionStateAt`, `VN_HOSE_SCHEDULE`, `sessionLabel`):
+    ATO/continuous/break/ATC/closed, evaluated via `Intl` in the exchange's own
+    time zone, so it's correct for a viewer anywhere — not just one in Vietnam.
+  - New **VN board** demo: price-limit tone, tick-aware formatting and the live
+    session badge, composed with `bo-grid/realtime` for price motion.
 
 ### Changed
 

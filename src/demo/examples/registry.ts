@@ -42,6 +42,12 @@ export const EXAMPLES: Example[] = [
     load: () => import('./OrderBook.svelte'),
   },
   {
+    id: 'vnboard',
+    title: 'VN board',
+    blurb: 'HOSE-style price-limit colouring (ceiling/floor/reference), tick-aware VND formatting & live session badge — bo-grid/trading.',
+    load: () => import('./VnBoard.svelte'),
+  },
+  {
     id: 'correlation',
     title: 'Correlation',
     blurb: 'An N×N heatmap matrix with a pinned label column and dynamic columns.',

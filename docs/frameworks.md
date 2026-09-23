@@ -188,6 +188,29 @@ burst can't blow the frame budget — reassigning `config` there costs one updat
 per frame rather than one per message. Watch `stream.pending`: if it climbs and
 stays up, the feed is outrunning the screen.
 
+## Market conventions
+
+`bo-grid/trading` (price-limit tone, tick-aware formatting, session state) is
+likewise plain JS with no Grid/Cell coupling — use it from any framework via a
+column's `render(ctx)` hook:
+
+```js
+import { resolveTone, toneColor, fmtTradingPrice, vnTickSize } from 'bo-grid/trading';
+
+const columns = [
+  { type: 'custom', key: 'price', header: 'Price', render: ({ value, row }) => {
+      const tone = resolveTone(value, row.bands); // { ref, ceiling, floor } you computed per row
+      const span = document.createElement('span');
+      span.textContent = fmtTradingPrice(value, vnTickSize(value, row.exchange));
+      span.style.color = toneColor(tone);
+      return span;
+    } },
+];
+```
+
+See the "Market conventions" section in [README.md](../README.md) for the full
+API and the **VN board** demo for a worked example.
+
 ## Notes
 
 - `config` is safe to set **after** the element attaches (the React `ref` +

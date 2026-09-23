@@ -892,6 +892,27 @@ const obDirected = document.querySelectorAll(
 ).length;
 if (obDirected === 0) fail('Derived flash fired without an up/down direction');
 
+// VN board: bo-grid/trading — price-limit tone (ceiling/floor/reference/up/down),
+// tick-aware VND formatting, and the live session badge, composed with the
+// bo-grid/realtime tick pipeline for price motion.
+await solo('vnboard', '.bo-grid .row', 'VN board example rendered no rows');
+const vnSession = document.querySelector('.session');
+if (!vnSession) fail('VN board session badge did not render');
+if (!/^(Pre-open|ATO|Continuous|Break|ATC|Closed)$/.test(vnSession.textContent?.trim() ?? '')) {
+  fail(`VN board session badge showed an unrecognized label: "${vnSession.textContent}"`);
+}
+// Ceiling/floor cells are coloured distinctly per bo-grid/trading's convention —
+// confirm at least the ceiling/floor legend swatches (always rendered) carry
+// two DIFFERENT colours, proving toneColor() actually varies by tone.
+const vnSwatches = [...document.querySelectorAll('.legend i')].map((i) => i.getAttribute('style'));
+if (new Set(vnSwatches).size < 5) fail('VN board legend did not render 5 distinct tone colours');
+const vnLiveBtn = document.querySelector('button.live');
+if (!vnLiveBtn) fail('VN board live toggle not found');
+vnLiveBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(500);
+vnLiveBtn.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+const vnRows = document.querySelectorAll('.bo-grid .row').length;
+
 // Correlation: an N×N heatmap matrix with a pinned label column.
 await solo('correlation', '.bo-grid .row', 'Correlation example rendered no rows');
 const heatCells = [...document.querySelectorAll('.bo-grid .row .c')].filter((c) =>
@@ -1136,7 +1157,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale + computed-col, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars + ${obDirected} derived flashes, correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut/${dashStacked} stacked/${dashLegend} legend (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), csv ${csvRows}→${csvAfter} rows + json ${csvJson} + auto ${csvAuto} (csv/tsv/json/auto import), print ${printGridRows} virt/${printPreviewRows} all-rows, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars + ${obDirected} derived flashes, vnboard ${vnRows} rows + ${vnSession.textContent?.trim()} session (bo-grid/trading), correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut/${dashStacked} stacked/${dashLegend} legend (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), csv ${csvRows}→${csvAfter} rows + json ${csvJson} + auto ${csvAuto} (csv/tsv/json/auto import), print ${printGridRows} virt/${printPreviewRows} all-rows, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

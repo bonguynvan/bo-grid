@@ -209,15 +209,37 @@ structural rather than something every consumer re-implements.
   entry on its own 2 KB budget; the core is untouched.
 - [x] **Realtime benchmarks** + live ticks/sec and queue depth in the demo.
 
+## 1.2 · Market conventions — done
+
+The APAC-broker differentiator: the ceiling/floor/reference colour convention
+every VN/TH terminal uses and no generic grid ships, plus the formatting and
+session-state plumbing that goes with it. Pure functions, no `ColumnDef`/Grid/Cell
+changes — wired up through the `cell`/`render` hook you already have, so a
+consumer who doesn't import `bo-grid/trading` pays nothing.
+
+- [x] **Price-limit tone** (`resolveTone`, `toneColor`): classify a value
+  against `{ ref, ceiling?, floor? }` → `'ceiling' | 'floor' | 'ref' | 'up' |
+  'down'`, with a default (overridable) purple/cyan/yellow/green/red palette.
+  `ceiling`/`floor` are optional, so the same function works for any market's
+  limit-price rule, or none.
+- [x] **Vietnam bands** (`vnBands`, `vnTickSize`, `vnBandPercent`,
+  `roundToTick`): HOSE's price-step schedule and HOSE/HNX/UPCOM's daily band
+  widths (7%/10%/15%) — ceiling rounded down to a tradable tick, floor rounded
+  up, so neither exceeds the true regulatory limit.
+- [x] **Tick-aware price formatting** (`fmtTradingPrice`, `decimalsForTick`):
+  decimals derived from the instrument's tick size — 0 for whole-VND, 4 for an
+  FX pip — instead of the built-in `price` type's fixed 2.
+- [x] **Session state** (`sessionStateAt`, `VN_HOSE_SCHEDULE`, `sessionLabel`):
+  ATO/continuous/break/ATC/closed, evaluated via `Intl` in the exchange's own
+  time zone so it's correct for a viewer anywhere.
+- [x] **`bo-grid/trading`** — a separate entry on its own 2 KB budget; the core
+  is untouched. New **VN board** demo, composing it with `bo-grid/realtime`.
+
 ## Candidate themes for later versions
 
 The roadmap's planned features are all shipped, plus cross-framework support and
 CSV round-trip. Remaining ideas are polish or demand-driven:
 
-- **Market conventions** (`bo-grid/trading`) — tick-size-aware price scales, and
-  ceiling / floor / reference colouring, which is how APAC boards signal price
-  rather than up/down. Session state (ATO/ATC/break). Its own budget, like
-  charts and realtime.
 - **Trading surfaces** — a price ladder / DOM mode (centre on mid, scroll-lock)
   and a capped append-at-top time & sales tape; a candlestick + depth chart in
   the charts companion (the canvas primitives are already there).
@@ -228,9 +250,9 @@ CSV round-trip. Remaining ideas are polish or demand-driven:
 
 Note: the eager grid core is ~94% of its 35 KB budget; the next sizable *core*
 feature should recalibrate it (still ~15× smaller than heavyweight grids). The
-charts (8 KB) and realtime (2 KB) companions, each on its own budget, are the
-model for keeping the core tiny — a new capability belongs in a subpath unless it
-is genuinely part of the grid's identity.
+charts (8 KB), realtime (2 KB) and trading (2 KB) companions, each on its own
+budget, are the model for keeping the core tiny — a new capability belongs in a
+subpath unless it is genuinely part of the grid's identity.
 
 Out of scope by design (they fight the "tiny" positioning): a heavyweight
 integrated-charting engine in the core (the companion package is the answer),

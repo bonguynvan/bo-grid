@@ -157,6 +157,7 @@
         <a href="#element">Web&nbsp;component</a>
         <a href="#charts">Charts</a>
         <a href="#realtime">Realtime</a>
+        <a href="#trading">Trading</a>
         <a href="#source">Source</a>
         <a href="#theming">Theming</a>
         <a href="https://github.com/bonguynvan/bo-grid">GitHub</a>
@@ -410,6 +411,56 @@ socket.onmessage = (e) =&gt; stream.push(JSON.parse(e.data).symbol, JSON.parse(e
         grid flashes each changed cell in the right direction on its own.
       </div>
 
+      <!-- ============ TRADING ============ -->
+      <h2 id="trading">Trading <span class="tag">bo-grid/trading</span></h2>
+      <p>Market-convention helpers for APAC trading screens. Pure functions only — no <code>ColumnDef</code> changes, no Grid/Cell wiring. Wire tone/formatting into a column via the <code>cell</code> snippet or a JS <code>render(ctx)</code> hook you already have. A <strong>separate import</strong> on its own budget (~1&nbsp;KB gzip) — adds nothing to the grid core.</p>
+      <h3>Price-limit tone</h3>
+      <p>The APAC convention: colour by position relative to the daily ceiling/floor/reference, not just up/down — a price pinned at the limit is a different signal from an ordinary move.</p>
+      <table>
+        <thead><tr><th>Export</th><th>Signature</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>resolveTone</td><td><span class="type">(value, bands, opts?) =&gt; Tone</span></td><td>Classify a value against <code>{'{'} ref, ceiling?, floor? {'}'}</code> → <code>'ceiling' | 'floor' | 'ref' | 'up' | 'down'</code>. <code>ceiling</code>/<code>floor</code> are optional — omit for plain up/down/ref. <code>opts.epsilon</code> absorbs float noise at a boundary (default 1e-6).</td></tr>
+          <tr><td>toneColor</td><td><span class="type">(tone, colors?) =&gt; string</span></td><td>Tone → CSS colour. Default palette (<code>defaultToneColors</code>): purple ceiling, cyan floor, yellow ref, green up, red down — pass a partial override for your own.</td></tr>
+        </tbody>
+      </table>
+      <h3>Vietnam bands <span style="font-weight:400;color:var(--dim)">(HOSE/HNX/UPCOM)</span></h3>
+      <p>Standard non-special-session rules only — no IPO first-day band, no ex-dividend reference adjustment. A broker with exact business rules should compute bands server-side and hand <code>{'{'} ref, ceiling, floor {'}'}</code> straight to <code>resolveTone</code>.</p>
+      <table>
+        <thead><tr><th>Export</th><th>Signature</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>vnTickSize</td><td><span class="type">(price, exchange?) =&gt; number</span></td><td>Minimum price increment at this price. HOSE steps 10 → 50 → 100 VND by price band; HNX/UPCOM flat 100 VND. Default HOSE.</td></tr>
+          <tr><td>vnBandPercent</td><td><span class="type">(exchange) =&gt; number</span></td><td>Daily band width: HOSE 7%, HNX 10%, UPCOM 15%.</td></tr>
+          <tr><td>vnBands</td><td><span class="type">(ref, exchange?) =&gt; ToneBands</span></td><td>Ceiling/floor from a reference price — ceiling rounded <strong>down</strong> to a tick, floor rounded <strong>up</strong>, so neither exceeds the true regulatory limit.</td></tr>
+          <tr><td>roundToTick</td><td><span class="type">(price, tick, mode?) =&gt; number</span></td><td><code>'down' | 'up' | 'nearest'</code> (default). Works in tick units to avoid float drift on a fractional tick (an FX pip).</td></tr>
+        </tbody>
+      </table>
+      <h3>Tick-aware formatting</h3>
+      <table>
+        <thead><tr><th>Export</th><th>Signature</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>fmtTradingPrice</td><td><span class="type">(value, tick, locale?) =&gt; string</span></td><td>Formats at the precision the tick implies — 0 decimals for a whole-VND tick, 4 for an FX pip — instead of the built-in <code>price</code> type's fixed 2.</td></tr>
+          <tr><td>decimalsForTick</td><td><span class="type">(tick) =&gt; number</span></td><td>The decimal count a tick size implies, on its own.</td></tr>
+        </tbody>
+      </table>
+      <h3>Session state</h3>
+      <table>
+        <thead><tr><th>Export</th><th>Signature</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>sessionStateAt</td><td><span class="type">(date, schedule, opts?) =&gt; SessionState</span></td><td><code>'pre-open' | 'ato' | 'continuous' | 'break' | 'atc' | 'closed'</code>. Evaluated via <code>Intl</code> in <code>opts.timeZone</code> (default <code>Asia/Ho_Chi_Minh</code>) — correct for a viewer in any time zone. <code>opts.skipWeekends</code> (default true) reports <code>'closed'</code> on Sat/Sun.</td></tr>
+          <tr><td>VN_HOSE_SCHEDULE</td><td><span class="type">SessionWindow[]</span></td><td>HOSE's standard weekday schedule: ATO 09:00–09:15, continuous 09:15–11:30, break 11:30–13:00, continuous 13:00–14:30, ATC 14:30–14:45. Doesn't account for holidays or special sessions.</td></tr>
+          <tr><td>sessionLabel</td><td><span class="type">(state) =&gt; string</span></td><td>A short display label for a session state.</td></tr>
+        </tbody>
+      </table>
+      <pre><code><span class="tok-key">import</span> { vnBands, resolveTone, toneColor, fmtTradingPrice, vnTickSize } <span class="tok-key">from</span> <span class="tok-str">'bo-grid/trading'</span>;
+
+<span class="tok-key">const</span> bands = vnBands(row.ref, <span class="tok-str">'HOSE'</span>);         <span class="tok-com">// { ref, ceiling, floor } — tick-rounded</span>
+<span class="tok-key">const</span> tone  = resolveTone(row.price, bands);   <span class="tok-com">// 'ceiling' | 'floor' | 'ref' | 'up' | 'down'</span>
+<span class="tok-key">const</span> color = toneColor(tone);                 <span class="tok-com">// CSS colour for that tone</span>
+<span class="tok-key">const</span> text  = fmtTradingPrice(row.price, vnTickSize(row.price, <span class="tok-str">'HOSE'</span>)); <span class="tok-com">// "68,500"</span></code></pre>
+      <div class="note">
+        None of this needs Grid/Cell support — wire it into a <code>type: 'custom'</code> column's <code>cell</code> snippet (or a JS <code>render(ctx)</code> hook) exactly like any other custom cell. See the <strong>VN board</strong> demo, which composes it with <code>bo-grid/realtime</code>.
+      </div>
+
       <!-- ============ SELECTION ============ -->
       <h2 id="selection">Selection &amp; keyboard</h2>
       <p>Click a cell, then drag or <kbd>Shift</kbd>+click to extend a rectangular selection. When more than one cell is selected a footer shows live Sum / Avg / Count / Min / Max over the numeric cells in the range.</p>
@@ -506,6 +557,9 @@ socket.onmessage = (e) =&gt; stream.push(JSON.parse(e.data).symbol, JSON.parse(e
           <span class="pill">CellRenderContext</span><span class="pill">AggKind</span><span class="pill">Candle</span><span class="pill">RowSource</span>
           <h3 style="font-size:14px">Realtime <span style="font-weight:400;color:var(--dim)">(bo-grid/realtime)</span></h3>
           <span class="pill">createTickStream</span><span class="pill">TickBuffer</span><span class="pill">createRowIndex</span><span class="pill">applyPatches</span>
+          <h3 style="font-size:14px">Trading <span style="font-weight:400;color:var(--dim)">(bo-grid/trading)</span></h3>
+          <span class="pill">resolveTone</span><span class="pill">toneColor</span><span class="pill">vnBands</span><span class="pill">vnTickSize</span>
+          <span class="pill">roundToTick</span><span class="pill">fmtTradingPrice</span><span class="pill">sessionStateAt</span><span class="pill">sessionLabel</span>
           <h3 style="font-size:14px">Web component <span style="font-weight:400;color:var(--dim)">(bo-grid/element)</span></h3>
           <span class="pill">createBoGrid</span><span class="pill">BoGridConfig</span><span class="pill">BoGridElement</span>
         </div>

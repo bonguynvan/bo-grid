@@ -28,7 +28,9 @@
     "trading-chart",
     "market-data",
     "order-book",
-    "websocket"
+    "websocket",
+    "vietnam-stock-exchange",
+    "price-limit"
   ],
   "svelte": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -47,6 +49,11 @@
       "types": "./dist/realtime/index.d.ts",
       "svelte": "./dist/realtime/index.js",
       "default": "./dist/realtime/index.js"
+    },
+    "./trading": {
+      "types": "./dist/trading/index.d.ts",
+      "svelte": "./dist/trading/index.js",
+      "default": "./dist/trading/index.js"
     },
     "./element": {
       "types": "./dist/bo-grid.element.d.ts",

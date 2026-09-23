@@ -155,6 +155,40 @@ which is also how it's unit-tested without a browser).
 Only on-screen rows render DOM, so off-screen updates cost nothing until they
 scroll into view.
 
+#### Market conventions — `bo-grid/trading`
+
+APAC boards colour by position relative to the daily **price limit**, not just
+up/down: purple at the ceiling (limit up), cyan at the floor (limit down),
+yellow at the unchanged reference, green/red for an ordinary move — a signal a
+plain up/down grid can't give you. `bo-grid/trading` is the pure-function
+toolkit for that, plus tick-aware price formatting and session state. It's a
+**separate entry**, like charts and realtime — no `ColumnDef` changes, wired up
+through the `cell`/`render` hook you already have:
+
+```ts
+import { vnBands, resolveTone, toneColor, fmtTradingPrice, vnTickSize } from 'bo-grid/trading';
+
+const bands = vnBands(row.ref, 'HOSE');       // { ref, ceiling, floor } — tick-rounded
+const tone = resolveTone(row.price, bands);   // 'ceiling' | 'floor' | 'ref' | 'up' | 'down'
+const color = toneColor(tone);                // CSS colour for that tone
+const text = fmtTradingPrice(row.price, vnTickSize(row.price, 'HOSE')); // "68,500", not "68500.00"
+```
+
+```ts
+import { sessionStateAt, sessionLabel, VN_HOSE_SCHEDULE } from 'bo-grid/trading';
+
+sessionStateAt(new Date(), VN_HOSE_SCHEDULE); // 'pre-open' | 'ato' | 'continuous' | 'break' | 'atc' | 'closed'
+```
+
+`vnBands`/`vnTickSize` encode HOSE's price-step schedule and HOSE/HNX/UPCOM's
+daily band widths (7%/10%/15%), rounding the ceiling **down** and the floor
+**up** to a tradable tick so neither ever sits outside the real regulatory
+limit. `sessionStateAt` evaluates the schedule in the exchange's own time zone
+via `Intl`, so it's correct for a viewer anywhere, not just one in Vietnam. None
+of this is required to use `resolveTone`/`toneColor` — pass your own
+`{ ref, ceiling, floor }` for any other market's limit-price rule. See the **VN
+board** demo for it composed with `bo-grid/realtime`.
+
 ### React, Vue, Angular & vanilla
 
 bo-grid also ships a framework-agnostic **custom element**, fully typed. Import it

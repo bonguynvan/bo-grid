@@ -14,6 +14,7 @@ excluded — you already ship the Svelte runtime):
 | `bo-grid` CSS | **~4 KB** |
 | `bo-grid/charts` (optional) | **~3 KB** |
 | `bo-grid/realtime` (optional) | **~1 KB** |
+| `bo-grid/trading` (optional) | **~1 KB** |
 
 This is an order of magnitude smaller than typical heavyweight data grids, whose
 core bundles run into the hundreds of KB before features. A few notes:
@@ -21,9 +22,10 @@ core bundles run into the hundreds of KB before features. A few notes:
 - The number is the **whole public API** measured eagerly. A consumer who imports
   only what they use (e.g. `import { Grid }`) tree-shakes the rest — the package is
   `sideEffects: false` — so the IO/print helpers don't ship unless imported.
-- The **charts companion** (`bo-grid/charts`) and the **realtime tick pipeline**
-  (`bo-grid/realtime`) are separate entries on their own budgets; neither adds
-  anything to the grid unless you import it.
+- The **charts companion** (`bo-grid/charts`), the **realtime tick pipeline**
+  (`bo-grid/realtime`) and the **trading conventions** helpers (`bo-grid/trading`)
+  are separate entries on their own budgets; none adds anything to the grid
+  unless you import it.
 - **Excel export** is a **dynamic import** of the optional `xlsx` peer — it never
   lands in the core bundle unless you call `exportXLSX`.
 - The heavy menu UI (filter menu, columns panel) lazy-loads on first use and is
