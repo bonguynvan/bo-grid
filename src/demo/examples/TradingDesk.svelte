@@ -21,11 +21,13 @@
   // The public Phase 0 surface: declare columns, hand over rows.
   const columns: ColumnDef[] = [
     { type: 'text', key: 'symbol', sub: 'sector', header: 'Symbol', width: 132 },
-    { type: 'price', key: 'price', header: 'Price', width: 88, flash: true, groupAgg: 'avg' },
+    { type: 'price', key: 'price', header: 'Price', width: 88, flash: 'auto', groupAgg: 'avg' },
     { type: 'percent', key: 'changePct', header: 'Chg %', width: 84 },
     { type: 'heatmap', key: 'changePct', header: 'Heat', width: 76, min: -5, max: 5 },
     { type: 'custom', key: 'changePct', header: 'Signal', width: 66, sortable: false },
-    { type: 'volume', key: 'volume', header: 'Volume', width: 90, groupAgg: 'sum' },
+    // Two independently-flashing columns in the same row: `flash: 'auto'` is
+    // per CELL, so volume flashes on its own cadence and direction, not the row's.
+    { type: 'volume', key: 'volume', header: 'Volume', width: 90, flash: 'auto', groupAgg: 'sum' },
     { type: 'number', key: 'target', header: 'Target', width: 78, decimals: 2, editable: true, validate: (v) => Number(v) >= 0 },
     { type: 'date', key: 'listedAt', header: 'Listed', width: 92, dateStyle: 'short' },
     { type: 'sparkline', key: 'candles', sparkKey: 'candles', header: 'Trend (24)', flex: 1 },
@@ -162,6 +164,10 @@
     aria-label="Filter rows"
   />
   <span class="metric {fpsClass}" title="frames per second">{meter.fps} fps</span>
+  <span class="metric" title="cell updates applied per second">{feed.appliedPerSec.toLocaleString()} ticks/s</span>
+  <span class="metric" title="ticks waiting for a frame — a climbing number means the feed is outrunning the screen">
+    {feed.pendingDepth.toLocaleString()} queued
+  </span>
   <span class="metric">{feed.applied.toLocaleString()} ticks</span>
   {#if lastResize}<span class="metric resize-info">resized {lastResize}</span>{/if}
   <button class="live" onclick={reload}>⟳ Reload</button>

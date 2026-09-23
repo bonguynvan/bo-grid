@@ -193,6 +193,89 @@ Completes the conditional-formatting trio (data bars + icon sets + colour scales
 - [x] **`parseRows`**: auto-detect JSON / TSV / CSV and parse to rows — ideal for a
   paste handler. **CSV import** demo gains an Auto-detect option.
 
+## 1.1 · Realtime, properly — done
+
+The trading-desk wave. bo-grid already claimed "realtime"; this makes the claim
+structural rather than something every consumer re-implements.
+
+- [x] **Derived per-cell flash** (`col.flash: 'auto' | 'change'`, `col.flashMs`):
+  the grid tracks each cell's last value and flashes green up / red down by
+  itself — no `flashSeq` bookkeeping, and independent per column within a row
+  (bid green while ask goes red). Keyed on (row id, column) so recycled cells
+  don't flash on scroll. `flash: true` stays as the legacy row-driven mode.
+- [x] **`bo-grid/realtime`** — `createTickStream` / `TickBuffer` /
+  `createRowIndex` / `applyPatches`: coalesce a feed per key, drain a bounded
+  slice per frame, apply patches in O(1) skipping unchanged fields. A separate
+  entry on its own 2 KB budget; the core is untouched.
+- [x] **Realtime benchmarks** + live ticks/sec and queue depth in the demo.
+
+## 1.2 · Market conventions — done
+
+The APAC-broker differentiator: the ceiling/floor/reference colour convention
+every VN/TH terminal uses and no generic grid ships, plus the formatting and
+session-state plumbing that goes with it. Pure functions, no `ColumnDef`/Grid/Cell
+changes — wired up through the `cell`/`render` hook you already have, so a
+consumer who doesn't import `bo-grid/trading` pays nothing.
+
+- [x] **Price-limit tone** (`resolveTone`, `toneColor`): classify a value
+  against `{ ref, ceiling?, floor? }` → `'ceiling' | 'floor' | 'ref' | 'up' |
+  'down'`, with a default (overridable) purple/cyan/yellow/green/red palette.
+  `ceiling`/`floor` are optional, so the same function works for any market's
+  limit-price rule, or none.
+- [x] **Vietnam bands** (`vnBands`, `vnTickSize`, `vnBandPercent`,
+  `roundToTick`): HOSE's price-step schedule and HOSE/HNX/UPCOM's daily band
+  widths (7%/10%/15%) — ceiling rounded down to a tradable tick, floor rounded
+  up, so neither exceeds the true regulatory limit.
+- [x] **Tick-aware price formatting** (`fmtTradingPrice`, `decimalsForTick`):
+  decimals derived from the instrument's tick size — 0 for whole-VND, 4 for an
+  FX pip — instead of the built-in `price` type's fixed 2.
+- [x] **Session state** (`sessionStateAt`, `VN_HOSE_SCHEDULE`, `sessionLabel`):
+  ATO/continuous/break/ATC/closed, evaluated via `Intl` in the exchange's own
+  time zone so it's correct for a viewer anywhere.
+- [x] **`bo-grid/trading`** — a separate entry on its own 2 KB budget; the core
+  is untouched. New **VN board** demo, composing it with `bo-grid/realtime`.
+
+## 1.3 · Trading surfaces — done
+
+The two live-desk surfaces a generic grid can't give you out of the box — both
+pure math/data-structure, added to `bo-grid/realtime` (order-book and
+trade-stream handling, not APAC-specific, so they stay out of `bo-grid/trading`)
+with no Grid/Cell changes.
+
+- [x] **Price ladder windowing** (`centeredWindow`): the `[start, end)` slice of
+  `visibleCount` contiguous levels centred on a given index, clamped to bounds.
+  Centring becomes array slicing — feed `<Grid rows>` a different window each
+  tick instead of fighting virtual scroll to physically scroll to a position.
+  "Scroll-lock" (follow the market vs. hold position) is documented as
+  component-level UI state, not something the helper decides. New **Price
+  ladder** demo: 120 levels, 16 visible, page + recenter.
+- [x] **`TradeTape`**: a capped, append-only ring buffer for a time & sales
+  feed — O(1) `push` regardless of session length (a true ring, not
+  shift-and-truncate), `toArray()` a newest-first snapshot. The opposite
+  discipline from `TickBuffer`: nothing coalesces, every trade shows. New
+  **Time & sales** demo.
+- [x] Fits inside realtime's existing 2 KB budget (now ~1.67/2 KB, ~84%) — the
+  next realtime feature should recalibrate it.
+
+## 1.4 · Candlestick & depth charts — done
+
+The last piece of the trading-desk wave: the two chart shapes a trading
+dashboard needs, in the existing `bo-grid/charts` companion. Pure SVG
+geometry (`candleGeometry`, `depthBars`) alongside the existing
+`linePoints`/`barRects`/`donutArcs`, so the pattern of thin component over
+tested geometry holds for these too.
+
+- [x] **`CandlestickChart`**: OHLC candlesticks from the same `Candle` type the
+  grid's own `sparkline` column already uses — body open→close, wick
+  high→low, coloured by direction.
+- [x] **`DepthChart`**: order-book depth from raw per-level sizes (nearest-to-
+  spread first — the cumulative sum is computed for you, not pre-summed by
+  the caller). Bids fill outward left, asks outward right, **one shared
+  vertical scale** across both sides so a lopsided book doesn't let the thin
+  side visually fill the chart.
+- [x] Charts budget recalibrated 3 → 4 KB for both (now ~4.2/8 KB). Dashboard
+  demo gets two more cards.
+
 ## Candidate themes for later versions
 
 The roadmap's planned features are all shipped, plus cross-framework support and
@@ -203,9 +286,11 @@ CSV round-trip. Remaining ideas are polish or demand-driven:
 - Driven by real-world usage now that it's published — open an issue with what's
   missing.
 
-Note: the eager grid core is ~97% of its 28 KB budget; the next sizable *core*
-feature should recalibrate it (still ~15× smaller than heavyweight grids). The charts
-companion (its own 8 KB budget) is the model for keeping the core tiny.
+Note: the eager grid core is ~94% of its 35 KB budget; the next sizable *core*
+feature should recalibrate it (still ~15× smaller than heavyweight grids). The
+charts (8 KB), realtime (2 KB) and trading (2 KB) companions, each on its own
+budget, are the model for keeping the core tiny — a new capability belongs in a
+subpath unless it is genuinely part of the grid's identity.
 
 Out of scope by design (they fight the "tiny" positioning): a heavyweight
 integrated-charting engine in the core (the companion package is the answer),

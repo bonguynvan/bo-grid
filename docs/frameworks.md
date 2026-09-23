@@ -147,6 +147,70 @@ const columns = [
 Sort, filter, tooltip, copy and export still use the value / `format` — `render`
 only controls how the cell looks.
 
+## Realtime feeds
+
+`bo-grid/realtime` is plain framework-agnostic JS — import it from React, Vue,
+Angular or vanilla exactly the same way. Pair it with `flash: 'auto'` columns and
+the grid flashes each changed cell green-up / red-down on its own:
+
+```js
+import { createTickStream, createRowIndex, applyPatches } from 'bo-grid/realtime';
+
+const rows = [/* … */];
+const index = createRowIndex(rows, (r) => r.symbol);
+
+const stream = createTickStream({
+  cap: 400, // max row writes per animation frame
+  apply: (batch) => {
+    applyPatches(index, batch);
+    grid.config = { ...grid.config, rows: [...rows] }; // hand the new rows to <bo-grid>
+  },
+});
+stream.start();
+
+socket.onmessage = (e) => {
+  const q = JSON.parse(e.data);
+  stream.push(q.symbol, q); // cheap: coalesces per symbol, no render
+};
+
+const columns = [
+  { type: 'text',  key: 'symbol', header: 'Symbol' },
+  { type: 'price', key: 'last',   header: 'Last', flash: 'auto' },
+];
+```
+
+Index rows by whatever your feed keys on (`symbol` here); the grid identifies
+rows separately via `id`, or via a `getRowId` you put in `config` — that's the
+key derived flash tracks cells by, so it must be stable across updates.
+
+The `apply` callback runs at most once per frame with at most `cap` entries, so a
+burst can't blow the frame budget — reassigning `config` there costs one update
+per frame rather than one per message. Watch `stream.pending`: if it climbs and
+stays up, the feed is outrunning the screen.
+
+## Market conventions
+
+`bo-grid/trading` (price-limit tone, tick-aware formatting, session state) is
+likewise plain JS with no Grid/Cell coupling — use it from any framework via a
+column's `render(ctx)` hook:
+
+```js
+import { resolveTone, toneColor, fmtTradingPrice, vnTickSize } from 'bo-grid/trading';
+
+const columns = [
+  { type: 'custom', key: 'price', header: 'Price', render: ({ value, row }) => {
+      const tone = resolveTone(value, row.bands); // { ref, ceiling, floor } you computed per row
+      const span = document.createElement('span');
+      span.textContent = fmtTradingPrice(value, vnTickSize(value, row.exchange));
+      span.style.color = toneColor(tone);
+      return span;
+    } },
+];
+```
+
+See the "Market conventions" section in [README.md](../README.md) for the full
+API and the **VN board** demo for a worked example.
+
 ## Notes
 
 - `config` is safe to set **after** the element attaches (the React `ref` +

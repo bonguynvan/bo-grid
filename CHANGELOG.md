@@ -5,7 +5,103 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Derived per-cell tick flash** (`col.flash: 'auto' | 'change'`) — the grid now
+  works out the flash itself: it remembers each cell's last value and flashes
+  green on a rise, red on a fall. No `flashSeq`/`flashDir` bookkeeping in app
+  code; just write the new value. The flash is **per cell**, so bid can flash
+  green while ask flashes red in the same row on the same frame — the legacy
+  `flash: true` mode flashes every such column in a row together, in one
+  direction. `'change'` gives a neutral flash on any change, numeric or not.
+  `col.flashMs` sets the duration (default 300).
+  Flash state is keyed on (row id, column key) rather than held in the cell
+  component, because the row loop is keyed by visual index and recycles mounted
+  cells across rows while scrolling — so a cell now stays quiet on first paint
+  and when it scrolls back into view, and only a real value change flashes.
+- **`bo-grid/realtime`** — the tick pipeline between a market-data socket and the
+  grid, as a separate entry on its own size budget (~1 KB gzip; nothing is added
+  to the grid core). `createTickStream` coalesces raw messages per key with no
+  reactive writes, then drains at most `cap` of them per animation frame, so a
+  burst can't blow the frame budget — a sustained overload shows as a climbing
+  `pending` depth rather than dropped frames. `TickBuffer` is the coalescing
+  buffer alone; `createRowIndex` + `applyPatches` apply a frame's patches to rows
+  in O(1), skipping unchanged fields so an idle-but-chatty feed neither
+  re-renders nor flashes. Framework-agnostic — the frame scheduler is injectable,
+  which is also how it's unit-tested without a browser.
+- **Realtime benchmarks** (`pnpm bench`) — tick coalescing, keyed row writes and
+  derived-flash observation, with regression ceilings like the other hot paths.
+  The **Trading desk** demo now shows applied ticks/sec and queue depth beside
+  the FPS meter.
+- **`bo-grid/trading`** — market-convention helpers for APAC trading screens, as
+  a separate entry on its own size budget (~1 KB gzip; nothing added to the
+  grid core). Pure functions only — wire them into a column via the `cell`
+  snippet or a JS `render(ctx)` hook you already have, no `ColumnDef` changes.
+  - **Price-limit tone** (`resolveTone`, `toneColor`): classify a value against
+    `{ ref, ceiling?, floor? }` → `'ceiling' | 'floor' | 'ref' | 'up' | 'down'`,
+    the ceiling/floor/reference colour convention every VN/TH terminal uses
+    (not just up/down) — `ceiling`/`floor` are optional, so it works for any
+    market's limit-price rule, or none. `toneColor` maps a tone to a default
+    purple/cyan/yellow/green/red palette, overridable per deployment.
+  - **Vietnam bands** (`vnBands`, `vnTickSize`, `vnBandPercent`, `roundToTick`):
+    HOSE's price-step schedule (10 → 50 → 100 VND by price) and HOSE/HNX/UPCOM's
+    daily band widths (7%/10%/15%). `vnBands` rounds the ceiling down and the
+    floor up to a tradable tick — re-rounding with the tick valid *at the
+    rounded price itself* when the band crosses a tier boundary (10,000 /
+    50,000 VND), so the result is always both within the true regulatory limit
+    and a price its own tier would actually trade at.
+  - **Tick-aware price formatting** (`fmtTradingPrice`, `decimalsForTick`):
+    decimals derived from the instrument's tick — 0 for whole-VND, 4 for an FX
+    pip, correctly down to an 8-decimal crypto tick — where the built-in
+    `price` type's fixed 2 decimals is wrong.
+  - **Session state** (`sessionStateAt`, `VN_HOSE_SCHEDULE`, `sessionLabel`):
+    ATO/continuous/break/ATC/closed, evaluated via `Intl` in the exchange's own
+    time zone, so it's correct for a viewer anywhere — not just one in Vietnam.
+  - New **VN board** demo: price-limit tone, tick-aware formatting and the live
+    session badge, composed with `bo-grid/realtime` for price motion.
+- **`centeredWindow`** (`bo-grid/realtime`) — the windowing math for a
+  centred/scroll-locked price ladder: the `[start, end)` slice of
+  `visibleCount` contiguous levels centred on a given index, clamped to
+  bounds. Feed `<Grid rows>` a different slice of the same levels array each
+  tick instead of scrolling to a position — centring becomes array slicing.
+  A non-finite/negative `visibleCount` or a non-finite `centerIndex` returns a
+  safe empty/rounded result rather than propagating `NaN` or an inverted
+  window. New **Price ladder** demo (120 levels, 16 visible, manual page +
+  recenter) — the demo's smoke test reads a rendered cell's value to confirm
+  paging/recentring actually moves the window, not just its lock-state UI.
+- **`TradeTape`** (`bo-grid/realtime`) — a capped, append-only ring buffer for
+  a time & sales feed: `push` is O(1) regardless of session length (a true
+  ring buffer, not shift-and-truncate), `toArray()` gives a newest-first
+  snapshot. The opposite discipline from `TickBuffer`: nothing coalesces,
+  every trade shows. A non-positive capacity throws at construction instead
+  of silently corrupting the ring's modulo arithmetic. New **Time & sales**
+  demo.
+- **Realtime benchmarks** — `TradeTape.push()`/`toArray()` added, with
+  regression ceilings like the other hot paths (~88M trades/sec appended,
+  measuring the ring buffer's own O(1) cost).
+- **`CandlestickChart`** (`bo-grid/charts`) — OHLC candlesticks from the same
+  `Candle` type as the grid's `sparkline` column: body open→close, wick
+  high→low, coloured by direction (`upColor`/`downColor`, default
+  `--boc-up`/`--boc-down`). Pure SVG geometry (`candleGeometry`) alongside
+  the chart companion's other geometry helpers.
+- **`DepthChart`** (`bo-grid/charts`) — order-book depth from raw per-level
+  sizes ordered nearest-to-spread first (`depthBars` computes the cumulative
+  sum — don't pre-sum it yourself). Bids fill outward left, asks outward
+  right, sharing **one** vertical scale across both sides so a lopsided book
+  doesn't let the thin side visually fill the chart. Charts budget
+  recalibrated 3 → 4 KB. Dashboard demo gets an OHLC card and a depth card.
+
 ### Changed
+
+- **`GridRow.flashSeq` / `flashDir` are now optional** — only the legacy
+  `flash: true` mode needs them. Existing rows that set them keep working.
+- **`FlashTracker` eviction is now true LRU** (least-recently-touched, not
+  insertion order) — a cell that keeps ticking is no longer the first thing
+  dropped once the tracker's 20k-cell cache fills on a long session.
+- **`createTickStream` no longer lets a throwing `apply` corrupt the health
+  counters** — a failed batch isn't counted in `applied`, and the error is
+  reported via the new `onError` option (default: re-thrown asynchronously)
+  instead of propagating into the scheduler.
 
 - **docs** — added a "Related projects" cross-link to
   [TradeCanvas](https://github.com/bonguynvan/tradecanvas) (the sibling Svelte 5

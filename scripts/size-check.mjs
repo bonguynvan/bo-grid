@@ -17,9 +17,10 @@ const DIR = 'demo-dist/assets';
 // the tight one and lives in size:lib; this is a looser anti-bloat ceiling for
 // the demo. Bumped 40→45 (landing page), 45→47 (conditional formatting), then
 // 47→52 for the analytics + scale wave (computed columns, rich types, charts
-// companion, column virtualization) and the Dashboard/Wide demos — all demo
-// markup, not shipped to npm.
-const BUDGET_KB = { js: 52, css: 10 }; // gzipped
+// companion, column virtualization) and the Dashboard/Wide demos, then 52→55 for
+// the realtime wave (derived per-cell flash in the core, the bo-grid/realtime
+// tick pipeline the demo feed now runs on) — all demo markup, not shipped to npm.
+const BUDGET_KB = { js: 55, css: 10 }; // gzipped
 
 function gzipKb(path) {
   return gzipSync(readFileSync(path)).length / 1024;

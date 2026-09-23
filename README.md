@@ -1,7 +1,7 @@
 # bo-grid
 
 Tiny, fast **Svelte 5** data grid for fintech UIs — canvas sparklines, batched
-realtime cell updates, and virtual scrolling, with a core that gzips to ~32 KB
+realtime cell updates, and virtual scrolling, with a core that gzips to ~33 KB
 (Svelte external; unused exports tree-shake). A free alternative to the heavyweight
 grids that paywall these features.
 
@@ -37,7 +37,7 @@ page, each grid lazy-mounting as you scroll (jump between them from the side rai
 | Price | $$$ / dev / year | Free (MIT) |
 | Sparklines | paid tier | built in |
 | Realtime cell updates | DIY / complex | built-in primitive |
-| Bundle | hundreds of KB | **~32 KB gzip core** ([benchmarks](./BENCHMARKS.md)) |
+| Bundle | hundreds of KB | **~33 KB gzip core** ([benchmarks](./BENCHMARKS.md)) |
 | Svelte | wrapper | native Svelte 5 |
 
 bo-grid ships most of the features other grids put behind a **paid (Enterprise)**
@@ -66,7 +66,7 @@ layout persistence.
 
   const columns: ColumnDef[] = [
     { type: 'text',      key: 'symbol', sub: 'sector', header: 'Symbol', width: 132 },
-    { type: 'price',     key: 'price',  header: 'Price', width: 88, flash: true },
+    { type: 'price',     key: 'price',  header: 'Price', width: 88, flash: 'auto' },
     { type: 'percent',   key: 'changePct', header: 'Chg %', width: 84 },
     { type: 'heatmap',   key: 'changePct', header: 'Heat', min: -5, max: 5, width: 76 },
     { type: 'volume',    key: 'volume', header: 'Volume', width: 90 },
@@ -74,7 +74,7 @@ layout persistence.
     { type: 'sparkline', key: 'candles', sparkKey: 'candles', header: 'Trend', flex: 1 },
   ];
 
-  // Rows must expose `id`, `flashSeq`, `flashDir` plus your data fields.
+  // Rows must expose `id` plus your data fields.
   // Make the hot fields `$state` so updates flash without re-rendering the table.
   let rows: GridRow[] = $state(/* ... */);
   let filter = $state(''); // bind to your own search input
@@ -85,18 +85,144 @@ layout persistence.
 
 ### Realtime updates
 
-A cell with `flash: true` plays a brief amber flash whenever the row's
-`flashSeq` increments. Drive it from your data source (e.g. a WebSocket):
+#### Tick flash
+
+Set `flash: 'auto'` on a column and the grid works the rest out itself — it
+remembers each cell's last value and flashes **green on a rise, red on a fall**.
+Just write the new value:
 
 ```ts
-row.flashDir = next >= row.price ? 'up' : 'down';
-row.price = next;
-row.flashSeq++; // triggers the flash on the price cell
+row.price = next; // that's it — the price cell flashes, in the right direction
 ```
 
+The flash is **per cell**, not per row: bid can flash green while ask flashes red
+in the same row on the same frame. Flash state is keyed on (row id, column), so a
+cell stays quiet on first paint and when it scrolls back into view — only a real
+value change flashes.
+
+| `flash` | Behaviour |
+| --- | --- |
+| `'auto'` (alias `'up-down'`) | Derived per cell: green up, red down. Numeric columns. |
+| `'change'` | Derived per cell: a neutral amber flash on any change (status, qty, text). |
+| `true` | Legacy row-driven mode: follows the row's own `flashSeq`/`flashDir`, so every `flash: true` column in the row flashes together and you bump the counter yourself. |
+
+`flashMs` sets the duration (default 300) — raise it for a slow feed, lower it
+for a fast one so flashes don't smear together. Reduced-motion is respected.
+
+#### Feeding the grid — `bo-grid/realtime`
+
+A market feed pushes far more messages than a screen can show. Writing each one
+straight into reactive state means thousands of updates to paint 60 frames, and
+the tab stalls. `bo-grid/realtime` is the pipeline that fixes that — coalesce raw
+messages per key (cheap, no reactive writes), then drain a bounded slice once per
+animation frame:
+
+```ts
+import { createTickStream, createRowIndex, applyPatches } from 'bo-grid/realtime';
+
+const index = createRowIndex(rows, (r) => r.symbol);
+const stream = createTickStream<string, Partial<Quote>>({
+  apply: (batch) => applyPatches(index, batch), // once per frame, ≤ cap entries
+  cap: 400,                                     // max row writes per frame
+});
+stream.start();
+
+socket.onmessage = (e) => {
+  const q = JSON.parse(e.data);
+  stream.push(q.symbol, q); // cheap: coalesces, no render
+};
+```
+
+Per key only the **latest** state is applied — intermediate ticks collapse, which
+is what a price board wants (append a trade tape directly instead). `cap` bounds
+the work per frame, so a burst can't blow the frame budget: a sustained overload
+shows up as a climbing `stream.pending` rather than dropped frames, and
+`stream.applied` gives you a throughput counter — it only counts batches that
+applied successfully. If `apply` throws, that frame's batch is lost (it's
+already off the buffer by the time `apply` runs, so it can't be safely
+re-queued) but the frame loop keeps going; pass `onError` to handle it yourself,
+otherwise it's re-thrown asynchronously so it doesn't vanish silently.
+`applyPatches` skips fields whose value didn't change, so an idle-but-chatty
+feed neither re-renders nor flashes.
+
+Row identity for flash comes from the grid's `getRowId` (default `row.id`), not
+from the key you index the feed by — keep it stable across updates.
+
+It's a **separate entry** on its own size budget — importing it adds nothing to
+the grid core, and it's framework-agnostic (the frame scheduler is injectable,
+which is also how it's unit-tested without a browser).
+
 Only on-screen rows render DOM, so off-screen updates cost nothing until they
-scroll into view. Batch bursty feeds into a `requestAnimationFrame` flush to
-keep frames smooth.
+scroll into view.
+
+#### Market conventions — `bo-grid/trading`
+
+APAC boards colour by position relative to the daily **price limit**, not just
+up/down: purple at the ceiling (limit up), cyan at the floor (limit down),
+yellow at the unchanged reference, green/red for an ordinary move — a signal a
+plain up/down grid can't give you. `bo-grid/trading` is the pure-function
+toolkit for that, plus tick-aware price formatting and session state. It's a
+**separate entry**, like charts and realtime — no `ColumnDef` changes, wired up
+through the `cell`/`render` hook you already have:
+
+```ts
+import { vnBands, resolveTone, toneColor, fmtTradingPrice, vnTickSize } from 'bo-grid/trading';
+
+const bands = vnBands(row.ref, 'HOSE');       // { ref, ceiling, floor } — tick-rounded
+const tone = resolveTone(row.price, bands);   // 'ceiling' | 'floor' | 'ref' | 'up' | 'down'
+const color = toneColor(tone);                // CSS colour for that tone
+const text = fmtTradingPrice(row.price, vnTickSize(row.price, 'HOSE')); // "68,500", not "68500.00"
+```
+
+```ts
+import { sessionStateAt, sessionLabel, VN_HOSE_SCHEDULE } from 'bo-grid/trading';
+
+sessionStateAt(new Date(), VN_HOSE_SCHEDULE); // 'pre-open' | 'ato' | 'continuous' | 'break' | 'atc' | 'closed'
+```
+
+`vnBands`/`vnTickSize` encode HOSE's price-step schedule and HOSE/HNX/UPCOM's
+daily band widths (7%/10%/15%), rounding the ceiling **down** and the floor
+**up** to a tradable tick so neither ever sits outside the real regulatory
+limit. `sessionStateAt` evaluates the schedule in the exchange's own time zone
+via `Intl`, so it's correct for a viewer anywhere, not just one in Vietnam. None
+of this is required to use `resolveTone`/`toneColor` — pass your own
+`{ ref, ceiling, floor }` for any other market's limit-price rule. See the **VN
+board** demo for it composed with `bo-grid/realtime`.
+
+#### Price ladder & time & sales
+
+Two more pieces of `bo-grid/realtime` for the surfaces every trading desk
+needs, both pure — no ladder/tape component of their own, just the data
+structure or math that makes building one straightforward:
+
+```ts
+import { centeredWindow } from 'bo-grid/realtime';
+
+// 120 price levels, 16 visible, centred on the spread (index 60):
+const { start, end } = centeredWindow(120, 60, 16); // { start: 52, end: 68 }
+const visible = levels.slice(start, end);           // hand THIS to <Grid rows>
+```
+
+A ladder shows more levels than fit on screen, kept centred on the spread as
+the book moves. `centeredWindow` is the windowing math — feed the grid a
+different slice of the same levels array each tick instead of fighting virtual
+scroll to physically scroll to a position. "Scroll-lock" (follow the market vs.
+hold position because the viewer paged away) is UI state you keep yourself —
+see the **Price ladder** demo for the pattern (a `lockedCenter: number | null`:
+`null` follows live, a number freezes the window until "Recenter").
+
+```ts
+import { TradeTape } from 'bo-grid/realtime';
+
+const tape = new TradeTape<Trade>(500); // capped ring buffer, O(1) per push
+socket.onmessage = (e) => tape.push(JSON.parse(e.data));
+rows = tape.toArray(); // newest trade first — call once per render, not per trade
+```
+
+A time & sales tape is the opposite discipline from a price feed: nothing
+coalesces (every trade must show), so what it needs is a bound instead — drop
+the oldest trade once `capacity` is reached, O(1) regardless of session length.
+See the **Time & sales** demo.
 
 ### React, Vue, Angular & vanilla
 
@@ -274,10 +400,11 @@ and pure — it's called during sort and filter.
 
 For dashboards, `bo-grid/charts` ships tiny, dependency-free SVG charts —
 `LineChart`, `BarChart`, `DonutChart`, `StackedBarChart` (stacked or `grouped`
-multi-series), and a `Legend`. They're a **separate import**, so they add nothing
-to the grid core (~3 KB gzip on their own). Use them standalone, or inside a grid
-cell via a `custom` column. Bar/stacked/donut elements carry an SVG `<title>`, so
-hovering shows the value (accessible, zero-JS).
+multi-series), `CandlestickChart`, `DepthChart`, and a `Legend`. They're a
+**separate import**, so they add nothing to the grid core (~4 KB gzip on their
+own). Use them standalone, or inside a grid cell via a `custom` column.
+Bar/stacked/donut elements carry an SVG `<title>`, so hovering shows the value
+(accessible, zero-JS).
 
 ```svelte
 <script>
@@ -297,6 +424,25 @@ Theme them with `color` / `colors` props, or by setting `--boc-color` and
 `--boc-1`…`--boc-6` CSS vars on any ancestor. The geometry helpers (`linePoints`,
 `barRects`, `donutArcs`, …) are exported too, for rolling your own SVG charts. See
 the **Dashboard** example for charts inside grid cells.
+
+#### Candlestick & depth charts
+
+The two trading-specific chart shapes, built on the same `Candle` type as the
+grid's own `sparkline` column:
+
+```svelte
+<CandlestickChart data={candles} width={220} height={60} />
+<!-- bids/asks: sizes ordered NEAREST-TO-SPREAD FIRST; cumulative depth is
+     computed for you, don't pre-sum it -->
+<DepthChart bids={[40, 90, 60]} asks={[55, 70, 45]} width={220} height={60} />
+```
+
+`CandlestickChart` colours by `upColor`/`downColor` (defaulting to
+`--boc-up`/`--boc-down`, then a fixed green/red). `DepthChart` shares **one**
+vertical scale across both sides, so a lopsided book doesn't let the thin side
+visually fill the chart — the whole point of a depth chart is comparing the
+two. The geometry helpers (`candleGeometry`, `depthBars`) are exported too. See
+the **Dashboard** example.
 
 ## Row height
 

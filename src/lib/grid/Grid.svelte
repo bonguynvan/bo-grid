@@ -17,6 +17,7 @@
   import { buildFlatRows, buildLazyGroupRows, activeGroupsAt, type VisualRow, type GroupNode, type LazyGroup } from './grouping';
   import { buildTreeRows } from './tree';
   import { moveIndex } from './reorder';
+  import { FlashTracker } from './flash';
   import { parseClipboard, isSingleCell } from './clipboard';
   import { applyWidths, clampWidth, isResizable, type WidthMap } from './sizing';
   import {
@@ -171,7 +172,11 @@
       event: MouseEvent,
     ) => void;
     /** Rows pinned to the top, always visible above the scroll (a benchmark, a
-        summary, "your position"). Display-only — not virtualized or selectable. */
+        summary, "your position"). Display-only — not virtualized or selectable.
+        Their `getRowId` must not collide with a row in `rows`/`source` — with a
+        derived-flash column (`flash: 'auto'`), a shared id means the pinned
+        cell and the data-row cell share one flash-tracker entry, so updating
+        one can suppress or trigger a flash on the other. */
     pinnedRows?: GridRow[];
     /** Show a per-column filter input row under the header. Rows must match every
         non-empty column filter (AND). In-memory mode only. Default false. */
@@ -525,6 +530,17 @@
       ? sized.map((c) => (c.key in pinOverrides ? { ...c, pinned: pinOverrides[c.key] } : c))
       : sized,
   );
+  // Derived flash keeps its last-seen value per (row id, column key) — a cell
+  // can't hold it, because the row loop is keyed by visual index and recycles
+  // mounted cells across rows as you scroll.
+  //
+  // Deliberately NOT $derived: a derived tracker would be rebuilt whenever
+  // `columns` changed identity (an inline array literal does that on every
+  // parent render), and a fresh tracker sees every cell as first-sight, which
+  // silently means nothing ever flashes. One stable instance per grid — an empty
+  // Map until a column with derived flash actually observes through it.
+  const flashTracker = new FlashTracker();
+
   // Pin-arrangement: pinned columns move to the edges and get sticky offsets.
   // When nothing is pinned this is a no-op and the grid stays fit-to-width.
   const layout = $derived(arrangePinned(pinnedSized));
@@ -1871,6 +1887,8 @@
                 colIndex={ci + 1 + leadCols}
                 cellId={`${gid}-pin${pi}-c${ci}`}
                 cellSnippet={cell}
+                rowKey={getRowId(prow)}
+                {flashTracker}
                 pinned={pinned && layout.info[ci].pinned}
                 pinSide={layout.info[ci].side ?? 'left'}
                 pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right : layout.info[ci].left + leadPx}
@@ -1969,6 +1987,8 @@
                   colIndex={ci + 1 + leadCols}
                   cellId={`${gid}-r${item.vr}-c${ci}`}
                   cellSnippet={cell}
+                  rowKey={getRowId(item.row)}
+                  {flashTracker}
                   selected={cellSelection && sel.contains(item.vr, ci)}
                   focused={cellSelection && sel.isFocus(item.vr, ci)}
                   pinned={pinned && layout.info[ci].pinned}

@@ -12,9 +12,15 @@ export default defineConfig({
     emptyOutDir: true,
     minify: 'esbuild',
     lib: {
-      // Two entries: the grid core and the optional charts companion. Measured
-      // separately by size-lib.mjs so each keeps its own budget.
-      entry: { 'bo-grid': 'src/lib/index.ts', charts: 'src/lib/charts/index.ts' },
+      // Four entries: the grid core plus the optional charts, realtime and
+      // trading companions. Measured separately by size-lib.mjs so each keeps
+      // its own budget and none can creep into the core number.
+      entry: {
+        'bo-grid': 'src/lib/index.ts',
+        charts: 'src/lib/charts/index.ts',
+        realtime: 'src/lib/realtime/index.ts',
+        trading: 'src/lib/trading/index.ts',
+      },
       formats: ['es'],
     },
     rollupOptions: {

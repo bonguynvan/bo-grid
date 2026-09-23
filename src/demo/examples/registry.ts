@@ -42,6 +42,24 @@ export const EXAMPLES: Example[] = [
     load: () => import('./OrderBook.svelte'),
   },
   {
+    id: 'ladder',
+    title: 'Price ladder',
+    blurb: '120 levels, 16 visible — centred on the spread with manual page + recenter (bo-grid/realtime centeredWindow).',
+    load: () => import('./PriceLadder.svelte'),
+  },
+  {
+    id: 'timesales',
+    title: 'Time & sales',
+    blurb: 'A capped trade tape, newest first, O(1) per trade — bo-grid/realtime TradeTape.',
+    load: () => import('./TimeSales.svelte'),
+  },
+  {
+    id: 'vnboard',
+    title: 'VN board',
+    blurb: 'HOSE-style price-limit colouring (ceiling/floor/reference), tick-aware VND formatting & live session badge — bo-grid/trading.',
+    load: () => import('./VnBoard.svelte'),
+  },
+  {
     id: 'correlation',
     title: 'Correlation',
     blurb: 'An N×N heatmap matrix with a pinned label column and dynamic columns.',
