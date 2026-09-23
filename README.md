@@ -7,6 +7,7 @@ grids that paywall these features.
 
 **[Live demo](https://bonguynvan.github.io/bo-grid/)** ·
 **[API reference](https://bonguynvan.github.io/bo-grid/api.html)** ·
+**[llms.txt](https://bonguynvan.github.io/bo-grid/llms.txt)** ·
 **[Benchmarks](./BENCHMARKS.md)** ·
 **[Roadmap](./ROADMAP.md)**
 
@@ -43,6 +44,23 @@ page, each grid lazy-mounting as you scroll (jump between them from the side rai
 bo-grid ships most of the features other grids put behind a **paid (Enterprise)**
 tier — grouping, pivot, tree data, master-detail, range selection, Excel export,
 sparklines — for free, and runs in any framework via a [custom element](./docs/frameworks.md).
+
+## Using bo-grid with an AI coding assistant
+
+Real props, real subpath boundaries, nothing invented:
+
+- **[llms.txt](https://bonguynvan.github.io/bo-grid/llms.txt)** /
+  **[llms-full.txt](https://bonguynvan.github.io/bo-grid/llms-full.txt)** —
+  machine-readable references. Paste `llms-full.txt` into a chat, or point an
+  agent that fetches URLs (Cursor, Windsurf, Claude Code, browsing ChatGPT) at
+  it before asking for bo-grid code — it has every `ColumnDef`/`<Grid>` prop,
+  every subpath's exports, and a "things an AI commonly gets wrong" list (the
+  #1 one: writing `flashSeq++` bookkeeping instead of `flash: 'auto'`).
+- **[Cursor/Windsurf rule](./docs/ai/cursor-rules.mdc)** and
+  **[CLAUDE.md snippet](./docs/ai/claude-md-snippet.md)** — copy one into your
+  own project (`.cursor/rules/bo-grid.mdc` or your `CLAUDE.md`) so every
+  session gets it right without you repeating yourself. See
+  [docs/ai](./docs/ai) for the full picture.
 
 ## Install
 

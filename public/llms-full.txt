@@ -1,0 +1,453 @@
+# bo-grid — full reference for AI code generation
+
+This file is meant to be pasted whole into an AI assistant's context (or
+fetched by an agent) before it generates code against `bo-grid`. It states
+the real, current API surface — every name here exists in the published
+package. If something you want isn't listed here, don't invent it: check
+CHANGELOG.md or ask, rather than guessing a plausible-sounding prop name.
+
+Package: `bo-grid` (npm). Peer dependency: `svelte@^5`. `sideEffects: false`
+(unused exports tree-shake). Works with SvelteKit/SSR out of the box.
+
+## 0. The one rule that matters most
+
+**bo-grid ships FOUR separate entry points. Importing one adds NOTHING to
+the others.** Never import something from the main entry if it belongs to a
+subpath — it isn't there.
+
+```
+bo-grid            → Grid component + core types/helpers (this file, §1-§4)
+bo-grid/charts      → SVG charts (§5)
+bo-grid/realtime    → tick/trade-stream pipeline (§6)
+bo-grid/trading     → APAC market-convention helpers (§7)
+bo-grid/element     → framework-agnostic <bo-grid> web component (§8)
+```
+
+## 1. Minimal usage
+
+```svelte
+<script lang="ts">
+  import { Grid, type ColumnDef, type GridRow } from 'bo-grid';
+
+  const columns: ColumnDef[] = [
+    { type: 'text', key: 'symbol', header: 'Symbol', width: 120 },
+    { type: 'price', key: 'price', header: 'Price', width: 90, flash: 'auto' },
+    { type: 'percent', key: 'changePct', header: 'Chg %', width: 80 },
+  ];
+
+  // GridRow requires only `id`. Add your own fields.
+  let rows: GridRow[] = $state([
+    { id: 1, symbol: 'AAPL', price: 227.5, changePct: 1.2 },
+    { id: 2, symbol: 'MSFT', price: 415.3, changePct: -0.4 },
+  ]);
+</script>
+
+<Grid {rows} {columns} height={640} />
+```
+
+`height` is a **number** (the scroll viewport's pixel height; the grid's
+total height is that plus header/toolbar/footer chrome) OR a **CSS string**
+(`'100%'`, `'80vh'`, `'480px'`) — a string sizes the whole element and the
+viewport auto-fits the remaining space (give the grid a sized parent).
+
+## 2. `GridRow`
+
+```ts
+interface GridRow {
+  id: number;
+  /** Legacy row-driven flash ONLY — omit unless you use `flash: true`. */
+  flashSeq?: number;
+  flashDir?: 'up' | 'down';
+  [field: string]: unknown; // your own data fields
+}
+```
+
+**DO NOT** add `flashSeq`/`flashDir` to a row unless a column explicitly uses
+the legacy `flash: true` mode. For `flash: 'auto'`/`'change'` (the normal,
+recommended mode — see §4.2), the grid needs neither field.
+
+## 3. `<Grid>` props
+
+```ts
+interface GridProps {
+  rows: GridRow[];                    // required, unless using `source`
+  columns: ColumnDef[];                // required — see §4
+  height: number | string;             // required — see §1
+
+  // Sizing/theming
+  rowHeight?: number | ((row: GridRow, index: number) => number); // default 36
+  theme?: 'dark' | 'light' | GridTheme;  // default 'dark' — see §3.1
+  resizable?: boolean;                 // drag-to-resize columns, default true
+  virtualizeColumns?: boolean;         // 100+ column grids, default false
+
+  // Selection
+  cellSelection?: boolean;             // range-select highlight, default true
+  rowSelection?: boolean;              // leading checkbox column, default false
+  onRowSelectionChange?: (selectedIds: Array<string | number>) => void;
+  selectedRowId?: string | number | null;   // controlled active-row highlight
+  onRowClick?: (row: GridRow, event: MouseEvent | KeyboardEvent) => void;
+  onCellClick?: (info: { row: GridRow; column: ColumnDef; value: unknown }, event: MouseEvent) => void;
+  getRowId?: (row: GridRow) => string | number;  // default: row => row.id
+
+  // Sort / filter
+  sort?: SortState[];                  // controlled: [{ key, dir: 'asc'|'desc' }]
+  onSortChange?: (sort: SortState[]) => void;
+  filter?: string;                     // quick-filter search text (bind to your input)
+  quickFilter?: boolean;               // built-in search box, default false
+  filterRow?: boolean;                 // per-column filter inputs under header
+  filterMenu?: boolean;                // per-column funnel menu (lazy-loaded)
+  columnFilters?: Record<string, ColumnFilter>;   // controlled
+  onFilterChange?: (filters: Record<string, ColumnFilter>) => void;
+
+  // Grouping / tree / pivot-adjacent
+  groupBy?: string[];
+  aggregations?: AggKind[];            // ['sum','avg','count','min','max']
+  getChildren?: (row: GridRow) => GridRow[] | undefined;  // sync tree data
+  loadChildren?: (row: GridRow) => Promise<GridRow[]>;    // async (lazy) tree
+  hasChildren?: (row: GridRow) => boolean;
+  lazyGroups?: LazyGroup[];            // server-side group summaries
+  loadGroup?: (key: string) => Promise<GridRow[]>;
+  detail?: Snippet<[{ row: GridRow }]>; // master-detail expand panel
+  detailHeight?: number;
+
+  // Columns
+  hiddenColumns?: string[];
+  onColumnVisibilityChange?: (hidden: string[]) => void;
+  columnMenu?: boolean;                // per-column ⋮ menu (sort/hide/filter)
+  columnsPanel?: boolean;              // "Columns" toggle panel
+  onColumnReorder?: (keys: string[]) => void;
+  onColumnResize?: (key: string, width: number) => void;
+
+  // Rows
+  rowClass?: (row: GridRow) => string | undefined;  // conditional row class
+  pinnedRows?: GridRow[];              // rows pinned above the scroll
+  emptyMessage?: string;
+  loading?: boolean;
+  rowMenu?: (row: GridRow) => Array<{ label: string; onSelect: () => void }>;
+  onRowReorder?: (fromIndex: number, toIndex: number) => void;
+
+  // Editing
+  onCellEdit?: (e: { row: GridRow; column: ColumnDef; value: string | number }) => void;
+  fillHandle?: boolean;                // drag-fill selection corner
+
+  // Pagination
+  pageSize?: number;
+  pageSizeOptions?: number[];
+  onPageSizeChange?: (size: number) => void;
+  page?: number;
+  onPageChange?: (page: number) => void;
+
+  // Server-side data (huge datasets — see RowSource below)
+  source?: RowSource;
+
+  // Misc
+  footer?: boolean;                    // totals row
+  persistKey?: string;                 // localStorage key for layout persistence
+  ariaLabel?: string;
+  cell?: Snippet<[{ row: GridRow; column: ColumnDef; value: unknown }]>;  // custom-cell renderer (Svelte-only — see §4.4 and §8 for non-Svelte)
+}
+```
+
+### 3.1 Theming
+
+```ts
+import { themePresets, type ThemePreset } from 'bo-grid';
+// themePresets: 'dark' | 'light' | 'highContrastDark' | 'highContrastLight' | 'midnight' | 'terminal'
+```
+Or pass a full `GridTheme` token object (`themeVars`, `darkTheme`, `lightTheme` are exported for reference/extension).
+
+### 3.2 Server-side data (`RowSource`)
+
+For datasets too large to hold in memory: `createArraySource(rows, opts?)` wraps
+an array with the windowed interface; implement `RowSource` yourself for a real
+backend (`{ getRows(params: RowSourceParams): Promise<RowSourceResult> }`,
+params include range/sort/filter/columnFilters).
+
+## 4. `ColumnDef`
+
+Every variant shares these base fields (all optional except `key`/`header`):
+
+```ts
+interface ColBase {
+  key: string;              // required — row field to read (or the sort/filter key for a computed column)
+  header: string;            // required — header label
+  value?: (row: GridRow) => unknown;   // computed column — derives instead of reading row[key]
+  width?: number; minWidth?: number; maxWidth?: number;
+  flex?: number;              // flex-grow weight instead of a fixed width
+  align?: 'left' | 'right';
+  cellClass?: string | ((value: unknown, row: GridRow) => string | undefined);
+  headerClass?: string;
+  headerTooltip?: string; headerInfo?: boolean;
+
+  flash?: boolean | 'auto' | 'up-down' | 'change';   // §4.2 — use 'auto', not true
+  flashMs?: number;           // derived-mode flash duration, default 300
+
+  sortable?: boolean;         // default true
+  compare?: (a: unknown, b: unknown) => number;
+  groupAgg?: AggKind;
+  pinned?: boolean | 'left' | 'right';
+  editable?: boolean;
+  validate?: (value: string | number, row: GridRow) => boolean;
+  options?: string[];         // editable <select> choices
+  tooltip?: boolean | ((value: unknown, row: GridRow) => string);
+  wrap?: boolean;
+  format?: (value: unknown, row?: GridRow) => string;   // custom display formatter
+  render?: (ctx: { value: unknown; row: GridRow; column: ColumnDef }) => string | Node | null | undefined;  // JS cell renderer (framework-agnostic — §4.4)
+  resizable?: boolean;
+  group?: string;              // spanning header group label
+  filter?: false | 'text' | 'number' | 'date' | 'set';
+
+  // Conditional formatting (numeric columns only)
+  dataBar?: { min?: number; max?: number; color?: string; negative?: string };
+  icons?: Array<{ at: number; icon: string; tone?: 'up'|'down'|'amber'|'info'|'neutral' }>;
+  colorScale?: { min?: number; mid?: number; max?: number; colors?: [string,string] | [string,string,string] };
+}
+```
+
+### 4.1 `type` variants (discriminated union — pick one per column)
+
+```
+'text'      sub?: string                                    plain text (+ optional subtitle)
+'price'     —                                                fixed 2-decimal number (use bo-grid/trading's
+                                                               fmtTradingPrice for tick-aware precision instead)
+'percent'   —                                                "+1.20%" style
+'volume'    —                                                1.2K / 3.4M / 5.6B compact number
+'number'    decimals?: number                                fixed-decimal number
+'date'      dateStyle?: 'short' | 'medium'                   epoch ms → localized date
+'currency'  currency?: string; locale?: string; decimals?    Intl.NumberFormat currency
+'relative'  —                                                epoch ms → "3 hours ago"
+'heatmap'   min: number; max: number; decimals?: number      fixed heat-ramp background (required min/max)
+'sparkline' sparkKey: string                                 canvas candlestick sparkline (value at sparkKey: Candle[])
+'progress'  min?: number; max?: number                       progress bar
+'rating'    max?: number                                     star rating
+'tags'      —                                                value: string[] or comma-separated string
+'badge'     tones?: Record<string, BadgeTone>                pill badge; BadgeTone = 'up'|'down'|'amber'|'info'|'neutral'
+'boolean'   trueLabel?: string; falseLabel?: string           ✓ / ✕
+'avatar'    sub?: string                                     initials avatar + name
+'link'      href?: (row) => string; newTab?: boolean          sanitized anchor (blocks javascript:/data:)
+'custom'    —                                                render via the `cell` snippet or `render()` hook
+```
+
+### 4.2 Realtime flash — the pattern to always use
+
+```ts
+{ type: 'price', key: 'price', header: 'Price', flash: 'auto' }
+```
+```ts
+row.price = next;  // that's the WHOLE update. No other code needed.
+```
+
+The grid tracks each cell's own last value (keyed on row id + column) and
+flashes green on a rise, red on a fall, automatically. It never flashes on
+first paint or when a row scrolls into view.
+
+**DO NOT** generate this legacy pattern unless the user explicitly asks for
+row-driven (`flash: true`) flash:
+```ts
+// ANTI-PATTERN — do not generate this for a new column:
+row.flashDir = next >= row.price ? 'up' : 'down';
+row.price = next;
+row.flashSeq++;
+```
+`'change'` instead of `'auto'` gives a neutral flash on any change (status,
+text, not just numeric up/down).
+
+### 4.3 Custom cells (Svelte)
+
+```svelte
+{#snippet cell({ row, column, value })}
+  <span class:up={row.changePct > 0}>{row.changePct > 0 ? '▲' : '▼'}</span>
+{/snippet}
+<Grid {rows} {columns} {cell} height={640} />
+```
+
+### 4.4 Custom cells (React/Vue/vanilla/`<bo-grid>`) — use `render`, not `cell`
+
+Svelte snippets don't exist outside Svelte. From any other framework, give a
+column a `render(ctx)` function instead:
+```ts
+{ type: 'custom', key: 'status', render: ({ value }) => {
+    const span = document.createElement('span');
+    span.textContent = value === 'up' ? '● Live' : '○ Idle';
+    return span; // a returned Node is safe; a returned STRING is set via innerHTML — sanitize it yourself
+  } }
+```
+
+## 5. `bo-grid/charts` — SVG charts (own budget, ~4 KB gzip, adds nothing to core)
+
+```ts
+import { LineChart, BarChart, DonutChart, StackedBarChart, CandlestickChart, DepthChart, Legend } from 'bo-grid/charts';
+```
+
+```
+LineChart          data: number[]; width?; height?; color?; area?; strokeWidth?
+BarChart           data: number[]; width?; height?; gap?; color?; radius?
+DonutChart          data: number[] | {value,color?,label?}[]; size?; thickness?  (thickness >= size/2 → pie)
+StackedBarChart     data: number[][]; width?; height?; grouped?; seriesLabels?   (data[series][category])
+CandlestickChart    data: Candle[]; width?; height?; gap?; upColor?; downColor?  (Candle = {open,high,low,close,volume})
+DepthChart          bids: number[]; asks: number[]; width?; height?; bidColor?; askColor?
+Legend              items: {label, color?}[]
+```
+
+`DepthChart.bids`/`asks` are **raw per-level sizes, nearest-to-spread first**
+(index 0 = best bid/ask) — the cumulative depth is computed internally; do
+NOT pass a pre-summed running total. Both sides share one vertical scale.
+
+All bar/stacked/donut/candlestick/depth elements carry an SVG `<title>` for
+native hover tooltips. Theme with `color`/`colors` props or the CSS vars
+`--boc-color`, `--boc-1`…`--boc-6`, `--boc-up`, `--boc-down` on any ancestor.
+
+Geometry helpers (for building your own SVG chart): `extent`, `linePoints`,
+`linePath`, `areaPath`, `barRects`, `stackedBars`, `groupedBars`, `donutArcs`,
+`candleGeometry`, `depthBars`.
+
+## 6. `bo-grid/realtime` — feed pipeline (own budget, ~1.7 KB gzip)
+
+```ts
+import { createTickStream, createRowIndex, applyPatches, TickBuffer, TradeTape, centeredWindow } from 'bo-grid/realtime';
+```
+
+**Price feed** (coalesces per key, drains a bounded slice per animation
+frame — use this instead of writing every socket message straight to
+`$state`, which stalls the tab under load):
+```ts
+const index = createRowIndex(rows, (r) => r.symbol);   // Map<key, row>, O(1) lookup
+const stream = createTickStream<string, Partial<Quote>>({
+  apply: (batch) => applyPatches(index, batch),  // called ≤ once per frame, ≤ cap entries
+  cap: 400,                                       // max row writes per frame, default 400
+  onError: (err) => console.error(err),            // optional; default: rethrows async
+});
+stream.start();
+socket.onmessage = (e) => stream.push(JSON.parse(e.data).symbol, JSON.parse(e.data));
+// stream.pending  → patches waiting for a frame (climbing = feed outrunning the screen)
+// stream.applied  → successfully-applied count (a batch whose apply() threw is not counted)
+// stream.stop() / stream.flushNow()
+```
+Per key, only the LATEST patch is applied — intermediate values collapse.
+This is correct for a price board; do NOT use it for a trade tape (every
+trade must show) — use `TradeTape` instead.
+
+**Trade tape** (time & sales — nothing coalesces, capped ring buffer, O(1) push):
+```ts
+const tape = new TradeTape<Trade>(500);   // capacity must be a positive integer; default 500
+socket.onmessage = (e) => tape.push(JSON.parse(e.data));
+rows = tape.toArray();   // newest-first snapshot — call once per render, not per trade
+```
+
+**Price ladder windowing** (centered/scroll-locked view over more levels
+than fit on screen — this is array-slicing math, not scroll control):
+```ts
+const { start, end } = centeredWindow(totalLevels, centerIndex, visibleCount);
+const visible = levels.slice(start, end);   // feed THIS to <Grid rows>, not the full array
+```
+Keep "scroll-lock" state (`lockedCenter: number | null`) in your own
+component — `null` follows the live center, a number freezes the window.
+
+## 7. `bo-grid/trading` — APAC market conventions (own budget, ~1.3 KB gzip)
+
+Pure functions only — no `ColumnDef`/Grid changes. Wire results into a column
+via `render`/`cell` (§4.3/§4.4).
+
+```ts
+import { resolveTone, toneColor, vnBands, vnTickSize, roundToTick, vnBandPercent,
+         fmtTradingPrice, decimalsForTick, sessionStateAt, sessionLabel, VN_HOSE_SCHEDULE } from 'bo-grid/trading';
+```
+
+**Price-limit tone** (the ceiling/floor/reference/up/down colour convention
+VN/TH terminals use — NOT plain up/down):
+```ts
+const bands = vnBands(row.ref, 'HOSE');   // 'HOSE' | 'HNX' | 'UPCOM', default 'HOSE'
+                                            // → { ref, ceiling, floor } — tick-rounded (ceiling DOWN, floor UP)
+const tone = resolveTone(row.price, bands);   // 'ceiling' | 'floor' | 'ref' | 'up' | 'down'
+const color = toneColor(tone);                 // default palette; pass a partial override object
+```
+`vnTickSize(price, exchange?)` — HOSE steps 10 → 50 → 100 VND by price tier;
+HNX/UPCOM flat 100 VND. `roundToTick(price, tick, 'down'|'up'|'nearest')`.
+
+**Tick-aware formatting** (the built-in `price` column type is a fixed 2
+decimals — wrong for whole-VND or a 4-decimal FX pip):
+```ts
+fmtTradingPrice(68500, vnTickSize(68500, 'HOSE'));  // "68,500" — 0 decimals for a whole-VND tick
+```
+
+**Session state** (evaluated via `Intl` in the exchange's own time zone —
+correct for a viewer anywhere, not just Vietnam):
+```ts
+sessionStateAt(new Date(), VN_HOSE_SCHEDULE);
+// → 'pre-open' | 'ato' | 'continuous' | 'break' | 'atc' | 'closed'
+```
+
+## 8. `bo-grid/element` — framework-agnostic `<bo-grid>` web component
+
+For React, Vue, Angular, or vanilla JS. Registers `<bo-grid>` as a custom
+element and takes the ENTIRE `<Grid>` API through one `config` object
+(bundle includes the Svelte runtime, so it's larger than the native import —
+~60 KB gzip; if you're already in Svelte, import `Grid` directly instead).
+
+```ts
+import { createBoGrid } from 'bo-grid/element';   // registers <bo-grid>, injects styles
+import type { BoGridConfig } from 'bo-grid/element';
+
+const config: BoGridConfig = { columns, rows, theme: 'dark', height: 520 };
+document.body.append(createBoGrid(config));
+// or: el.config = config;  — config is safe to set AFTER the element attaches
+// (blank grid until config arrives, then reacts — no crash). Use createBoGrid
+// or set config in a useEffect/onMounted — never assume it exists synchronously.
+```
+Client-only (needs the DOM) — guard SSR with a dynamic import. Renders to
+light DOM (no shadow root), so `--bo-*`/page CSS applies normally. Custom
+cells from non-Svelte code use a column's `render(ctx)` — see §4.4.
+
+## 9. Main-entry (`bo-grid`) standalone exports
+
+```ts
+// Formatters
+fmtPrice, fmtPercent, fmtVolume, fmtDate, fmtCurrency, relativeTime
+
+// Data helpers
+aggregate(values: number[]) → {sum,avg,count,min,max} | null (empty → null)
+heatColor(value, min, max), pivot(rows, config)
+
+// Theming
+themeVars, darkTheme, lightTheme, highContrastDark, highContrastLight,
+midnightTheme, terminalTheme, themePresets
+
+// Sparkline canvas primitives (draw your own candlestick canvas)
+drawCandles(ctx, candles, w, h, colors?), setupHiDpiCanvas(canvas, cssW, cssH)
+
+// Export / import (CSV dependency-free; XLSX dynamic-imports the optional `xlsx` peer)
+toCSV(rows, columns, opts?) → string
+exportCSV(filename, rows, columns, opts?)   // filename is FIRST — triggers a browser download
+exportXLSX(filename, rows, columns, opts?)  // async; filename FIRST; dynamic-imports `xlsx` (install it as a peer)
+parseCSV(text, columns?), parseCSVMatrix(text), parseTSV(text, columns?),
+parseJSON(text), parseRows(text, columns?)  // auto-detects JSON/TSV/CSV — good for a paste handler
+rowsFromObjects(objects)
+
+// Print / full-data HTML (renders ALL rows, unlike the virtualized grid)
+toHTMLTable(rows, columns), printTable(rows, columns, opts?), escapeHTML(s)
+
+// Server-side / windowed data source
+createArraySource(rows, opts?)
+```
+
+## 10. Things an AI assistant commonly gets wrong — check before you emit code
+
+1. Importing a chart/realtime/trading export from `'bo-grid'` instead of its
+   subpath (`'bo-grid/charts'` etc.) — it will not exist there.
+2. Writing `flashSeq++`/`flashDir =` bookkeeping for a NEW column — use
+   `flash: 'auto'` instead (§4.2). Only reach for `flash: true` if asked for
+   the legacy row-driven mode explicitly.
+3. Using the Svelte `cell` snippet from React/Vue/vanilla code — snippets
+   don't exist outside Svelte; use `render(ctx)` (§4.4).
+4. Pre-summing cumulative depth before calling `DepthChart`/`depthBars` — pass
+   raw per-level sizes, the cumulative sum is computed internally (§5).
+5. Coalescing a trade tape's individual trades with `createTickStream`
+   (which is last-write-wins per key) — a trade tape needs `TradeTape`
+   instead, because every trade must show (§6).
+6. Assuming `GridRow` needs `flashSeq`/`flashDir` — it doesn't, unless using
+   legacy `flash: true` (§2).
+7. Setting `<bo-grid>`'s `config` before the element is guaranteed attached
+   without checking the docs' safe pattern — use `createBoGrid` or a
+   framework's post-mount hook (§8).
+8. Inventing a `ColumnDef`/`GridProps` field not listed in §3/§4 — the full
+   prop surface is listed above; if a name isn't there, it doesn't exist.
