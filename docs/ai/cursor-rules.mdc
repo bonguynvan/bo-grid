@@ -1,0 +1,82 @@
+---
+description: bo-grid — correct API usage for the Svelte 5 data grid (Grid, ColumnDef, subpaths)
+globs: ["**/*.svelte", "**/*.ts", "**/*.tsx", "**/*.jsx"]
+alwaysApply: false
+---
+
+# bo-grid usage rules
+
+This project depends on `bo-grid` (a Svelte 5 data grid; peer `svelte@^5`).
+Before writing or editing code that uses it, follow these rules exactly — do
+not invent props or import paths that aren't listed here.
+
+**Full API reference**: fetch and read
+`https://bonguynvan.github.io/bo-grid/llms-full.txt` before generating
+non-trivial grid code (new column types, realtime feeds, charts, or the web
+component) — it lists every `ColumnDef`/`<Grid>` prop and every subpath
+export with runnable snippets. Don't guess a prop name; check it there.
+
+## The one rule that matters most
+
+bo-grid ships **four separate entry points**. Importing one adds nothing to
+the others — never import a chart/realtime/trading export from the main
+`'bo-grid'` entry, it isn't there:
+
+```
+bo-grid            Grid component + core types/helpers
+bo-grid/charts      SVG charts (LineChart, BarChart, DonutChart, StackedBarChart, CandlestickChart, DepthChart, Legend)
+bo-grid/realtime    createTickStream, TradeTape, centeredWindow, applyPatches
+bo-grid/trading     resolveTone, vnBands, fmtTradingPrice, sessionStateAt (VN/APAC market conventions)
+bo-grid/element     <bo-grid> web component (React/Vue/Angular/vanilla)
+```
+
+## Minimal usage
+
+```svelte
+<script lang="ts">
+  import { Grid, type ColumnDef, type GridRow } from 'bo-grid';
+  const columns: ColumnDef[] = [
+    { type: 'text', key: 'symbol', header: 'Symbol', width: 120 },
+    { type: 'price', key: 'price', header: 'Price', width: 90, flash: 'auto' },
+  ];
+  let rows: GridRow[] = $state([{ id: 1, symbol: 'AAPL', price: 227.5 }]); // GridRow needs only `id`
+</script>
+<Grid {rows} {columns} height={640} />
+```
+
+## Realtime cell flash — always use `flash: 'auto'`
+
+```ts
+{ type: 'price', key: 'price', header: 'Price', flash: 'auto' }
+```
+```ts
+row.price = next; // that's the whole update
+```
+**Never** generate this legacy pattern for a new column unless explicitly
+asked for row-driven flash:
+```ts
+// WRONG for a new column — do not write flashSeq/flashDir bookkeeping:
+row.flashDir = next >= row.price ? 'up' : 'down';
+row.price = next;
+row.flashSeq++;
+```
+`GridRow.flashSeq`/`flashDir` are optional and only needed by that legacy
+`flash: true` mode — do not add them to a row type "just in case."
+
+## Custom cells: Svelte vs everything else
+
+- **Svelte**: a `cell` snippet — `<Grid {rows} {columns} {cell} />` with
+  `{#snippet cell({ row, column, value })}...{/snippet}`.
+- **React/Vue/vanilla/`<bo-grid>`**: snippets don't exist outside Svelte —
+  give the column a `render(ctx) => Node | string` function instead.
+
+## Common mistakes to avoid
+
+1. Importing from `'bo-grid'` instead of the correct subpath.
+2. Writing `flashSeq++` bookkeeping instead of `flash: 'auto'`.
+3. Using the Svelte `cell` snippet from a non-Svelte framework.
+4. Pre-summing cumulative depth before calling `DepthChart`/`depthBars` —
+   pass raw per-level sizes; the cumulative sum is computed internally.
+5. Using `createTickStream` (last-write-wins per key) for a trade tape —
+   use `TradeTape` instead, since every trade must show, nothing coalesces.
+6. Inventing a `ColumnDef`/`<Grid>` prop not in the fetched reference above.
