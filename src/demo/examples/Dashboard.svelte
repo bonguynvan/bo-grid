@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Grid, type ColumnDef, type GridRow } from '../../lib';
-  import { BarChart, LineChart, DonutChart, StackedBarChart, Legend } from '../../lib/charts';
+  import { BarChart, LineChart, DonutChart, StackedBarChart, CandlestickChart, DepthChart, Legend } from '../../lib/charts';
+  import type { Candle } from '../../lib/types';
   import { ui } from '../theme.svelte';
 
   // An analytics dashboard — the charts companion used both standalone (KPI
@@ -54,6 +55,29 @@
   const stackData = $derived(topRegions.map((r) => r.trend.filter((_, i) => i % 2 === 0)));
   const fmtUsd = (n: number) => `$${(n / 1000).toLocaleString('en-US', { maximumFractionDigits: 0 })}k`;
 
+  // Candlestick + depth cards — a deterministic OHLC series and a synthetic
+  // order book, built once (no live feed needed to show the chart shapes).
+  function makeCandles(seed: number, n: number): Candle[] {
+    let close = 100 + (seed % 20);
+    const out: Candle[] = [];
+    for (let i = 0; i < n; i++) {
+      const open = close;
+      const drift = Math.sin(seed + i * 0.8) * 3;
+      close = Math.max(5, open + drift);
+      const high = Math.max(open, close) + Math.abs(Math.sin(seed + i * 1.3)) * 2;
+      const low = Math.min(open, close) - Math.abs(Math.cos(seed + i * 1.1)) * 2;
+      out.push({ open, high, low, close, volume: 1000 + i * 40 });
+    }
+    return out;
+  }
+  const candles = makeCandles(11, 30);
+
+  function depthSide(seed: number, n: number): number[] {
+    return Array.from({ length: n }, (_, i) => 30 + ((seed + i * 17) % 90));
+  }
+  const bidDepth = depthSide(5, 12);
+  const askDepth = depthSide(9, 12);
+
   const columns: ColumnDef[] = [
     { type: 'text', key: 'region', header: 'Region', width: 150, pinned: true },
     { type: 'currency', key: 'revenue', header: 'Revenue', width: 120, currency: 'USD', decimals: 0, groupAgg: 'sum' },
@@ -93,6 +117,14 @@
       class="card-chart"
     />
     <Legend items={topRegions.map((r) => ({ label: r.region }))} />
+  </div>
+  <div class="card">
+    <span class="k">OHLC · 30 sessions</span>
+    <CandlestickChart data={candles} width={220} height={56} class="card-chart" />
+  </div>
+  <div class="card">
+    <span class="k">Order book depth</span>
+    <DepthChart bids={bidDepth} asks={askDepth} width={220} height={56} class="card-chart" />
   </div>
 </div>
 

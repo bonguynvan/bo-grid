@@ -72,6 +72,8 @@ try {
     ['BarChart', { data: [1, 3, 2, 5] }],
     ['DonutChart', { data: [1, 2, 3] }],
     ['StackedBarChart', { data: [[1, 2], [3, 4]] }],
+    ['CandlestickChart', { data: [{ open: 10, high: 12, low: 9, close: 11, volume: 100 }] }],
+    ['DepthChart', { bids: [10, 20], asks: [15, 5] }],
   ]) {
     const out = render(charts[name], { props });
     if (!out.body.includes('<svg')) fail(`${name} did not server-render an <svg>`);
@@ -81,7 +83,7 @@ try {
   console.log(
     `✓ ssr: <Grid> server-rendered cleanly — ${cellCount} cells, ` +
       `basic + feature-heavy (rowSelection/filterRow/footer/groupBy/pagination/persistKey/sparkline/theme) ` +
-      `+ charts (line/bar/donut/stacked) OK`,
+      `+ charts (line/bar/donut/stacked/candlestick/depth) OK`,
   );
 } catch (err) {
   fail(err && err.stack ? err.stack : String(err));

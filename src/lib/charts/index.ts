@@ -5,10 +5,23 @@ export { default as BarChart } from './BarChart.svelte';
 export { default as LineChart } from './LineChart.svelte';
 export { default as DonutChart } from './DonutChart.svelte';
 export { default as StackedBarChart } from './StackedBarChart.svelte';
+export { default as CandlestickChart } from './CandlestickChart.svelte';
+export { default as DepthChart } from './DepthChart.svelte';
 export { default as Legend } from './Legend.svelte';
 
 export { CHART_PALETTE, CHART_COLOR } from './palette';
 
 // Geometry helpers (for building your own SVG charts).
-export { extent, linePoints, linePath, areaPath, barRects, stackedBars, groupedBars, donutArcs } from './chart-math';
-export type { Point, Rect, Arc, BarSeg } from './chart-math';
+export {
+  extent,
+  linePoints,
+  linePath,
+  areaPath,
+  barRects,
+  stackedBars,
+  groupedBars,
+  donutArcs,
+  candleGeometry,
+  depthBars,
+} from './chart-math';
+export type { Point, Rect, Arc, BarSeg, CandleGeom, DepthBar } from './chart-math';

@@ -79,6 +79,17 @@ All notable changes to this project are documented here. Format follows
 - **Realtime benchmarks** — `TradeTape.push()`/`toArray()` added, with
   regression ceilings like the other hot paths (~88M trades/sec appended,
   measuring the ring buffer's own O(1) cost).
+- **`CandlestickChart`** (`bo-grid/charts`) — OHLC candlesticks from the same
+  `Candle` type as the grid's `sparkline` column: body open→close, wick
+  high→low, coloured by direction (`upColor`/`downColor`, default
+  `--boc-up`/`--boc-down`). Pure SVG geometry (`candleGeometry`) alongside
+  the chart companion's other geometry helpers.
+- **`DepthChart`** (`bo-grid/charts`) — order-book depth from raw per-level
+  sizes ordered nearest-to-spread first (`depthBars` computes the cumulative
+  sum — don't pre-sum it yourself). Bids fill outward left, asks outward
+  right, sharing **one** vertical scale across both sides so a lopsided book
+  doesn't let the thin side visually fill the chart. Charts budget
+  recalibrated 3 → 4 KB. Dashboard demo gets an OHLC card and a depth card.
 
 ### Changed
 

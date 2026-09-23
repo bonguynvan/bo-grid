@@ -49,6 +49,7 @@ try {
   );
   const { FlashTracker } = await server.ssrLoadModule('/src/lib/grid/flash.ts');
   const { TradeTape } = await server.ssrLoadModule('/src/lib/realtime/tape.ts');
+  const { candleGeometry, depthBars } = await server.ssrLoadModule('/src/lib/charts/chart-math.ts');
 
   const N = 1_000_000;
 
@@ -164,6 +165,27 @@ try {
     for (let i = 0; i < TOARRAY_CALLS; i++) tape.toArray();
   }, 500);
 
+  // --- Charts: candlestick + depth geometry ---
+  // A chart recomputes geometry every render (Svelte $derived), not per row
+  // like a grid — realistic series are small (tens to low hundreds of
+  // candles/levels), so this checks the per-call cost stays cheap at a
+  // generous scale, not a million-row throughput number.
+  const CHART_CANDLES = Array.from({ length: 500 }, (_, i) => ({
+    open: 100 + i,
+    high: 102 + i,
+    low: 98 + i,
+    close: 101 + i,
+    volume: 1000,
+  }));
+  const CHART_CALLS = 10_000;
+  time('candleGeometry()', `${fmt(CHART_CALLS)} calls over ${fmt(CHART_CANDLES.length)} candles`, () => {
+    for (let i = 0; i < CHART_CALLS; i++) candleGeometry(CHART_CANDLES, 800, 200);
+  }, 1500);
+  const CHART_LEVELS = Array.from({ length: 250 }, (_, i) => 10 + i);
+  time('depthBars()', `${fmt(CHART_CALLS)} calls over ${fmt(CHART_LEVELS.length * 2)} levels`, () => {
+    for (let i = 0; i < CHART_CALLS; i++) depthBars(CHART_LEVELS, CHART_LEVELS, 800, 200);
+  }, 1500);
+
   // --- Report ---
   const wLabel = Math.max(...results.map((r) => r.label.length));
   console.log('\nbo-grid hot-path benchmarks — Node, single thread, deterministic inputs\n');
@@ -193,6 +215,11 @@ try {
   );
   const tapePush = results.find((r) => r.label === 'TradeTape.push()');
   console.log(`  → ${fmt(Math.round((TRADES / tapePush.t) * 1000))} trades/sec appended to the tape (O(1) per push).`);
+  const candleBench = results.find((r) => r.label === 'candleGeometry()');
+  console.log(
+    `  → ${((candleBench.t / CHART_CALLS) * 1000).toFixed(1)} µs per candleGeometry() call over ` +
+      `${fmt(CHART_CANDLES.length)} candles — a chart recomputes this once per render, not per row.`,
+  );
   console.log(
     failed
       ? '\n✗ bench: a hot path exceeded its regression ceiling — likely an algorithmic regression.\n'

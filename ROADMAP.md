@@ -254,16 +254,33 @@ with no Grid/Cell changes.
   shift-and-truncate), `toArray()` a newest-first snapshot. The opposite
   discipline from `TickBuffer`: nothing coalesces, every trade shows. New
   **Time & sales** demo.
-- [x] Fits inside realtime's existing 2 KB budget (now ~1.6/2 KB, ~79%) — the
+- [x] Fits inside realtime's existing 2 KB budget (now ~1.67/2 KB, ~84%) — the
   next realtime feature should recalibrate it.
+
+## 1.4 · Candlestick & depth charts — done
+
+The last piece of the trading-desk wave: the two chart shapes a trading
+dashboard needs, in the existing `bo-grid/charts` companion. Pure SVG
+geometry (`candleGeometry`, `depthBars`) alongside the existing
+`linePoints`/`barRects`/`donutArcs`, so the pattern of thin component over
+tested geometry holds for these too.
+
+- [x] **`CandlestickChart`**: OHLC candlesticks from the same `Candle` type the
+  grid's own `sparkline` column already uses — body open→close, wick
+  high→low, coloured by direction.
+- [x] **`DepthChart`**: order-book depth from raw per-level sizes (nearest-to-
+  spread first — the cumulative sum is computed for you, not pre-summed by
+  the caller). Bids fill outward left, asks outward right, **one shared
+  vertical scale** across both sides so a lopsided book doesn't let the thin
+  side visually fill the chart.
+- [x] Charts budget recalibrated 3 → 4 KB for both (now ~4.2/8 KB). Dashboard
+  demo gets two more cards.
 
 ## Candidate themes for later versions
 
 The roadmap's planned features are all shipped, plus cross-framework support and
 CSV round-trip. Remaining ideas are polish or demand-driven:
 
-- **Candlestick + depth chart** in the charts companion — the canvas
-  primitives (`drawCandles`) are already there.
 - **Polish** — a live screen-reader + axe-core pass; framework starter repos;
   multi-level lazy groups; custom-cell bridging for the Web Component.
 - Driven by real-world usage now that it's published — open an issue with what's

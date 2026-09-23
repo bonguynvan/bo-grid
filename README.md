@@ -400,10 +400,11 @@ and pure — it's called during sort and filter.
 
 For dashboards, `bo-grid/charts` ships tiny, dependency-free SVG charts —
 `LineChart`, `BarChart`, `DonutChart`, `StackedBarChart` (stacked or `grouped`
-multi-series), and a `Legend`. They're a **separate import**, so they add nothing
-to the grid core (~3 KB gzip on their own). Use them standalone, or inside a grid
-cell via a `custom` column. Bar/stacked/donut elements carry an SVG `<title>`, so
-hovering shows the value (accessible, zero-JS).
+multi-series), `CandlestickChart`, `DepthChart`, and a `Legend`. They're a
+**separate import**, so they add nothing to the grid core (~4 KB gzip on their
+own). Use them standalone, or inside a grid cell via a `custom` column.
+Bar/stacked/donut elements carry an SVG `<title>`, so hovering shows the value
+(accessible, zero-JS).
 
 ```svelte
 <script>
@@ -423,6 +424,25 @@ Theme them with `color` / `colors` props, or by setting `--boc-color` and
 `--boc-1`…`--boc-6` CSS vars on any ancestor. The geometry helpers (`linePoints`,
 `barRects`, `donutArcs`, …) are exported too, for rolling your own SVG charts. See
 the **Dashboard** example for charts inside grid cells.
+
+#### Candlestick & depth charts
+
+The two trading-specific chart shapes, built on the same `Candle` type as the
+grid's own `sparkline` column:
+
+```svelte
+<CandlestickChart data={candles} width={220} height={60} />
+<!-- bids/asks: sizes ordered NEAREST-TO-SPREAD FIRST; cumulative depth is
+     computed for you, don't pre-sum it -->
+<DepthChart bids={[40, 90, 60]} asks={[55, 70, 45]} width={220} height={60} />
+```
+
+`CandlestickChart` colours by `upColor`/`downColor` (defaulting to
+`--boc-up`/`--boc-down`, then a fixed green/red). `DepthChart` shares **one**
+vertical scale across both sides, so a lopsided book doesn't let the thin side
+visually fill the chart — the whole point of a depth chart is comparing the
+two. The geometry helpers (`candleGeometry`, `depthBars`) are exported too. See
+the **Dashboard** example.
 
 ## Row height
 

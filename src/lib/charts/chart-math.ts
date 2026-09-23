@@ -1,6 +1,7 @@
 // Pure SVG geometry for the bo-grid/charts companion. No dependencies; every
 // chart component is a thin SVG wrapper over these helpers, so the math is
 // unit-tested in isolation and the components stay trivial.
+import type { Candle } from '../types';
 
 export interface Point {
   x: number;
@@ -219,4 +220,135 @@ export function donutArcs(values: readonly number[], size: number, thickness: nu
     a0 = a1;
   });
   return arcs;
+}
+
+/** One candlestick's screen geometry. `bodyY`/`bodyH` are the rect for the
+    open→close body; `wickY0`/`wickY1` are the high/low line's endpoints
+    (`wickY0` is always the smaller y — the high, since y grows downward). */
+export interface CandleGeom {
+  x: number;
+  wickX: number;
+  wickY0: number;
+  wickY1: number;
+  bodyY: number;
+  bodyH: number;
+  bodyW: number;
+  up: boolean;
+}
+
+/** OHLC price extent across a candle series — min of every low, max of every
+    high. Guards an empty or degenerate (flat) series like `extent()`. */
+function ohlcExtent(candles: readonly Candle[]): { min: number; max: number } {
+  let min = Infinity;
+  let max = -Infinity;
+  for (const c of candles) {
+    if (Number.isFinite(c.low) && c.low < min) min = c.low;
+    if (Number.isFinite(c.high) && c.high > max) max = c.high;
+  }
+  if (!Number.isFinite(min)) min = 0;
+  if (!Number.isFinite(max)) max = min;
+  if (min === max) max = min + 1; // avoid divide-by-zero on a flat series
+  return { min, max };
+}
+
+/**
+ * Geometry for an OHLC candlestick series, left to right. `gap` is the space
+ * between candle slots; `pad` insets the whole chart from the SVG edge (as in
+ * `barRects`). Body width fills its slot up to a sensible cap so a wide chart
+ * with few candles doesn't produce absurdly fat bodies.
+ */
+export function candleGeometry(candles: readonly Candle[], w: number, h: number, gap = 1, pad = 2): CandleGeom[] {
+  if (candles.length === 0) return [];
+  const { min, max } = ohlcExtent(candles);
+  const span = max - min || 1;
+  const iw = w - pad * 2;
+  const ih = h - pad * 2;
+  const n = candles.length;
+  const slot = iw / n;
+  const bodyW = Math.max(1, Math.min(slot - gap, slot * 0.7));
+  const yOf = (price: number): number => pad + ih - ((price - min) / span) * ih;
+
+  return candles.map((c, i) => {
+    const cx = pad + i * slot + slot / 2;
+    const yOpen = yOf(c.open);
+    const yClose = yOf(c.close);
+    return {
+      x: round(cx),
+      wickX: round(cx),
+      wickY0: round(yOf(c.high)), // high → smallest y
+      wickY1: round(yOf(c.low)), // low → largest y
+      bodyY: round(Math.min(yOpen, yClose)),
+      bodyH: round(Math.max(1, Math.abs(yClose - yOpen))),
+      bodyW: round(bodyW),
+      up: c.close >= c.open,
+    };
+  });
+}
+
+/** One bar of a depth-chart side. `cum` is the cumulative size this bar
+    represents (the level's own size plus every level nearer the spread). */
+export interface DepthBar extends Rect {
+  side: 'bid' | 'ask';
+  cum: number;
+}
+
+/** Running cumulative sum, clamping each entry to >= 0 first so a bad value
+    can't corrupt every bar after it. */
+function cumulative(sizes: readonly number[]): number[] {
+  let sum = 0;
+  return sizes.map((v) => {
+    sum += Number.isFinite(v) && v > 0 ? v : 0;
+    return sum;
+  });
+}
+
+/**
+ * Depth-chart geometry for an order book. `bidSizes`/`askSizes` are level
+ * sizes ordered NEAREST-TO-SPREAD FIRST (index 0 = best bid/ask) — this
+ * computes the cumulative depth itself, so pass raw per-level sizes, not a
+ * pre-summed running total.
+ *
+ * The spread sits at the horizontal centre: bids fill outward to the LEFT
+ * (index 0 nearest centre, later indices further out), asks fill outward to
+ * the RIGHT. Both sides share ONE vertical scale (the larger side's total
+ * depth), so a lopsided book doesn't let the thin side visually fill the
+ * chart — the whole point of a depth chart is comparing the two sides.
+ */
+export function depthBars(
+  bidSizes: readonly number[],
+  askSizes: readonly number[],
+  w: number,
+  h: number,
+  pad = 1,
+): DepthBar[] {
+  const bidCum = cumulative(bidSizes);
+  const askCum = cumulative(askSizes);
+  if (bidCum.length === 0 && askCum.length === 0) return [];
+
+  const max = Math.max(1, bidCum[bidCum.length - 1] ?? 0, askCum[askCum.length - 1] ?? 0);
+  const iw = w - pad * 2;
+  const ih = h - pad * 2;
+  const halfW = iw / 2;
+  const centerX = pad + halfW;
+  const yOf = (cum: number): number => pad + ih - (cum / max) * ih;
+
+  const bars: DepthBar[] = [];
+  if (bidCum.length > 0) {
+    const slot = halfW / bidCum.length;
+    bidCum.forEach((cum, i) => {
+      // Index 0 sits nearest the spread — the rightmost slot of the left half.
+      const x = centerX - (i + 1) * slot;
+      const y = yOf(cum);
+      bars.push({ x: round(x), y: round(y), w: round(slot), h: round(pad + ih - y), side: 'bid', cum });
+    });
+  }
+  if (askCum.length > 0) {
+    const slot = halfW / askCum.length;
+    askCum.forEach((cum, i) => {
+      const x = centerX + i * slot;
+      const y = yOf(cum);
+      bars.push({ x: round(x), y: round(y), w: round(slot), h: round(pad + ih - y), side: 'ask', cum });
+    });
+  }
+  return bars;
 }

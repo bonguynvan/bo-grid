@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { extent, linePoints, linePath, areaPath, barRects, stackedBars, groupedBars, donutArcs } from './chart-math';
+import {
+  extent,
+  linePoints,
+  linePath,
+  areaPath,
+  barRects,
+  stackedBars,
+  groupedBars,
+  donutArcs,
+  candleGeometry,
+  depthBars,
+} from './chart-math';
 
 describe('extent', () => {
   it('guards empty and flat series', () => {
@@ -106,5 +117,104 @@ describe('donutArcs', () => {
     const [only] = donutArcs([42], 100, 20);
     expect(only.fraction).toBe(1);
     expect(only.d.match(/M/g)?.length).toBe(2); // outer + inner circle
+  });
+});
+
+describe('candleGeometry', () => {
+  const up = { open: 10, high: 15, low: 8, close: 14, volume: 100 };
+  const down = { open: 14, high: 16, low: 9, close: 10, volume: 100 };
+
+  it('returns nothing for an empty series', () => {
+    expect(candleGeometry([], 100, 60)).toEqual([]);
+  });
+
+  it('emits one geometry per candle', () => {
+    expect(candleGeometry([up, down], 100, 60)).toHaveLength(2);
+  });
+
+  it('flags up when close >= open, down otherwise', () => {
+    const [g1, g2] = candleGeometry([up, down], 100, 60);
+    expect(g1.up).toBe(true);
+    expect(g2.up).toBe(false);
+  });
+
+  it('the wick spans the full high→low range, high at the smallest y (top)', () => {
+    const [g] = candleGeometry([up], 100, 60, 0, 0);
+    expect(g.wickY0).toBeLessThan(g.wickY1); // high (small y) above low (large y)
+  });
+
+  it('the body top is the smaller of open/close\'s y (visually the higher price)', () => {
+    const [g] = candleGeometry([up], 100, 60, 0, 0); // close(14) > open(10)
+    // close is the higher price → smaller y → body starts at close's y.
+    expect(g.bodyY).toBeLessThan(g.wickY1);
+    expect(g.bodyH).toBeGreaterThan(0);
+  });
+
+  it('spaces candles left to right across the width', () => {
+    const geoms = candleGeometry([up, down, up], 90, 60, 2, 0);
+    expect(geoms[0].x).toBeLessThan(geoms[1].x);
+    expect(geoms[1].x).toBeLessThan(geoms[2].x);
+  });
+
+  it('does not divide by zero on a flat (no-range) series', () => {
+    const flat = { open: 10, high: 10, low: 10, close: 10, volume: 1 };
+    expect(() => candleGeometry([flat, flat], 100, 60)).not.toThrow();
+    const [g] = candleGeometry([flat, flat], 100, 60);
+    expect(Number.isFinite(g.wickY0)).toBe(true);
+  });
+
+  it('produces a positive body width that fits within its slot', () => {
+    const geoms = candleGeometry([up, down], 100, 60, 2, 0);
+    for (const g of geoms) expect(g.bodyW).toBeGreaterThan(0);
+  });
+});
+
+describe('depthBars', () => {
+  it('returns nothing when both sides are empty', () => {
+    expect(depthBars([], [], 100, 60)).toEqual([]);
+  });
+
+  it('emits one bar per level, tagged by side', () => {
+    const bars = depthBars([10, 20], [15], 100, 60);
+    expect(bars.filter((b) => b.side === 'bid')).toHaveLength(2);
+    expect(bars.filter((b) => b.side === 'ask')).toHaveLength(1);
+  });
+
+  it('accumulates depth OUTWARD from the spread (index 0 = nearest spread = smallest cumulative)', () => {
+    const [bid0, bid1] = depthBars([10, 20], [], 100, 60, 0);
+    expect(bid0.cum).toBe(10);
+    expect(bid1.cum).toBe(30); // 10 + 20
+    expect(bid1.h).toBeGreaterThan(bid0.h); // taller further from the spread
+  });
+
+  it('places bids in the left half and asks in the right half', () => {
+    const bars = depthBars([10], [10], 100, 60, 0);
+    const bid = bars.find((b) => b.side === 'bid')!;
+    const ask = bars.find((b) => b.side === 'ask')!;
+    expect(bid.x + bid.w).toBeLessThanOrEqual(50); // left half
+    expect(ask.x).toBeGreaterThanOrEqual(50); // right half
+  });
+
+  it('orders bid levels index 0 nearest the spread (rightmost of the left half)', () => {
+    const bars = depthBars([10, 10, 10], [], 100, 60, 0);
+    // Index 0 (nearest spread) should be the RIGHTMOST bid bar.
+    const sorted = [...bars].sort((a, b) => a.x - b.x);
+    expect(sorted[sorted.length - 1].cum).toBe(10); // index 0's cumulative (smallest)
+    expect(sorted[0].cum).toBe(30); // index 2's cumulative (largest, farthest out)
+  });
+
+  it('shares ONE vertical scale across both sides — a lopsided book does not let the thin side fill full height', () => {
+    // Bid side accumulates to 100; ask side only ever reaches 10.
+    const bars = depthBars([100], [10], 100, 60, 0);
+    const bid = bars.find((b) => b.side === 'bid')!;
+    const ask = bars.find((b) => b.side === 'ask')!;
+    expect(ask.h).toBeLessThan(bid.h);
+    expect(ask.h / bid.h).toBeCloseTo(10 / 100, 1);
+  });
+
+  it('clamps negative or non-finite sizes to zero rather than corrupting the cumulative sum', () => {
+    expect(() => depthBars([10, -5, NaN, 5], [], 100, 60)).not.toThrow();
+    const bars = depthBars([10, -5, NaN, 5], [], 100, 60, 0);
+    expect(bars[bars.length - 1].cum).toBe(15); // 10 + 0 + 0 + 5
   });
 });
