@@ -7,6 +7,10 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 // @sveltejs/package (see the `package` script).
 export default defineConfig({
   plugins: [svelte()],
+  // This build measures the library only — repo-root public/ (the demo
+  // site's llms.txt) has no business here; see vite.wc.config.ts for the
+  // same reasoning where it actually matters (that one ships to npm).
+  publicDir: false,
   build: {
     outDir: 'lib-dist',
     emptyOutDir: true,

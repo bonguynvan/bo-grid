@@ -21,6 +21,12 @@ export default defineConfig({
       },
     }),
   ],
+  // Vite copies `publicDir` (default: repo-root `public/`) into `outDir` on
+  // every build. `public/` holds the demo site's llms.txt/llms-full.txt —
+  // meant for the GH Pages demo (see vite.config.ts), NOT for the published
+  // npm package. Without this, they'd leak into dist/ and ship in the
+  // tarball alongside the real library output.
+  publicDir: false,
   build: {
     outDir: 'dist',
     emptyOutDir: false,

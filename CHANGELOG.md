@@ -5,8 +5,24 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-09-24
+
+**The trading-desk wave.** Four roadmap phases (1.1–1.4), shipped together:
+derived per-cell realtime flash + a tick/trade-stream pipeline
+(`bo-grid/realtime`), APAC market-convention helpers (`bo-grid/trading`),
+a centred price-ladder + time & sales tape, and candlestick + depth charts
+(`bo-grid/charts`). All additive — no breaking API changes from 1.0.0. Every
+addition follows the existing companion-package discipline: pure functions,
+own size budget, zero changes to the grid core (still ~33 KB gzip).
+
 ### Added
 
+- **AI-assistant discoverability** — `llms.txt` / `llms-full.txt` (served
+  from the demo site) give an AI coding agent the real, current API surface
+  instead of it guessing from training data; ready-to-copy Cursor/Windsurf
+  rule and `CLAUDE.md` snippet files (`docs/ai/`) let a *consumer* project
+  install the same guidance for every session. Docs-only — no npm package
+  changes.
 - **Derived per-cell tick flash** (`col.flash: 'auto' | 'change'`) — the grid now
   works out the flash itself: it remembers each cell's last value and flashes
   green on a rise, red on a fall. No `flashSeq`/`flashDir` bookkeeping in app
@@ -90,6 +106,19 @@ All notable changes to this project are documented here. Format follows
   right, sharing **one** vertical scale across both sides so a lopsided book
   doesn't let the thin side visually fill the chart. Charts budget
   recalibrated 3 → 4 KB. Dashboard demo gets an OHLC card and a depth card.
+
+### Fixed
+
+- **`pnpm package` no longer leaks `public/llms.txt`/`llms-full.txt` into the
+  published npm tarball.** Adding `public/` for the demo site (served via the
+  root Vite config) exposed that `vite.wc.config.ts` — which builds the
+  `bo-grid/element` web component straight into `dist/`, the directory that
+  ships to npm — inherits Vite's default `publicDir` and copies it into
+  every build's `outDir` unless told not to. Both non-demo Vite configs
+  (`vite.wc.config.ts`, `vite.lib.config.ts`) now set `publicDir: false`;
+  caught before the first real publish by diffing the release dry-run's file
+  list, not by intent — worth knowing if you add a `public/` directory to a
+  Vite project with more than one build config targeting different outputs.
 
 ### Changed
 
