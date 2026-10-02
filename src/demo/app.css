@@ -1,81 +1,147 @@
-/* Demo page tokens. Two deliberate palettes rather than one inverted:
-   "broadsheet" (default) — newsprint paper, ink, a highlighter mark — and
-   "terminal" (html.dark) — a phosphor-on-black trading screen. The legacy names
-   (--bg, --text, --text-dim, --border, --up, --down…) stay, because every
-   example reads them. */
+/* Demo page tokens: the TradeCanvas / TradingDek "terminal" system, so the
+   bo-grid site reads as part of the same family. Dark is the default;
+   html.light follows the light theme, with accent and up/down darkened until
+   they pass 4.5:1 as text. The legacy names (--bg, --text, --text-dim,
+   --border, --up, --down, --mono…) stay, because every example reads them. */
 :root {
-  --paper: #f2ede3;
-  --paper-2: #e8e1d2;
-  --ink: #161512;
-  --ink-dim: #5e594f;
-  --rule: #161512;
-  --rule-soft: rgba(22, 21, 18, 0.16);
-  --mark: #c99a12;
-  --mark-bg: #f3d46b;
-  --up: #0c7a4e;
-  --down: #c3262c;
-  --amber: #b26a00;
-  --card: #fbf8f1;
+  /* Grounds — page, panes, raised strips, recessed bands */
+  --surface: #0c1016;
+  --panel: #11161e;
+  --panel-2: #161c25;
+  --cell: #0a0e14;
 
-  --bg: var(--paper);
-  --header-bg: var(--paper-2);
-  --row-a: var(--card);
-  --row-b: var(--paper);
-  --row-hover: #ece4d3;
-  --text: var(--ink);
-  --text-dim: var(--ink-dim);
-  --border: var(--rule-soft);
-  --blue-fill: rgba(201, 154, 18, 0.2);
+  /* Lines */
+  --line: #1f2630;
+  --line-soft: #161b23;
+  --line-strong: #2c3542;
 
+  /* Text */
+  --text: #d9dde4;
+  --text-2: #a7aebb;
+  --text-3: #7d8696;
+
+  /* Signal */
+  --accent: #f2a93b;
+  --accent-dim: #2a2215;
+  --on-accent: #0c1016;
+  --up: #3ccf91;
+  --up-dim: #10261d;
+  --down: #f0616d;
+  --down-dim: #2b1519;
+  --info: #4c8dff;
+  /* Text on a filled up/down chip */
+  --on-up: #052e1a;
+  --on-down: #2e0505;
+  /* VN price-board limits: ceiling purple, floor cyan */
+  --ceil: #c084fc;
+  --floor: #22d3ee;
+
+  /* Type — mono for data and UI, sans for prose, condensed caps for labels */
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', monospace;
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-cond: 'IBM Plex Sans Condensed', 'Arial Narrow', sans-serif;
+
+  /* Sharp by default; panes and chips soften slightly */
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --shadow-pop: 0 12px 32px -8px rgb(0 0 0 / 0.6);
+
+  --gutter: clamp(16px, 4vw, 48px);
+  --gutter-in: clamp(16px, 3vw, 36px);
+
+  /* Legacy names read by the examples */
+  --bg: var(--panel);
+  --header-bg: var(--panel-2);
+  --row-a: var(--panel);
+  --row-b: var(--panel);
+  --row-hover: var(--panel-2);
+  --text-dim: var(--text-3);
+  --border: var(--line);
+  --amber: var(--accent);
+  --card: var(--panel);
+  --blue-fill: color-mix(in srgb, var(--accent) 16%, transparent);
+  --mono: var(--font-mono);
+  --sans: var(--font-sans);
   --row-h: 36px;
   --header-h: 28px;
 
-  --serif: 'Fraunces', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
-  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  --sans: var(--mono);
-
-  color-scheme: light;
-}
-
-html.dark {
-  --paper: #0d0e0c;
-  --paper-2: #151713;
-  --ink: #e9e5d8;
-  --ink-dim: #8d887b;
-  --rule: #e9e5d8;
-  --rule-soft: rgba(233, 229, 216, 0.14);
-  --mark: #f2c14e;
-  --mark-bg: #5a4612;
-  --up: #3ddc97;
-  --down: #ff6b6b;
-  --amber: #f59e0b;
-  --card: #111310;
-  --row-hover: #1b1e19;
-  --blue-fill: rgba(242, 193, 78, 0.16);
   color-scheme: dark;
 }
 
-* { box-sizing: border-box; }
+html.light {
+  --surface: #eef0f3;
+  --panel: #ffffff;
+  --panel-2: #f6f7f9;
+  --cell: #fbfbfc;
 
-html { scroll-behavior: smooth; }
+  --line: #dde1e7;
+  --line-soft: #eceef2;
+  --line-strong: #c4cad3;
+
+  --text: #0f131a;
+  --text-2: #3f4652;
+  --text-3: #5f6774;
+
+  --accent: #9a5c06;
+  --accent-dim: #fbf1e2;
+  --on-accent: #ffffff;
+  --up: #0b7a4b;
+  --up-dim: #e3f4ec;
+  --down: #c0303d;
+  --down-dim: #fbe9ea;
+  --info: #2a62d4;
+  --on-up: #ffffff;
+  --on-down: #ffffff;
+  --ceil: #8a3fc7;
+  --floor: #0b7590;
+
+  --shadow-pop: 0 12px 32px -14px rgb(15 19 26 / 0.22);
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
 
 html,
 body {
   margin: 0;
   min-height: 100%;
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--serif);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code,
+kbd,
+pre {
+  font-family: var(--font-mono);
 }
 
 ::selection {
-  background: var(--mark-bg);
-  color: var(--ink);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--text);
 }
 
-#app { min-height: 100vh; display: flex; flex-direction: column; }
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
+  html {
+    scroll-behavior: auto;
+  }
 }

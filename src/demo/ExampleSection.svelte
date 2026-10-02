@@ -63,7 +63,7 @@
 
 <style>
   .lp-ex {
-    scroll-margin-top: 56px;
+    scroll-margin-top: 64px;
   }
   .lp-ex-head {
     display: grid;
@@ -71,52 +71,51 @@
     column-gap: 14px;
     align-items: baseline;
     margin-bottom: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--rule, var(--border));
   }
   .lp-ex-n {
     grid-row: span 2;
-    font-family: var(--mono);
+    font-family: var(--font-mono);
     font-size: 11px;
-    letter-spacing: 0.12em;
+    font-weight: 500;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--down);
+    color: var(--accent);
   }
   .lp-ex-head h3 {
-    margin: 0 0 2px;
-    font-family: var(--serif);
-    font-size: 1.6rem;
+    margin: 0 0 3px;
+    font-family: var(--font-cond);
+    font-size: 1.45rem;
     font-weight: 700;
-    font-variation-settings: 'opsz' 72;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.005em;
   }
   .lp-ex-head p {
     margin: 0;
-    font-family: var(--serif);
-    font-size: 0.98rem;
-    font-style: italic;
-    color: var(--text-dim);
+    max-width: 72ch;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text-2);
   }
   .lp-ex-body {
-    border: 1px solid var(--rule, var(--border));
-    background: var(--card, var(--bg));
-    padding: 16px;
+    padding: 14px;
     overflow: auto;
-    font-family: var(--mono);
+    font-family: var(--font-mono);
     font-size: 13px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
   }
   .lp-ex-ph {
     min-height: 220px;
     display: grid;
     place-items: center;
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-3);
   }
   .lp-loading {
     margin: 40px 4px;
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-3);
   }
 </style>

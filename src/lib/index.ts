@@ -74,6 +74,8 @@ export {
   highContrastLight,
   midnightTheme,
   terminalTheme,
+  tradecanvasTheme,
+  tradecanvasLightTheme,
   themePresets,
 } from './grid/theme';
 export type { GridTheme, ThemePreset } from './grid/theme';

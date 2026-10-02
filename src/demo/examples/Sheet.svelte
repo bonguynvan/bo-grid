@@ -165,7 +165,7 @@
     quickFilter
     fillHandle
     emptyMessage="No people match your filters"
-    theme={ui.theme}
+    theme={ui.grid}
     persistKey="demo-sheet"
     height={620}
     rowSelection
@@ -205,7 +205,7 @@
     outline: none;
   }
   .filter:focus {
-    border-color: #6366f1;
+    border-color: var(--accent);
   }
   .hint {
     color: var(--text-dim);
@@ -215,8 +215,8 @@
     font-family: var(--mono);
     font-size: 11px;
     font-weight: 600;
-    color: #312e81;
-    background: #e0e7ff;
+    color: var(--accent);
+    background: var(--accent-dim);
     border-radius: 999px;
   }
   .lastcell {
@@ -241,11 +241,11 @@
     cursor: pointer;
   }
   .colbtn.on {
-    border-color: #6366f1;
+    border-color: var(--accent);
   }
   .colbtn .badge {
     font-size: 10px;
-    color: #6366f1;
+    color: var(--accent);
   }
   .menu {
     position: absolute;
@@ -302,10 +302,10 @@
   }
   /* Per-column class hooks (cellClass / headerClass). */
   :global(.bo-grid .h.team-head) {
-    color: #6366f1;
+    color: var(--accent);
   }
   :global(.bo-grid .c.team-cell) {
-    color: #4f46e5;
+    color: var(--info);
   }
   :global(.bo-grid .c.rating-hot) {
     font-weight: 700;

@@ -140,7 +140,7 @@
     {filterTypes}
     onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}
     {cellSelection}
-    theme={ui.theme}
+    theme={ui.grid}
     filterMenu
     columnMenu
     height={560}

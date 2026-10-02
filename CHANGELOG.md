@@ -5,6 +5,26 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- **`tradecanvasTheme` / `tradecanvasLightTheme` presets** (`themePresets`
+  keys `tradecanvas` and `tradecanvas-light`): the palette TradeCanvas charts and
+  TradingDek share — ink panes split by hairlines, one amber accent, up/down
+  kept for prices — so a grid sits flush next to a chart. Every text colour
+  passes WCAG AA on every row surface (tested).
+- **Live frame benchmark** on the Price board demo,
+  `window.__priceBoard.benchLive()`: the real feed in real time, timed through
+  paint. BENCHMARKS.md records where a busy frame goes — two thirds of the main
+  thread is paint and layerize, not script — and two flash techniques measured
+  and dropped.
+
+### Changed
+
+- **The demo site uses the TradeCanvas / TradingDek design system**: IBM Plex
+  type, the shared dark and light tokens (dark by default, the choice
+  persists), every example grid on the matching preset, and one accent for
+  actions instead of up/down colours on buttons.
+
 ## [2.0.0] — 2026-10-02
 
 **bo-grid is now grid-only, and built for busy markets.** Standalone charting is

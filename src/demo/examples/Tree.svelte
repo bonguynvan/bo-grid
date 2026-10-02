@@ -55,7 +55,7 @@
   <Grid
     rows={gridRows}
     {columns}
-    theme={ui.theme}
+    theme={ui.grid}
     height={520}
     getChildren={(r) => (r as Node).children}
     rowClass={(r) => ((r as Node).kind === 'folder' ? 'folder-row' : '')}

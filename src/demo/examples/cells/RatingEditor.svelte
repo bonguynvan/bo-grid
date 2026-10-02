@@ -56,7 +56,7 @@
     opacity: 0.45;
   }
   .star.on {
-    color: #f59e0b;
+    color: var(--accent);
     opacity: 1;
   }
 </style>

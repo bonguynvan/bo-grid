@@ -190,7 +190,7 @@
     groupBy={pivotMode ? [] : dataMode === 'server' ? [] : groupBy}
     source={pivotMode ? undefined : source}
     {rowHeight}
-    theme={ui.theme}
+    theme={ui.grid}
     persistKey={pivotMode ? undefined : 'demo'}
     height={620}
     loading={loadingState}
@@ -227,8 +227,8 @@
     cursor: pointer;
   }
   .seg button.on {
-    color: #0a0a0a;
-    background: var(--up);
+    color: var(--on-accent);
+    background: var(--accent);
   }
   .signal {
     padding: 1px 7px;
@@ -240,11 +240,11 @@
     background: var(--row-hover);
   }
   .signal.buy {
-    color: #052e1a;
+    color: var(--on-up);
     background: var(--up);
   }
   .signal.sell {
-    color: #2e0505;
+    color: var(--on-down);
     background: var(--down);
   }
   .filter {

@@ -78,6 +78,39 @@ Svelte to update the cells, and 1.8 ms of browser style + layout. Rows off scree
 cost nothing beyond the write. Numbers move with the machine — compare runs on
 the same machine, in the same session.
 
+### Live frames: where the time goes
+
+The synchronous benches above stop at layout. `window.__priceBoard.benchLive()`
+runs the real pipeline in real time — the feed, the coalescing tick stream,
+running flash animations — and times each frame from its start to a task posted
+after it rendered, so paint is included. It needs a visible tab (hidden tabs get
+no animation frames); a traced headless Chrome run gives the same numbers plus a
+main-thread breakdown.
+
+Headless Chrome on an Intel UHD laptop GPU, 620 px board, 30,000 events/s —
+the renderer main thread spends ~18 ms per frame:
+
+| Step | ms / frame |
+| --- | --- |
+| Paint (recording the changed cells) | ~6.1 |
+| Layerize (grouping paint into layers) | ~5.6 |
+| Script (tick stream, `patchRows`, Svelte) | ~4.1 |
+| Layout + style + pre-paint | ~3.7 |
+
+Paint and layerize are two thirds of it, and the longest frames (30–35 ms) are
+mostly those two. That is the next optimization target: the rows' paint
+structure, not the script.
+
+Two flash ideas were measured and dropped (6 rounds, randomized order, traced):
+
+- **A fading flash vs a stepped one (tint on, then off) vs no flash**: no
+  measurable difference in paint or layerize at 3,000, 10,000 or 30,000
+  events/s. At these rates nearly every visible cell's text changes within a
+  frame or two, so the cell repaints whether or not it is flashing — adapting
+  the flash to load would not buy frames.
+- **An opacity overlay instead of the background fade**: 4–8× more frame work.
+  Hundreds of simultaneously animating cells each become a compositor layer.
+
 ## Hot paths
 
 The reason scrolling stays smooth whether you have 1,000 rows or 1,000,000 is

@@ -42,7 +42,7 @@
 </p>
 
 <div class="gridwrap">
-  <Grid {rows} {columns} virtualizeColumns theme={ui.theme} height={520} ariaLabel="Wide metrics grid" />
+  <Grid {rows} {columns} virtualizeColumns theme={ui.grid} height={520} ariaLabel="Wide metrics grid" />
 </div>
 
 <style>

@@ -47,7 +47,7 @@
   <Grid
     rows={gridRows}
     {columns}
-    theme={ui.theme}
+    theme={ui.grid}
     height={tasks.length * 36 + 40}
     onRowReorder={reorder}
   />

@@ -85,7 +85,7 @@
 </div>
 
 <div class="gridwrap">
-  <Grid rows={visible} {columns} theme={ui.theme} height={VISIBLE * 32} rowHeight={32} rowClass={(r) => (r as Level).side} />
+  <Grid rows={visible} {columns} theme={ui.grid} height={VISIBLE * 32} rowHeight={32} rowClass={(r) => (r as Level).side} />
 </div>
 
 <style>

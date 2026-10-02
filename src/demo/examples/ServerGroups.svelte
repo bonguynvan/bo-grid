@@ -60,7 +60,7 @@
     {columns}
     {lazyGroups}
     {loadGroup}
-    theme={ui.theme}
+    theme={ui.grid}
     height={520}
     ariaLabel="Orders by region (server-side groups)"
   />

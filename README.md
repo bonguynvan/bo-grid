@@ -793,8 +793,10 @@ a built-in preset or a custom token map:
 <Grid {rows} {columns} theme={{ bg: '#0b1020', up: '#22d3ee' }} height={640} />
 ```
 
-Six built-in presets are exported (`GridTheme`): `darkTheme`, `lightTheme`,
-`highContrastDark`, `highContrastLight`, `midnightTheme`, `terminalTheme` — plus a
+Eight built-in presets are exported (`GridTheme`): `darkTheme`, `lightTheme`,
+`highContrastDark`, `highContrastLight`, `midnightTheme`, `terminalTheme`, and
+`tradecanvasTheme` / `tradecanvasLightTheme` (the palette TradeCanvas charts and
+TradingDek share, so a grid sits flush next to a chart) — plus a
 `themePresets` name→preset map (and a `ThemePreset` type) for a theme picker:
 
 ```svelte

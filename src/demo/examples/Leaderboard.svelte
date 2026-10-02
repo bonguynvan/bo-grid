@@ -81,7 +81,7 @@
   <Grid
     rows={gridRows}
     {columns}
-    theme={ui.theme}
+    theme={ui.grid}
     height={rows.length * 36 + 40}
     rowClass={(r) => ((r as Player).rank <= 3 ? 'podium-row' : '')}
     pinnedRows={[youRow]}
@@ -120,7 +120,7 @@
   .bar .fill {
     height: 100%;
     border-radius: 4px;
-    background: linear-gradient(90deg, var(--up), #6366f1);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 45%, transparent), var(--accent));
   }
   :global(.bo-grid .row.podium-row) {
     background: rgba(99, 102, 241, 0.08);

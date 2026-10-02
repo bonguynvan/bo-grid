@@ -85,7 +85,7 @@
     rows={rows as unknown as GridRow[]}
     {columns}
     height={8 * 36}
-    theme={ui.theme}
+    theme={ui.grid}
     cellSelection={false}
     resizable={false}
     ariaLabel="Live price board sample"
@@ -96,7 +96,7 @@
 <style>
   .hb :global(.hb-up) { color: var(--up); }
   .hb :global(.hb-down) { color: var(--down); }
-  .hb :global(.hb-ref) { color: var(--mark); }
-  .hb :global(.hb-ceil) { color: #a259e6; }
-  .hb :global(.hb-floor) { color: #1aa3c4; }
+  .hb :global(.hb-ref) { color: var(--accent); }
+  .hb :global(.hb-ceil) { color: var(--ceil); }
+  .hb :global(.hb-floor) { color: var(--floor); }
 </style>
