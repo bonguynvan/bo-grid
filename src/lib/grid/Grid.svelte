@@ -35,6 +35,7 @@
   import AggregationBar from './AggregationBar.svelte';
   import Pager from './Pager.svelte';
   import RowMenu from './RowMenu.svelte';
+  import { resolveLabels, type GridLabels } from './labels';
 
   let {
     rows = [],
@@ -72,7 +73,9 @@
     filterMenu = false,
     quickFilter = false,
     fillHandle = false,
-    emptyMessage = 'No matching rows',
+    emptyMessage,
+    labels,
+    locale,
     loading = false,
     rowMenu,
     detail,
@@ -195,8 +198,16 @@
         drag it to copy the selected value(s) across the extended range (editable
         columns only). In-memory mode only. Default false. */
     fillHandle?: boolean;
-    /** Message shown when there are no rows. Default 'No matching rows'. */
+    /** Message shown when there are no rows. Defaults to `labels.noRows`. */
     emptyMessage?: string;
+    /** Override any string the grid renders itself (menus, filter editor,
+        pager, aria labels). Merged over English defaults — pass only what
+        changes. Interpolated entries are functions so translations can reorder
+        the parts. Resolved per grid. */
+    labels?: Partial<GridLabels>;
+    /** BCP 47 locale for the grid's own number formatting (aggregation bar,
+        pager row count). Default: the runtime's locale. */
+    locale?: string;
     /** Show a loading overlay over the grid (for consumer-driven async work in
         in-memory mode; source mode shows skeleton rows automatically). */
     loading?: boolean;
@@ -266,6 +277,7 @@
   const ROW_H = 36;
   const OVERSCAN = 6;
   const gid = `bo-grid-${uid++}`;
+  const L = $derived(resolveLabels(labels));
 
   let scrollTop = $state(0);
   // Styled floating tooltip (opt-in via column `tooltip`): a single fixed-
@@ -508,7 +520,10 @@
     onRowSelectionChange?.([...selectedRows]);
   }
 
-  const ordered = $derived(order.length === columns.length ? order.map((i) => columns[i]) : columns);
+  const localized = $derived(
+    locale ? columns.map((c) => (c.locale ? c : ({ ...c, locale } as ColumnDef))) : columns,
+  );
+  const ordered = $derived(order.length === localized.length ? order.map((i) => localized[i]) : localized);
   // Columns hidden at runtime via the column menu, unioned with the controlled
   // `hiddenColumns` prop.
   let runtimeHidden = $state<string[]>([]);
@@ -1389,22 +1404,22 @@
   ): Array<{ label: string; onSelect: () => void }> {
     const items: Array<{ label: string; onSelect: () => void }> = [];
     if (isSortable(col)) {
-      items.push({ label: 'Sort ascending', onSelect: () => setSorts([{ key: col.key, dir: 'asc' }]) });
-      items.push({ label: 'Sort descending', onSelect: () => setSorts([{ key: col.key, dir: 'desc' }]) });
+      items.push({ label: L.sortAscending, onSelect: () => setSorts([{ key: col.key, dir: 'asc' }]) });
+      items.push({ label: L.sortDescending, onSelect: () => setSorts([{ key: col.key, dir: 'desc' }]) });
       if (sortInfo(col.key)) {
-        items.push({ label: 'Clear sort', onSelect: () => setSorts(sorts.filter((s) => s.key !== col.key)) });
+        items.push({ label: L.clearSort, onSelect: () => setSorts(sorts.filter((s) => s.key !== col.key)) });
       }
     }
     // Keyboard path to filtering (the header funnel is pointer-only by design).
     if (filterMenu && col.type !== 'sparkline' && col.filter !== false) {
-      items.push({ label: 'Filter…', onSelect: () => void openFilterMenu(col, anchor) });
+      items.push({ label: L.filterEllipsis, onSelect: () => void openFilterMenu(col, anchor) });
     }
     const side = pinSideOf(col);
-    if (side !== 'left') items.push({ label: 'Pin left', onSelect: () => setPinOverride(col.key, 'left') });
-    if (side !== 'right') items.push({ label: 'Pin right', onSelect: () => setPinOverride(col.key, 'right') });
-    if (side) items.push({ label: 'Unpin', onSelect: () => setPinOverride(col.key, false) });
-    if (isResizable(col, resizable)) items.push({ label: 'Autosize', onSelect: () => autosizeColumn(col) });
-    items.push({ label: 'Hide column', onSelect: () => hideColumn(col.key) });
+    if (side !== 'left') items.push({ label: L.pinLeft, onSelect: () => setPinOverride(col.key, 'left') });
+    if (side !== 'right') items.push({ label: L.pinRight, onSelect: () => setPinOverride(col.key, 'right') });
+    if (side) items.push({ label: L.unpin, onSelect: () => setPinOverride(col.key, false) });
+    if (isResizable(col, resizable)) items.push({ label: L.autosize, onSelect: () => autosizeColumn(col) });
+    items.push({ label: L.hideColumn, onSelect: () => hideColumn(col.key) });
     return items;
   }
   function openColumnMenu(col: ColumnDef, e: Event) {
@@ -1688,12 +1703,12 @@
           class="bo-quickfilter"
           type="search"
           placeholder="Search…"
-          aria-label="Quick filter"
+          aria-label={L.quickFilter}
           bind:value={quickText}
         />
       {/if}
       {#if columnsPanel}
-        <button class="bo-cols-toggle" type="button" onclick={openToolPanel}>⊟ Columns</button>
+        <button class="bo-cols-toggle" type="button" onclick={openToolPanel}>⊟ {L.columns}</button>
       {/if}
     </div>
   {/if}
@@ -1728,7 +1743,7 @@
           checked={selectAll.checked}
           indeterminate={selectAll.indeterminate}
           disabled={!!source}
-          aria-label="Select all rows"
+          aria-label={L.selectAllRows}
           onclick={(e) => e.stopPropagation()}
           onchange={toggleAll}
         />
@@ -1794,8 +1809,8 @@
             class:on={isFilterActive(activeColumnFilters[col.key])}
             role="button"
             tabindex="-1"
-            aria-label="Filter {col.header}"
-            title="Filter {col.header}"
+            aria-label={L.filterFor(col.header)}
+            title={L.filterFor(col.header)}
             onclick={(e) => {
               e.stopPropagation();
               openFilterMenu(col, (e.currentTarget as HTMLElement).getBoundingClientRect());
@@ -1813,8 +1828,8 @@
             class="hmenu"
             role="button"
             tabindex="-1"
-            aria-label="{col.header} menu"
-            title="{col.header} menu"
+            aria-label={L.columnMenu(col.header)}
+            title={L.columnMenu(col.header)}
             onclick={(e) => openColumnMenu(col, e)}
             onkeydown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') openColumnMenu(col, e);
@@ -1827,7 +1842,7 @@
             class="grip"
             role="separator"
             aria-orientation="vertical"
-            aria-label="Resize {col.header}"
+            aria-label={L.resizeColumn(col.header)}
             onpointerdown={(e) => startResize(ci, e)}
             ondblclick={(e) => resetWidth(ci, e)}
             ondragstart={(e) => e.preventDefault()}
@@ -1849,7 +1864,7 @@
               class="fr-input"
               type="search"
               placeholder="filter…"
-              aria-label="Filter {col.header}"
+              aria-label={L.filterFor(col.header)}
               value={colFilters[col.key] ?? ''}
               oninput={(e) => (colFilters = { ...colFilters, [col.key]: e.currentTarget.value })}
             />
@@ -1880,6 +1895,7 @@
             {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
             {#each cols as col, ci (ci)}
               <Cell
+                labels={L}
                 {col}
                 row={prow}
                 r={-1 - pi}
@@ -1900,7 +1916,7 @@
       </div>
     {/if}
     {#if rowCount === 0 && !controller?.loading}
-      <div class="empty">{emptyMessage}</div>
+      <div class="empty">{emptyMessage ?? L.noRows}</div>
     {/if}
     {#if loading}
       <div class="loading-overlay" aria-busy="true" aria-live="polite">
@@ -1951,7 +1967,7 @@
                   class="expand-toggle"
                   type="button"
                   aria-expanded={isExpanded(getRowId(item.row))}
-                  aria-label="Toggle detail"
+                  aria-label={L.toggleDetail}
                   onpointerdown={(e) => e.stopPropagation()}
                   onclick={(e) => {
                     e.stopPropagation();
@@ -1968,7 +1984,7 @@
                   type="checkbox"
                   class="rowcheck"
                   checked={isRowSelected(getRowId(item.row))}
-                  aria-label="Select row"
+                  aria-label={L.selectRow}
                   onpointerdown={(e) => e.stopPropagation()}
                   onclick={(e) => e.stopPropagation()}
                   onchange={() => toggleRow(getRowId(item.row))}
@@ -1980,6 +1996,7 @@
                 {@const ci = it.ci}
                 {@const col = cols[ci]}
                 <Cell
+                  labels={L}
                   {col}
                   row={item.row}
                   r={item.vr}
@@ -2049,7 +2066,7 @@
     {/if}
   </div>
 
-  <AggregationBar result={agg} kinds={aggregations} />
+  <AggregationBar result={agg} kinds={aggregations} {locale} />
 
   {#if paged}
     <Pager
@@ -2060,6 +2077,8 @@
       pageSize={effPageSize}
       {pageSizeOptions}
       onPageSize={setPageSize}
+      labels={L}
+      {locale}
     />
   {/if}
 
@@ -2079,6 +2098,7 @@
       y={filterUi.y}
       onApply={(f) => applyColumnFilter(key, f)}
       onClose={() => (filterUi = null)}
+      labels={L}
     />
   {/if}
 
@@ -2092,6 +2112,7 @@
       onToggle={toggleColumnVisible}
       onShowAll={showAllColumns}
       onClose={() => (panelXY = null)}
+      labels={L}
     />
   {/if}
 

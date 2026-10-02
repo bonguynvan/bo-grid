@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { ColumnDef, GridRow } from './column';
+  import type { GridLabels } from './labels';
   import {
     formatCell,
     tooltipText,
@@ -49,6 +50,7 @@
     onEditCommit,
     onEditCancel,
     onFillStart,
+    labels,
   }: {
     col: ColumnDef;
     row: GridRow;
@@ -93,6 +95,7 @@
     onEditCommit?: (raw: string) => void;
     onEditCancel?: () => void;
     onFillStart?: () => void;
+    labels: GridLabels;
   } = $props();
 
   // Avatar initials: first letters of the first two words.
@@ -264,7 +267,7 @@
       class="drag-handle"
       role="button"
       tabindex="-1"
-      aria-label="Drag to reorder row"
+      aria-label={labels.dragToReorder}
       draggable="true"
       onpointerdown={(e) => e.stopPropagation()}
       ondragstart={() => dragHandle.onStart()}
@@ -278,7 +281,7 @@
           class="tree-toggle"
           type="button"
           aria-expanded={tree.expanded}
-          aria-label="Toggle children"
+          aria-label={labels.toggleChildren}
           onpointerdown={(e) => e.stopPropagation()}
           onclick={(e) => {
             e.stopPropagation();
@@ -337,7 +340,7 @@
   {:else if col.type === 'rating'}
     {@const rmax = col.max ?? 5}
     {@const r = Math.max(0, Math.min(rmax, Math.round(Number(value) || 0)))}
-    <span class="bo-rating" aria-label="{r} out of {rmax}">
+    <span class="bo-rating" aria-label={labels.rating(r, rmax)}>
       <span class="bo-stars-on">{'★'.repeat(r)}</span><span class="bo-stars-off">{'★'.repeat(rmax - r)}</span>
     </span>
   {:else if col.type === 'tags'}
@@ -396,7 +399,7 @@
       class="fill-handle"
       role="button"
       tabindex="-1"
-      aria-label="Fill"
+      aria-label={labels.fill}
       onpointerdown={(e) => {
         e.stopPropagation();
         onFillStart?.();

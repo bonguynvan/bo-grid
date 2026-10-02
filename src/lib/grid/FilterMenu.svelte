@@ -3,6 +3,7 @@
   // stays out of the core bundle until a filter is opened. Presentation-only:
   // the parent owns open/close + position and applies the resulting filter.
   import { untrack } from 'svelte';
+  import type { GridLabels } from './labels';
   import {
     isFilterActive,
     type ColumnFilter,
@@ -21,6 +22,7 @@
     y,
     onApply,
     onClose,
+    labels,
   }: {
     kind: FilterKind;
     header: string;
@@ -31,30 +33,32 @@
     y: number;
     onApply: (f: ColumnFilter | null) => void;
     onClose: () => void;
+    labels: GridLabels;
   } = $props();
 
-  const TEXT_OPS: Array<{ op: TextOp; label: string }> = [
-    { op: 'contains', label: 'Contains' },
-    { op: 'notContains', label: 'Not contains' },
-    { op: 'equals', label: 'Equals' },
-    { op: 'starts', label: 'Starts with' },
-    { op: 'ends', label: 'Ends with' },
-  ];
-  const NUMBER_OPS: Array<{ op: NumberOp; label: string }> = [
+  const L = $derived(labels);
+  const TEXT_OPS: Array<{ op: TextOp; label: string }> = $derived([
+    { op: 'contains', label: L.opContains },
+    { op: 'notContains', label: L.opNotContains },
+    { op: 'equals', label: L.opEquals },
+    { op: 'starts', label: L.opStartsWith },
+    { op: 'ends', label: L.opEndsWith },
+  ]);
+  const NUMBER_OPS: Array<{ op: NumberOp; label: string }> = $derived([
     { op: 'eq', label: '=' },
     { op: 'ne', label: '≠' },
     { op: 'lt', label: '<' },
     { op: 'le', label: '≤' },
     { op: 'gt', label: '>' },
     { op: 'ge', label: '≥' },
-    { op: 'between', label: 'Between' },
-  ];
-  const DATE_OPS: Array<{ op: DateOp; label: string }> = [
-    { op: 'on', label: 'On' },
-    { op: 'before', label: 'Before' },
-    { op: 'after', label: 'After' },
-    { op: 'between', label: 'Between' },
-  ];
+    { op: 'between', label: L.opBetween },
+  ]);
+  const DATE_OPS: Array<{ op: DateOp; label: string }> = $derived([
+    { op: 'on', label: L.opOn },
+    { op: 'before', label: L.opBefore },
+    { op: 'after', label: L.opAfter },
+    { op: 'between', label: L.opBetween },
+  ]);
 
   const toMs = (s: string): number => (s ? Date.parse(`${s}T00:00:00Z`) : NaN);
   const toDateInput = (ms: number): string =>
@@ -115,7 +119,7 @@
   class="bo-filtermenu"
   role="dialog"
   tabindex="-1"
-  aria-label="Filter {header}"
+  aria-label={L.filterFor(header)}
   style="left:{x}px;top:{y}px;"
   onpointerdown={(e) => e.stopPropagation()}
   onkeydown={onKey}
@@ -123,46 +127,46 @@
   <div class="bo-fm-head">{header}</div>
 
   {#if kind === 'number'}
-    <select class="bo-fm-op" bind:value={numOp} aria-label="Operator">
+    <select class="bo-fm-op" bind:value={numOp} aria-label={L.operator}>
       {#each NUMBER_OPS as o (o.op)}<option value={o.op}>{o.label}</option>{/each}
     </select>
-    <input class="bo-fm-in" type="number" bind:value={numA} placeholder="value" aria-label="Value" />
+    <input class="bo-fm-in" type="number" bind:value={numA} placeholder={L.valuePlaceholder} aria-label={L.value} />
     {#if numOp === 'between'}
-      <input class="bo-fm-in" type="number" bind:value={numB} placeholder="and" aria-label="Upper value" />
+      <input class="bo-fm-in" type="number" bind:value={numB} placeholder={L.and} aria-label={L.upperValue} />
     {/if}
   {:else if kind === 'date'}
-    <select class="bo-fm-op" bind:value={dateOp} aria-label="Operator">
+    <select class="bo-fm-op" bind:value={dateOp} aria-label={L.operator}>
       {#each DATE_OPS as o (o.op)}<option value={o.op}>{o.label}</option>{/each}
     </select>
-    <input class="bo-fm-in" type="date" bind:value={dateA} aria-label="Date" />
+    <input class="bo-fm-in" type="date" bind:value={dateA} aria-label={L.date} />
     {#if dateOp === 'between'}
-      <input class="bo-fm-in" type="date" bind:value={dateB} aria-label="End date" />
+      <input class="bo-fm-in" type="date" bind:value={dateB} aria-label={L.endDate} />
     {/if}
   {:else if kind === 'set'}
-    <input class="bo-fm-in" type="search" bind:value={search} placeholder="search…" aria-label="Search values" />
+    <input class="bo-fm-in" type="search" bind:value={search} placeholder={L.searchPlaceholder} aria-label={L.searchValues} />
     <div class="bo-fm-setbar">
-      <button type="button" class="bo-fm-link" onclick={() => (excluded = new Set())}>All</button>
-      <button type="button" class="bo-fm-link" onclick={() => (excluded = new Set(values))}>None</button>
+      <button type="button" class="bo-fm-link" onclick={() => (excluded = new Set())}>{L.all}</button>
+      <button type="button" class="bo-fm-link" onclick={() => (excluded = new Set(values))}>{L.none}</button>
     </div>
     <div class="bo-fm-list">
       {#each shown as v (v)}
         <label class="bo-fm-opt">
           <input type="checkbox" checked={!excluded.has(v)} onchange={() => toggleVal(v)} />
-          <span>{v === '' ? '(blank)' : v}</span>
+          <span>{v === '' ? L.blank : v}</span>
         </label>
       {/each}
     </div>
   {:else}
-    <select class="bo-fm-op" bind:value={textOp} aria-label="Operator">
+    <select class="bo-fm-op" bind:value={textOp} aria-label={L.operator}>
       {#each TEXT_OPS as o (o.op)}<option value={o.op}>{o.label}</option>{/each}
     </select>
     <!-- svelte-ignore a11y_autofocus -->
-    <input class="bo-fm-in" type="text" bind:value={textQ} placeholder="filter…" aria-label="Value" autofocus />
+    <input class="bo-fm-in" type="text" bind:value={textQ} placeholder={L.filterPlaceholder} aria-label={L.value} autofocus />
   {/if}
 
   <div class="bo-fm-actions">
-    <button class="bo-fm-btn" type="button" onclick={clear}>Clear</button>
-    <button class="bo-fm-btn bo-fm-apply" type="button" onclick={apply}>Apply</button>
+    <button class="bo-fm-btn" type="button" onclick={clear}>{L.clear}</button>
+    <button class="bo-fm-btn bo-fm-apply" type="button" onclick={apply}>{L.apply}</button>
   </div>
 </div>
 

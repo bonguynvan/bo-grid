@@ -5,6 +5,15 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- **`labels` and `locale` props** — every string the grid renders itself
+  (column menu, filter editor, pager, columns panel, aria labels) can be
+  overridden per grid; `locale` drives built-in `price` / `date` / `currency` /
+  `relative` formatting, the aggregation bar and the pager. `ColumnDef.locale`
+  is now available on every column type. Exports `DEFAULT_LABELS`,
+  `resolveLabels` and the `GridLabels` type.
+
 ## [1.4.0] — 2026-09-24
 
 **The trading-desk wave.** Four roadmap phases (1.1–1.4), shipped together:

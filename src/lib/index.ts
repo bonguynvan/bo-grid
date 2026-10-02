@@ -59,6 +59,8 @@ export {
   themePresets,
 } from './grid/theme';
 export type { GridTheme, ThemePreset } from './grid/theme';
+export { DEFAULT_LABELS, resolveLabels } from './grid/labels';
+export type { GridLabels } from './grid/labels';
 
 // Sparkline canvas primitives (draw candlesticks on your own canvas)
 export { drawCandles, setupHiDpiCanvas } from './sparkline/sparkline-render';

@@ -9,6 +9,9 @@ interface ColBase {
   /** Field on the row to read for this column's value. */
   key: string;
   header: string;
+  /** BCP 47 locale for this column's built-in formatting (`price`, `date`,
+      `currency`, `relative`). Defaults to the grid's `locale`, then `en-US`. */
+  locale?: string;
   /** Computed value: derive this cell's value from the whole row instead of
       reading `row[key]` (KPIs, ratios, deltas). Flows through display, sort,
       filter, aggregation, export and conditional formatting. `key` still names
@@ -182,7 +185,7 @@ export type ColumnDef =
   | (ColBase & { type: 'volume' })
   | (ColBase & { type: 'number'; decimals?: number })
   | (ColBase & { type: 'date'; dateStyle?: DateStyle })
-  | (ColBase & { type: 'currency'; currency?: string; locale?: string; decimals?: number })
+  | (ColBase & { type: 'currency'; currency?: string; decimals?: number })
   | (ColBase & { type: 'relative' }) // value: epoch ms → "3 hours ago"
   | (ColBase & { type: 'heatmap'; min: number; max: number; decimals?: number })
   | (ColBase & { type: 'sparkline'; sparkKey: string })
@@ -231,7 +234,7 @@ export function formatCell(col: ColumnDef, value: unknown, row?: GridRow): strin
   const n = typeof value === 'number' ? value : Number(value);
   switch (col.type) {
     case 'price':
-      return fmtPrice(n);
+      return fmtPrice(n, col.locale);
     case 'percent':
       return fmtPercent(n);
     case 'volume':
@@ -239,11 +242,11 @@ export function formatCell(col: ColumnDef, value: unknown, row?: GridRow): strin
     case 'number':
       return n.toFixed(col.decimals ?? 2);
     case 'date':
-      return fmtDate(n, col.dateStyle);
+      return fmtDate(n, col.dateStyle, col.locale);
     case 'currency':
       return fmtCurrency(n, col.currency, col.locale, col.decimals);
     case 'relative':
-      return relativeTime(n);
+      return relativeTime(n, undefined, col.locale);
     case 'heatmap':
       return n.toFixed(col.decimals ?? 2);
     case 'rating':
