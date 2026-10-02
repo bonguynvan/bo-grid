@@ -18,6 +18,10 @@ from here is feature parity with heavyweight grids.
 
 ### Fixed
 
+- **Flashing no longer rebuilds DOM.** Every tick used to destroy and recreate
+  the flashing element to replay its animation; consecutive flashes now
+  alternate between two identical keyframes on the same element. Render cost per
+  frame on a busy board roughly halves.
 - **Date filters and the date editor use the viewer's calendar day.** A `date`
   cell displays its value as a local day, but the filter matched — and the
   editor wrote — the UTC day, so east or west of UTC a cell showing the 15th
@@ -37,6 +41,17 @@ from here is feature parity with heavyweight grids.
 
 ### Added
 
+- **Realtime fast path for busy markets: `api.patchRows`** — rows can be plain
+  objects; `patchRows([[id, fields], …])` writes ticks in place and repaints only
+  the rendered rows it changed, skipping the reactive-proxy cost on every write.
+  On the new **Price board** demo (1,000 symbols, 24 flashing columns) a frame of
+  a 30,000 events/s feed drops from ~18 ms to ~8.5 ms. Feed it straight from
+  `createTickStream({ apply: (b) => api.patchRows(b) })`.
+- **`flashColor: false`** — flash only the background, keeping the column's own
+  text colour (price-limit tones on VN boards).
+- **Price board demo** — a full VN-style bảng giá (3 bid/ask levels, match,
+  high/low, foreign flow) with a live feed up to 30,000 events/s and a built-in
+  per-frame benchmark (`apply · render · layout`).
 - **Custom cell editors, `parse` and `defaultColumn`** — an `editor` component
   replaces the built-in input (and makes display widgets like `rating`
   editable); `parse(raw, row)` turns typed or pasted text into the stored value

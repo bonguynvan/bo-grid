@@ -39,6 +39,7 @@
   import { resolveLabels, type GridLabels } from './labels';
   import { resolveColumns, type DefaultColumn } from './celltype';
   import { parseCellInput } from './edit';
+  import { patchRowsInPlace } from './patch';
   import { scrollTopFor, type GridApi, type ScrollAlign } from './api';
   import { buildMergePlan, combinedFlex, type MergePlan, type SpanRun } from './merge';
   import { GRID_STATE_VERSION, reconcileState, type GridState } from './state';
@@ -997,6 +998,7 @@
   // view) for each column with a data bar or colour scale. Per-column `min`/`max`
   // config overrides are applied later, in the cell. Keyed by column key.
   const cfRanges = $derived.by<Record<string, { min: number; max: number }>>(() => {
+    dataVersion;
     const out: Record<string, { min: number; max: number }> = {};
     for (const col of columns) {
       if (!col.dataBar && !col.colorScale) continue;
@@ -1132,6 +1134,7 @@
   // Pinned totals row: per-column `groupAgg` over all (filtered) rows. Reads row
   // values reactively so it stays live with the feed. In-memory mode only.
   const footerCells = $derived.by<string[] | null>(() => {
+    dataVersion;
     if (!footer || source) return null;
     const v = view;
     return cols.map((col) => {
@@ -1344,6 +1347,7 @@
   }
 
   const agg = $derived.by<AggResult | null>(() => {
+    dataVersion;
     const b = sel.bounds;
     if (!b || sel.count <= 1) return null;
     const vals: number[] = [];
@@ -1550,6 +1554,31 @@
     onColumnResize?.(col.key, w);
   }
 
+  // ---- Realtime fast path (`api.patchRows`) ----------------------------------
+  // Rows can be plain objects: patchRows writes into them directly (a fraction of
+  // the cost of writing through $state proxies) and repaints only the rendered
+  // rows it touched, by bumping a per-row version their cells read. Rows off
+  // screen pay nothing reactive; they read current values when they mount.
+  // `dataVersion` keeps the whole-view readers (footer totals, group subtotals,
+  // selection aggregates, conditional-format ranges) live, once per call.
+  // A $state record, not a SvelteMap: reading a missing key of a proxied object
+  // subscribes to that key alone, so bumping one row never wakes the others.
+  const rowVersions: Record<string, number> = $state({});
+  let dataVersion = $state(0);
+  const rowIndex = $derived(new Map(rows.map((r) => [getRowId(r), r] as const)));
+
+  function patchRows(patches: Iterable<readonly [string | number, Record<string, unknown>]>): number {
+    const changed = patchRowsInPlace(rowIndex, patches);
+    if (changed.size === 0) return 0;
+    for (const item of renderItems) {
+      if (item.kind !== 'data') continue;
+      const key = getRowId(item.row);
+      if (changed.has(key)) rowVersions[key] = (rowVersions[key] ?? 0) + 1;
+    }
+    dataVersion++;
+    return changed.size;
+  }
+
   // ---- Imperative handle (`onReady`) ----------------------------------------
   function dataRowIndex(key: string | number): number {
     return flat.findIndex((v) => v.kind === 'data' && getRowId(v.row) === key);
@@ -1623,7 +1652,7 @@
 
   $effect(() => {
     untrack(() =>
-      onReady?.({ scrollToRow, focusCell, getSelectedRows, autosizeColumns, exportCSV: exportViewCSV, getState, applyState }),
+      onReady?.({ scrollToRow, focusCell, getSelectedRows, autosizeColumns, exportCSV: exportViewCSV, getState, applyState, patchRows }),
     );
   });
 
@@ -2160,7 +2189,7 @@
       <div class="sticky">
         {#each stickyGroups as g (g.depth)}
           <div class="sticky-row" aria-hidden="true" style="height:{baseH}px">
-            <GroupRow group={g} columns={cols} onToggle={toggleGroup} />
+            <GroupRow version={dataVersion} group={g} columns={cols} onToggle={toggleGroup} />
           </div>
         {/each}
       </div>
@@ -2171,7 +2200,7 @@
           <div class="grouprow" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
             {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
             {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
-            <GroupRow group={item.group} columns={cols} onToggle={lazyGrouped ? toggleLazyGroup : toggleGroup} rowIndex={item.vr + 2} />
+            <GroupRow version={dataVersion} group={item.group} columns={cols} onToggle={lazyGrouped ? toggleLazyGroup : toggleGroup} rowIndex={item.vr + 2} />
           </div>
         {:else if item.kind === 'skeleton'}
           <div class="row skeleton" role="row" aria-rowindex={item.vr + 2} aria-hidden="true" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
@@ -2243,6 +2272,7 @@
                   cellId={`${gid}-r${item.vr}-c${ci}`}
                   cellSnippet={cell}
                   rowKey={getRowId(item.row)}
+                  version={rowVersions[getRowId(item.row)]}
                   {flashTracker}
                   selected={cellSelection && (m ? rectSelected(m.r0, m.r1, ci, m.c1) : sel.contains(item.vr, ci))}
                   focused={cellSelection && (m ? rectFocused(m.r0, m.r1, ci, m.c1) : sel.isFocus(item.vr, ci))}

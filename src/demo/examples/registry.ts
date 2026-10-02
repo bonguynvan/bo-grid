@@ -42,6 +42,12 @@ export const EXAMPLES: Example[] = [
     load: () => import('./OrderBook.svelte'),
   },
   {
+    id: 'priceboard',
+    title: 'Price board',
+    blurb: 'A full VN-style bảng giá under a busy-market feed — 1,000+ symbols, every changed cell flashing. Benchmarks itself.',
+    load: () => import('./PriceBoard.svelte'),
+  },
+  {
     id: 'blotter',
     title: 'Blotter',
     blurb: 'Execution blotter with merged cells — spanRows down repeated fills, colSpan for note rows.',

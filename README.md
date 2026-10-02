@@ -172,6 +172,45 @@ which is also how it's unit-tested without a browser).
 Only on-screen rows render DOM, so off-screen updates cost nothing until they
 scroll into view.
 
+#### Busy markets — plain rows + `api.patchRows`
+
+`$state` rows are the simplest model, but every field write goes through a
+reactive proxy — about ten times the cost of a plain write, paid for **every**
+row the feed touches, on screen or not. For a full price board (hundreds to
+thousands of symbols, several fields per tick) hand the grid **plain objects**
+and let it write the ticks:
+
+```svelte
+<script lang="ts">
+  import { Grid, type GridApi } from 'bo-grid';
+  import { createTickStream } from 'bo-grid/realtime';
+
+  let rows = $state.raw(initialQuotes); // plain objects — no deep proxy
+  let api: GridApi;
+  const stream = createTickStream<string, Partial<Quote>>({
+    apply: (batch) => api.patchRows(batch), // writes in place, repaints rendered rows only
+  });
+  stream.start();
+  socket.onmessage = (e) => { const q = JSON.parse(e.data); stream.push(q.symbol, q); };
+</script>
+
+<Grid {rows} {columns} getRowId={(r) => r.symbol} onReady={(a) => (api = a)} />
+```
+
+`patchRows` writes into the rows and bumps a version only for the **rendered**
+rows it changed; their cells (including `cellClass`, `format` and renderers that
+read other fields of the row) repaint, off-screen rows pay nothing reactive and
+read current values when they scroll in. Footer totals, group subtotals and
+selection aggregates stay live. Sort and filter catch up on the next view change,
+as with any live data.
+
+On the **Price board** demo (1,000 symbols, 24 columns, every changed cell
+flashing, ~24 rows on screen), one frame of a 30,000 events/s feed costs
+~8.5 ms with `patchRows` against ~18 ms through `$state` rows — run the demo's
+**Benchmark** button to measure your own machine. Set `flashColor: false` on
+columns that colour their own text (price-limit tones) so a flash lights only
+the background.
+
 #### Market conventions — `bo-grid/trading`
 
 APAC boards colour by position relative to the daily **price limit**, not just

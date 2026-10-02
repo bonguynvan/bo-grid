@@ -9,16 +9,20 @@
     columns,
     onToggle,
     rowIndex,
+    version = 0,
   }: {
     group: GroupNode;
     columns: ColumnDef[];
     onToggle: (path: string) => void;
     rowIndex?: number;
+    /** Bumped by the grid on every patchRows, so subtotals over plain rows stay live. */
+    version?: number;
   } = $props();
 
   // Aggregate over the group's leaf rows. Reads row $state values, so group
   // subtotals stay live as the feed ticks (only on-screen groups are rendered).
   function aggText(col: ColumnDef): string {
+    version;
     // Lazy/server groups carry preformatted aggregate strings (leaf rows aren't
     // loaded), so use those directly when present.
     if (group.aggText) return group.aggText[col.key] ?? '';

@@ -66,6 +66,11 @@ export interface ColBase {
       CSS animation's fixed duration regardless. Default 300. Raise it for a
       slow feed, lower it for a fast one so flashes don't smear together. */
   flashMs?: number;
+  /** Tint the text in the tick's direction while flashing (default true). Set
+      false when the column colours its own text — e.g. price-limit tones on a
+      VN board (ceiling / floor / reference) — so the flash only lights the
+      background. */
+  flashColor?: boolean;
   /** Set false to disable header-click sorting on this column. */
   sortable?: boolean;
   /** Custom ascending comparator for this column's values (e.g. enum priority or

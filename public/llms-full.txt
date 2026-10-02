@@ -179,10 +179,14 @@ interface GridApi {
   exportCSV(filename?: string): Promise<void>;  // current view (filtered + sorted)
   getState(): GridState;                   // { version, order, widths, hidden, pinned, sorts, filters } — JSON-safe
   applyState(state: unknown): boolean;     // reconciled against current columns; false for a foreign version
+  patchRows(patches: Iterable<[rowId, Partial<Row>]>): number;  // BUSY FEEDS: rows may be plain objects ($state.raw); writes in place, repaints rendered rows only
 }
 ```
-Row keys are whatever `getRowId` returns (default `row.id`). There is no
-`patchRow` — realtime updates go through `bo-grid/realtime` (`applyPatches`).
+Row keys are whatever `getRowId` returns (default `row.id`). For a busy feed
+(price board), keep rows as plain objects and wire
+`createTickStream({ apply: (b) => api.patchRows(b) })` — ~10x cheaper per write
+than mutating $state proxies; `applyPatches` + $state rows still works for light
+feeds.
 
 ## 4. `ColumnDef`
 
@@ -205,6 +209,7 @@ interface ColBase {
 
   flash?: boolean | 'auto' | 'up-down' | 'change';   // §4.2 — use 'auto', not true
   flashMs?: number;           // derived-mode flash duration, default 300
+  flashColor?: boolean;       // default true; false = flash background only, keep the column's text colour (price-limit tones)
 
   sortable?: boolean;         // default true
   compare?: (a: unknown, b: unknown) => number;

@@ -38,6 +38,7 @@
     fillpreview = false,
     cfRange = null,
     rowKey = null,
+    version = 0,
     flashTracker = null,
     colIndex,
     cellId,
@@ -84,6 +85,9 @@
         by visual index as you scroll, so flash state cannot live in the
         component — it is keyed on (rowKey, column) in the grid's tracker. */
     rowKey?: string | number | null;
+    /** Bumped when `api.patchRows` changes this row, so plain (non-$state) row
+        objects still repaint. */
+    version?: number;
     /** The grid's flash tracker; null when no column uses derived flash. */
     flashTracker?: FlashTracker | null;
     colIndex?: number;
@@ -177,7 +181,10 @@
   // goes through the $state getter — fine-grained reactivity is preserved even
   // though the key is only known at runtime. Computed columns derive from the
   // whole row via cellValue (their value() reads the row's $state getters too).
-  const value = $derived(cellValue(col, row));
+  const value = $derived.by(() => {
+    version;
+    return cellValue(col, row);
+  });
   // Typed inline editor: date columns edit with a date picker, numeric columns
   // with a numeric input; everything else stays a text input.
   const editorType = $derived(col.type === 'date' ? 'date' : isNumeric(col) ? 'number' : 'text');
@@ -190,12 +197,26 @@
   // types (tags/badge/boolean/avatar) left-align.
   const kind = $derived(col.type === 'sparkline' ? 'spark' : isNumeric(col) ? 'num' : 'text');
   // Optional per-column cell class (static string or value/row function).
-  const extraClass = $derived(
-    typeof col.cellClass === 'function' ? (col.cellClass(value, row) ?? '') : (col.cellClass ?? ''),
-  );
+  // Everything below that may read OTHER fields of the row (cellClass/format/
+  // tooltip functions, renderers) also reads `version`: with plain row objects
+  // fed through api.patchRows, that bump is the only signal that the row moved.
+  const extraClass = $derived.by(() => {
+    if (typeof col.cellClass !== 'function') return col.cellClass ?? '';
+    version;
+    return col.cellClass(value, row) ?? '';
+  });
+  // The display string, shared by every text branch below.
+  const text = $derived.by(() => {
+    version;
+    return formatCell(col, value, row);
+  });
   // Styled floating tooltip text (opt-in via column `tooltip`); the grid root
   // renders the actual tooltip from this cell's `data-bo-tip` attribute.
-  const tip = $derived(tooltipText(col, value, row));
+  const tip = $derived.by(() => {
+    if (!col.tooltip) return undefined;
+    version;
+    return tooltipText(col, value, row);
+  });
 
   // ---- Flash ----
   // `'row'` keeps the legacy behaviour (the row owns flashSeq/flashDir). The
@@ -206,22 +227,28 @@
   const flash = $derived.by(() => {
     if (flashMode === null) return null;
     if (flashMode === 'row') {
-      return { key: row.flashSeq ?? 0, dir: row.flashDir ?? 'up', on: true };
+      return { seq: Number(row.flashSeq ?? 0), dir: row.flashDir ?? 'up', on: true };
     }
     if (!flashTracker || rowKey == null) return null;
-    const state = flashTracker.observe(rowKey, col.key, value, flashMode, Date.now());
-    // Re-key on row identity too: a recycled cell must build a fresh element
-    // rather than inherit the previous row's animation state.
-    return {
-      key: `${rowKey}:${state.seq}`,
-      dir: state.dir,
-      on: isFresh(state, Date.now(), col.flashMs ?? FLASH_MS),
-    };
+    const now = Date.now();
+    const state = flashTracker.observe(rowKey, col.key, value, flashMode, now);
+    return { seq: state.seq, dir: state.dir, on: isFresh(state, now, col.flashMs ?? FLASH_MS) };
   });
+  // The flash as one class string — a single DOM write per tick instead of a
+  // toggle per modifier. `alt` alternates keyframes to replay the animation.
+  const flashClass = $derived(
+    flash?.on
+      ? `flash${flash.seq % 2 === 1 ? ' alt' : ''}${flash.dir === 'up' ? ' up' : flash.dir === 'down' ? ' down' : ''}${col.flashColor === false ? ' keep' : ''}`
+      : '',
+  );
 
   // JS cell renderer (framework-agnostic alt to the `cell` snippet). Returns an
   // HTML string ({@html}) or a DOM Node (mounted via the action below).
-  const rendered = $derived(col.render ? col.render({ value, row, column: col }) : undefined);
+  const rendered = $derived.by(() => {
+    if (!col.render) return undefined;
+    version;
+    return col.render({ value, row, column: col });
+  });
   // Mount/replace a Node return value; updates when the derived node changes.
   function renderNode(host: HTMLElement, node: Node | string | null | undefined) {
     const set = (n: Node | string | null | undefined) => {
@@ -390,7 +417,7 @@
     />
   {:else if col.component}
     {@const Renderer = col.component}
-    <Renderer {value} {row} column={col} text={formatCell(col, value, row)} />
+    {#key version}<Renderer {value} {row} column={col} {text} />{/key}
   {:else if col.render}
     {#if typeof rendered === 'string'}
       <span class="bo-render">{@html rendered}</span>
@@ -398,7 +425,7 @@
       <span class="bo-render" use:renderNode={rendered}></span>
     {/if}
   {:else if col.type === 'custom'}
-    {#if cellSnippet}{@render cellSnippet({ row, column: col, value })}{:else}{value ?? ''}{/if}
+    {#if cellSnippet}{#key version}{@render cellSnippet({ row, column: col, value })}{/key}{:else}{value ?? ''}{/if}
   {:else if col.type === 'sparkline'}
     <Sparkline candles={candlesOf(row, col.sparkKey)} />
   {:else if col.type === 'progress'}
@@ -437,32 +464,16 @@
         onpointerdown={(e) => e.stopPropagation()}
         onclick={(e) => e.stopPropagation()}>{value ?? ''}</a>{:else}{value ?? ''}{/if}
   {:else if col.type === 'text'}
-    <strong>{formatCell(col, value, row)}</strong>{#if col.sub}<em>{row[col.sub]}</em>{/if}
+    <strong>{text}</strong>{#if col.sub}<em>{row[col.sub]}</em>{/if}
   {:else if hasCf}
     {#if bar}<span class="bo-databar" style="left:{bar.left};width:{bar.width};background:{bar.color}"></span>{/if}
-    {#key flash ? flash.key : 0}
-      <span
-        class="bo-cf-val"
-        class:flash={flash?.on}
-        class:up={flash?.on && flash.dir === 'up'}
-        class:down={flash?.on && flash.dir === 'down'}
-        style={flash?.on ? flashDuration(col) : undefined}
-      >
-        {#if icon}<span class="bo-cf-icon" style="color:{icon.color}">{icon.icon}</span>{/if}{formatCell(col, value, row)}
-      </span>
-    {/key}
+    <span class="bo-cf-val {flashClass}" style={flash?.on ? flashDuration(col) : undefined}>
+      {#if icon}<span class="bo-cf-icon" style="color:{icon.color}">{icon.icon}</span>{/if}{text}
+    </span>
   {:else if flash}
-    {#key flash.key}
-      <span
-        class="bo-cell-text"
-        class:flash={flash.on}
-        class:up={flash.on && flash.dir === 'up'}
-        class:down={flash.on && flash.dir === 'down'}
-        style={flash.on ? flashDuration(col) : undefined}
-      >{formatCell(col, value, row)}</span>
-    {/key}
+    <span class="bo-cell-text {flashClass}" style={flash.on ? flashDuration(col) : undefined}>{text}</span>
   {:else}
-    <span class="bo-cell-text">{formatCell(col, value, row)}</span>
+    <span class="bo-cell-text">{text}</span>
   {/if}
   {#if fillCorner}
     <span
@@ -783,11 +794,17 @@
   }
 
   /* One keyframe, tinted per direction: amber for a neutral change, up/down
-     colours for a derived tick — the convention on every trading screen. */
+     colours for a derived tick — the convention on every trading screen.
+     Consecutive changes alternate between two identical keyframes: switching
+     animation-name restarts the animation on the SAME element, so a tick never
+     rebuilds DOM just to replay the flash. */
   .flash {
     --bo-flash-ms: 300ms;
     --bo-flash-tint: var(--bo-amber);
     animation: flash var(--bo-flash-ms) linear;
+  }
+  .flash.alt {
+    animation-name: flash-alt;
   }
   .flash.up {
     --bo-flash-tint: var(--bo-up);
@@ -797,6 +814,10 @@
     --bo-flash-tint: var(--bo-down);
     color: var(--bo-down);
   }
+  /* flashColor: false — the column owns its text colour; only the background flashes. */
+  .flash.keep {
+    color: inherit;
+  }
   @keyframes flash {
     0% {
       background: color-mix(in srgb, var(--bo-flash-tint) 38%, transparent);
@@ -805,8 +826,17 @@
       background: transparent;
     }
   }
+  @keyframes flash-alt {
+    0% {
+      background: color-mix(in srgb, var(--bo-flash-tint) 38%, transparent);
+    }
+    100% {
+      background: transparent;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
-    .flash {
+    .flash,
+    .flash.alt {
       animation: none;
     }
   }

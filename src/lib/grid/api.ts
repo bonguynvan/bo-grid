@@ -23,6 +23,13 @@ export interface GridApi {
   /** Restore a snapshot, reconciled against the columns as they are now.
       Returns false when the state is unusable (foreign version, not an object). */
   applyState(state: unknown): boolean;
+  /** Realtime fast path: write `[rowId, fields]` patches into the rows in
+      place and repaint only the rendered rows they change. Rows may be plain
+      objects (no $state proxy) — far cheaper per write in a busy feed. Feed it
+      a tick stream: `createTickStream({ apply: (b) => api.patchRows(b) })`.
+      Sort and filter catch up on the next view change, as for any live data.
+      Returns how many rows changed. */
+  patchRows(patches: Iterable<readonly [string | number, Record<string, unknown>]>): number;
 }
 
 /** The `scrollTop` that brings a row of `rowH` at `rowTop` into a viewport of

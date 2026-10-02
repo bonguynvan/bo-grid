@@ -4,7 +4,7 @@
 import { JSDOM } from 'jsdom';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 
 const dom = new JSDOM('<!doctype html><html><body><div id="app"></div></body></html>', {
   pretendToBeVisual: true,
@@ -96,7 +96,10 @@ function fail(msg) {
 
 process.on('unhandledRejection', (e) => fail(`unhandled rejection: ${e?.message || e}`));
 
-const bundle = readdirSync('demo-dist/assets').find((f) => f.endsWith('.js'));
+// The entry is whatever index.html loads — not the first .js on disk: shared
+// lazy chunks (e.g. a helper split out between two examples) sort before it.
+const entrySrc = /src="\.\/assets\/([^"]+\.js)"/.exec(readFileSync('demo-dist/index.html', 'utf8'))?.[1];
+const bundle = entrySrc ?? readdirSync('demo-dist/assets').find((f) => f.startsWith('index-') && f.endsWith('.js'));
 if (!bundle) fail('no built bundle in demo-dist/assets — run the demo build first');
 const url = pathToFileURL(resolve('demo-dist/assets', bundle)).href;
 
@@ -998,6 +1001,29 @@ if (corrPinned === 0) fail('Correlation matrix label column did not pin');
 // Leaderboard: custom rank/progress cells + podium row highlighting.
 // Blotter: merged cells. spanRows draws one tall cell per run (aria-rowspan)
 // with transparent covers below it; colSpan note rows cover Qty/Price.
+// Price board: plain rows fed through api.patchRows. A patch to an on-screen
+// symbol repaints its cell (and flashes it); the board renders all 24 columns.
+await solo('priceboard', '.bo-grid .row', 'Price board example rendered no rows');
+{
+  const pb = globalThis.__priceBoard ?? window.__priceBoard;
+  if (!pb?.api?.()) fail('Price board: grid handle (onReady) not exposed');
+  const head = [...document.querySelectorAll('.bo-grid .head [role=columnheader]')].find((h) => h.textContent.trim() === 'Giá');
+  const ci = head?.getAttribute('aria-colindex');
+  const row0 = document.querySelector('.bo-grid .viewport .row');
+  const sym = row0?.querySelector('[aria-colindex="1"]')?.textContent.trim();
+  const q = pb.rows().find((r) => r.symbol === sym);
+  if (!q) fail('Price board: first rendered row not found in its data');
+  const before = row0.querySelector(`[aria-colindex="${ci}"]`).textContent.trim();
+  const changed = pb.api().patchRows([[q.id, { mp: q.mp + 500 }]]);
+  await wait(30);
+  const after = document.querySelector('.bo-grid .viewport .row').querySelector(`[aria-colindex="${ci}"]`);
+  if (changed !== 1) fail(`Price board: patchRows reported ${changed} changed rows, expected 1`);
+  if (after.textContent.trim() === before) fail('Price board: patchRows did not repaint the on-screen cell');
+  if (!after.querySelector('.flash')) fail('Price board: patched cell did not flash');
+  if (document.querySelectorAll('.bo-grid .head [role=columnheader]').length !== 24)
+    fail('Price board: expected 24 columns');
+}
+
 await solo('blotter', '.bo-grid .row', 'Blotter example rendered no rows');
 const blotRuns = [...document.querySelectorAll('.bo-grid [aria-rowspan]')];
 const blotCovers = document.querySelectorAll('.bo-grid .spancover').length;
