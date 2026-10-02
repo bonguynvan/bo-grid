@@ -50,6 +50,8 @@ export interface GridLabels {
   dragToReorder: string;
   fill: string;
   noRows: string;
+  loading: string;
+  total: string;
   rating: (value: number, max: number) => string;
   pagination: string;
   rowsPerPage: string;
@@ -110,6 +112,8 @@ export const DEFAULT_LABELS: GridLabels = {
   dragToReorder: 'Drag to reorder row',
   fill: 'Fill',
   noRows: 'No matching rows',
+  loading: 'Loading…',
+  total: 'Total',
   rating: (v, max) => `${v} out of ${max}`,
   pagination: 'Pagination',
   rowsPerPage: 'Rows per page',

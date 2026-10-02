@@ -42,6 +42,12 @@ export const EXAMPLES: Example[] = [
     load: () => import('./OrderBook.svelte'),
   },
   {
+    id: 'blotter',
+    title: 'Blotter',
+    blurb: 'Execution blotter with merged cells — spanRows down repeated fills, colSpan for note rows.',
+    load: () => import('./Blotter.svelte'),
+  },
+  {
     id: 'ladder',
     title: 'Price ladder',
     blurb: '120 levels, 16 visible — centred on the spread with manual page + recenter (bo-grid/realtime centeredWindow).',

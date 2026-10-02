@@ -18,6 +18,12 @@ from here is feature parity with heavyweight grids.
 
 ### Added
 
+- **Merged cells** — `spanRows` merges a column's cell down over adjacent rows
+  with equal values (or per a comparator), hierarchically left to right;
+  `colSpan(row)` makes a cell cover several columns. Display-only: sort,
+  filter, copy and export still see every row. Works with pinned columns,
+  variable row heights and virtual scrolling. New **Blotter** demo. Exports
+  `buildMergePlan`, `colSpanRow`, `MergePlan`.
 - **`onReady(api)` grid handle** — `scrollToRow(key, align?)`,
   `focusCell(rowKey, columnKey)`, `getSelectedRows()`, `autosizeColumns(keys?)`,
   `exportCSV(filename?)`, and `getState()` / `applyState()` for saving and
@@ -30,7 +36,8 @@ from here is feature parity with heavyweight grids.
   (column menu, filter editor, pager, columns panel, aria labels) can be
   overridden per grid; `locale` drives built-in `price` / `date` / `currency` /
   `relative` formatting, the aggregation bar and the pager. `ColumnDef.locale`
-  is now available on every column type. Exports `DEFAULT_LABELS`,
+  is now available on every column type. The loading text and footer
+  "Total" label are localizable too. Exports `DEFAULT_LABELS`,
   `resolveLabels` and the `GridLabels` type.
 
 ## [1.4.0] — 2026-09-24

@@ -51,6 +51,9 @@
     onEditCancel,
     onFillStart,
     labels,
+    span,
+    flexStyle,
+    colspan,
   }: {
     col: ColumnDef;
     row: GridRow;
@@ -96,6 +99,14 @@
     onEditCancel?: () => void;
     onFillStart?: () => void;
     labels: GridLabels;
+    /** Row-span geometry when this cell draws a merged run: `up` px above this
+        row to the run's top, total `height`, the first row's height (content
+        aligns to it), the run length, and the run's first-row stripe. */
+    span?: { up: number; height: number; first: number; rows: number; alt: boolean };
+    /** Flex sizing override for a colSpan cell in fit-to-width mode. */
+    flexStyle?: string;
+    /** Number of columns this cell covers (colSpan), for aria-colspan. */
+    colspan?: number;
   } = $props();
 
   // Avatar initials: first letters of the first two words.
@@ -222,18 +233,28 @@
     return c.flashMs && c.flashMs !== FLASH_MS ? `--bo-flash-ms:${c.flashMs}ms` : undefined;
   }
 
+  // Stacking: pinned cells (2) cover scrolled content; a merged run (1, or 3
+  // when pinned) paints over the rows below it, which are later in the DOM.
   function cellStyle(): string {
-    let s = width != null ? `flex:0 0 ${width}px;width:${width}px;` : colStyle(col);
+    let s = width != null ? `flex:0 0 ${width}px;width:${width}px;` : (flexStyle ?? colStyle(col));
     // Conditional background: heatmap type, else a colour-scale tint (both translucent).
     const bg = col.type === 'heatmap' ? heatColor(Number(value), col.min, col.max) : scaleBg;
+    // Opaque cells (pinned, or a run drawn over other rows) layer any translucent
+    // tint over the row colour.
+    const stripe = span ? span.alt : alt;
+    const rowBg = `var(${stripe ? '--bo-row-a' : '--bo-row-b'})`;
+    const opaque = bg ? `background:linear-gradient(${bg},${bg}),${rowBg};` : `background:${rowBg};`;
     if (pinned) {
-      s += `position:sticky;${pinSide}:${pinOffset}px;z-index:1;`;
-      // Pinned cells must be opaque to cover scrolled content — layer any
-      // translucent tint over the (alternating) row colour.
-      const rowBg = `var(${alt ? '--bo-row-a' : '--bo-row-b'})`;
-      s += bg ? `background:linear-gradient(${bg},${bg}),${rowBg};` : `background:${rowBg};`;
+      s += `position:sticky;${pinSide}:${pinOffset}px;z-index:${span ? 3 : 2};${opaque}`;
+    } else if (span) {
+      s += `z-index:1;${opaque}`;
     } else if (bg) {
       s += `background:${bg};`;
+    }
+    if (span) {
+      s += `height:${span.height}px;align-self:flex-start;align-items:flex-start;`;
+      s += `padding-top:calc((${span.first}px - 1.4em) / 2);border-bottom:0.5px solid var(--bo-border);`;
+      if (span.up) s += `transform:translateY(-${span.up}px);`;
     }
     return s;
   }
@@ -256,6 +277,8 @@
   id={cellId}
   data-bo-tip={tip}
   aria-colindex={colIndex}
+  aria-rowspan={span && !span.up ? span.rows : undefined}
+  aria-colspan={colspan}
   aria-selected={selected}
   onpointerdown={(e) => onCellDown?.(r, c, e)}
   onpointerenter={(e) => onCellEnter?.(r, c, e)}

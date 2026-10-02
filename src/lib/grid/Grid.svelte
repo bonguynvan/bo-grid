@@ -37,6 +37,7 @@
   import RowMenu from './RowMenu.svelte';
   import { resolveLabels, type GridLabels } from './labels';
   import { scrollTopFor, type GridApi, type ScrollAlign } from './api';
+  import { buildMergePlan, combinedFlex, type MergePlan, type SpanRun } from './merge';
   import { GRID_STATE_VERSION, reconcileState, type GridState } from './state';
 
   let {
@@ -318,7 +319,7 @@
   let editSeed = $state<string | null>(null);
 
   function startEdit(r: number, c: number, seed: string | null = null) {
-    if (!isEditable(cols[c]) || !dataAt(r)) return;
+    if (!isEditable(cols[c]) || !dataAt(r) || isMerged(r, c)) return;
     editSeed = seed;
     editing = { r, c };
   }
@@ -646,7 +647,7 @@
     if (!hScroll) return colStyle(cols[ci]);
     const inf = layout.info[ci];
     let s = `flex:0 0 ${inf.width}px;width:${inf.width}px;`;
-    if (inf.pinned) s += `${pinStick(ci)}z-index:1;background:var(--bo-bg);`;
+    if (inf.pinned) s += `${pinStick(ci)}z-index:2;background:var(--bo-bg);`;
     return s;
   }
   // The leading checkbox column: a fixed-width flex item, sticky-left (past the
@@ -1178,6 +1179,74 @@
     }
     return out;
   });
+
+  // Merged cells (spanRows / colSpan). Built from the view like grouping:
+  // value reads are untracked, so a ticking feed never rebuilds the plan.
+  const mergePlan = $derived.by<MergePlan | null>(() => {
+    if (source) return null;
+    const visCols = cols;
+    if (!visCols.some((c) => c.spanRows || c.colSpan)) return null;
+    const items = flat;
+    const info = layout.info;
+    const colSpanOn = !virtualizeColumns;
+    if (expandable) expVersion;
+    return untrack(() =>
+      buildMergePlan({
+        columns: visCols,
+        count: items.length,
+        rowAt: (vr) => {
+          const it = items[vr];
+          return it && it.kind === 'data' ? it.row : null;
+        },
+        sectionOf: (ci) => (info[ci]?.side === 'left' ? 0 : info[ci]?.side === 'right' ? 2 : 1),
+        breakAfter: expandable
+          ? (vr) => {
+              const it = items[vr];
+              return !!it && it.kind === 'data' && isExpanded(getRowId(it.row));
+            }
+          : undefined,
+        colSpan: colSpanOn,
+      }),
+    );
+  });
+
+  /** A cell inside a merged run or covered by a column span — not editable. */
+  function isMerged(r: number, c: number): boolean {
+    if (!mergePlan) return false;
+    const w = mergePlan.colSpansOf(r)?.[c] ?? 1;
+    return w !== 1 || !!mergePlan.runOf(c, r);
+  }
+  const rowBoxH = (vr: number): number => (expandable ? baseH : hm.heightOf(vr));
+  function spanWidthPx(ci: number, w: number): number {
+    let px = 0;
+    for (let k = 0; k < w; k++) px += layout.info[ci + k]?.width ?? 0;
+    return px;
+  }
+  function spanWidthStyle(ci: number, w: number): string {
+    if (hScroll) {
+      const px = spanWidthPx(ci, w);
+      return `flex:0 0 ${px}px;width:${px}px;`;
+    }
+    return w > 1 ? combinedFlex(cols.slice(ci, ci + w)) : colStyle(cols[ci]);
+  }
+  function spanGeometry(vr: number, run: SpanRun) {
+    const top = hm.offsetOf(run.start);
+    return {
+      up: hm.offsetOf(vr) - top,
+      height: hm.offsetOf(run.end) + rowBoxH(run.end) - top,
+      first: rowBoxH(run.start),
+      rows: run.end - run.start + 1,
+      alt: run.start % 2 === 1,
+    };
+  }
+  function rectSelected(r0: number, r1: number, c0: number, c1: number): boolean {
+    const b = sel.bounds;
+    return !!b && b.r0 <= r1 && b.r1 >= r0 && b.c0 <= c1 && b.c1 >= c0;
+  }
+  function rectFocused(r0: number, r1: number, c0: number, c1: number): boolean {
+    const f = sel.focus;
+    return !!f && f.r >= r0 && f.r <= r1 && f.c >= c0 && f.c <= c1;
+  }
 
   const stickyGroups = $derived(
     !source && groupBy.length > 0 ? activeGroupsAt(flat, hm.indexAt(scrollTop)) : [],
@@ -2009,7 +2078,7 @@
     {#if loading}
       <div class="loading-overlay" aria-busy="true" aria-live="polite">
         <span class="spinner" aria-hidden="true"></span>
-        <span class="loading-label">Loading…</span>
+        <span class="loading-label">{L.loading}</span>
       </div>
     {/if}
     {#if stickyGroups.length > 0}
@@ -2042,10 +2111,11 @@
             {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
             {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
             <span class="tree-loading-cell" style="padding-left:{(item.depth ?? 0) * 16 + 24}px">
-              <span class="spinner sm" aria-hidden="true"></span>Loading…
+              <span class="spinner sm" aria-hidden="true"></span>{L.loading}
             </span>
           </div>
         {:else}
+          {@const rowSpans = mergePlan ? mergePlan.colSpansOf(item.vr) : null}
           <!-- Row activation is keyboard-accessible at the grid level: Enter on the focused cell fires onRowClick (focus is via aria-activedescendant). -->
           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
           <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:rowactive={selectedRowId != null && getRowId(item.row) === selectedRowId} class:clickable={!!onRowClick} class:droptarget={reorderable && dropRowVr === item.vr && dragRowVr !== item.vr} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : undefined} aria-level={treeData ? (item.depth ?? 0) + 1 : undefined} aria-expanded={treeData && item.hasChildren ? isExpanded(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{expandable ? baseH : hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)} oncontextmenu={(e) => openRowMenu(item.row, e)} ondragover={reorderable ? (e) => { if (dragRowVr < 0) return; e.preventDefault(); dropRowVr = item.vr; } : undefined} ondrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(); } : undefined}>
@@ -2083,6 +2153,14 @@
               {#if it.kind === 'cell'}
                 {@const ci = it.ci}
                 {@const col = cols[ci]}
+                {@const cw = rowSpans ? rowSpans[ci] : 1}
+                {@const run = mergePlan ? mergePlan.runOf(ci, item.vr) : null}
+                {#if cw === 0}
+                  <!-- covered by a column span to the left -->
+                {:else if run && item.vr !== run.start && item.vr !== start}
+                  <span class="c spancover" aria-hidden="true" style={spanWidthStyle(ci, cw)}></span>
+                {:else}
+                {@const merged = !!run || cw > 1}
                 <Cell
                   labels={L}
                   {col}
@@ -2094,12 +2172,21 @@
                   cellSnippet={cell}
                   rowKey={getRowId(item.row)}
                   {flashTracker}
-                  selected={cellSelection && sel.contains(item.vr, ci)}
-                  focused={cellSelection && sel.isFocus(item.vr, ci)}
+                  selected={cellSelection &&
+                    (merged
+                      ? rectSelected(run ? run.start : item.vr, run ? run.end : item.vr, ci, ci + cw - 1)
+                      : sel.contains(item.vr, ci))}
+                  focused={cellSelection &&
+                    (merged
+                      ? rectFocused(run ? run.start : item.vr, run ? run.end : item.vr, ci, ci + cw - 1)
+                      : sel.isFocus(item.vr, ci))}
+                  span={run ? spanGeometry(item.vr, run) : undefined}
+                  colspan={cw > 1 ? cw : undefined}
+                  flexStyle={!hScroll && cw > 1 ? combinedFlex(cols.slice(ci, ci + cw)) : undefined}
                   pinned={pinned && layout.info[ci].pinned}
                   pinSide={layout.info[ci].side ?? 'left'}
                   pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right : layout.info[ci].left + leadPx}
-                  width={hScroll ? layout.info[ci].width : undefined}
+                  width={hScroll ? spanWidthPx(ci, cw) : undefined}
                   alt={item.vr % 2 === 1}
                   editing={editing?.r === item.vr && editing?.c === ci}
                   seed={editing?.r === item.vr && editing?.c === ci ? editSeed : null}
@@ -2128,6 +2215,7 @@
                     editSeed = null;
                   }}
                 />
+                {/if}
               {:else}
                 <span class="colspacer" aria-hidden="true" style="flex:0 0 {it.w}px;width:{it.w}px;"></span>
               {/if}
@@ -2147,7 +2235,7 @@
         {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
         {#each cols as col, ci (ci)}
           <span class="fcell" class:right={isNumeric(col)} style={cellWidthStyle(ci)}>
-            {ci === 0 && !footerCells[ci] ? 'Total' : footerCells[ci]}
+            {ci === 0 && !footerCells[ci] ? L.total : footerCells[ci]}
           </span>
         {/each}
       </div>
@@ -2658,7 +2746,7 @@
     position: sticky;
     top: 0;
     height: 0;
-    z-index: 3;
+    z-index: 4;
     overflow: visible;
   }
   .sticky-row {

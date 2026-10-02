@@ -191,6 +191,8 @@ interface ColBase {
   header: string;            // required — header label
   locale?: string;           // BCP 47 for built-in price/date/currency/relative formatting; defaults to the grid's `locale`
   value?: (row: GridRow) => unknown;   // computed column — derives instead of reading row[key]
+  spanRows?: boolean | ((a: GridRow, b: GridRow) => boolean);  // merge cell down over ADJACENT rows (true = equal non-blank values); hierarchical left→right; in-memory only; display only
+  colSpan?: (row: GridRow) => number;  // cell covers N columns for this row; covered cells not drawn; clamped at pin boundary; ignored with virtualizeColumns
   width?: number; minWidth?: number; maxWidth?: number;
   flex?: number;              // flex-grow weight instead of a fixed width
   align?: 'left' | 'right';
@@ -398,6 +400,9 @@ fmtPrice, fmtPercent, fmtVolume, fmtDate, fmtCurrency, relativeTime
 // Data helpers
 aggregate(values: number[]) → {sum,avg,count,min,max} | null (empty → null)
 heatColor(value, min, max), pivot(rows, config)
+
+// Merged cells (pure planning, for custom renderers)
+buildMergePlan({ columns, count, rowAt, sectionOf, breakAfter?, colSpan? }) → MergePlan | null, colSpanRow(columns, row, sectionOf)
 
 // Localization & layout state
 DEFAULT_LABELS, resolveLabels(overrides?) → GridLabels

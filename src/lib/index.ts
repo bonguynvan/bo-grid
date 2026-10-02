@@ -61,6 +61,8 @@ export {
 export type { GridTheme, ThemePreset } from './grid/theme';
 export { DEFAULT_LABELS, resolveLabels } from './grid/labels';
 export { reconcileState, GRID_STATE_VERSION } from './grid/state';
+export { buildMergePlan, colSpanRow } from './grid/merge';
+export type { MergePlan, MergeInput, SpanRun } from './grid/merge';
 export type { GridState } from './grid/state';
 export type { GridApi, ScrollAlign } from './grid/api';
 export type { GridLabels } from './grid/labels';

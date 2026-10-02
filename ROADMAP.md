@@ -289,8 +289,10 @@ grids such as AG Grid. Standalone charting moves out: the
 - [x] **Grid handle** — `onReady(api)`: `scrollToRow`, `focusCell`,
   `getSelectedRows`, `autosizeColumns`, `exportCSV`, `getState`/`applyState`
   with saved-layout reconciliation.
-- [ ] **Merged cells** — value-driven `rowSpan`, row-driven `colSpan`, and
-  explicit key-addressed `merges` regions.
+- [x] **Merged cells** — value-driven `spanRows` (hierarchical) and row-driven
+  `colSpan`, virtualization- and pin-aware.
+- [ ] **Explicit merge regions** — key-addressed rectangles for layout facts
+  no rule derives (block trades, report captions).
 - [ ] **Cell-type registry** — register custom column types instead of only
   `type: 'custom'`.
 - [ ] **Custom filter types** — register a filter kind with its own editor.
@@ -307,7 +309,7 @@ CSV round-trip. Remaining ideas are polish or demand-driven:
 - Driven by real-world usage now that it's published — open an issue with what's
   missing.
 
-Note: the eager grid core is ~93% of its 38 KB budget (recalibrated from 35 KB
+Note: the eager grid core is ~99% of its 38 KB budget (recalibrated from 35 KB
 for the 2.0 wave); each sizable *core* feature recalibrates it explicitly (still
 ~14× smaller than heavyweight grids). The
 realtime (2 KB) and trading (2 KB) companions, each on its own budget, are the

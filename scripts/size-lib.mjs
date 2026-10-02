@@ -17,8 +17,8 @@ const DIR = 'lib-dist';
 // rich types, column virtualization). 32 → 35 for the 1.0 adopter-experience wave
 // (styled tooltips, JS render hook, header tooltips, auto-fit height, controlled
 // active row, pager page-size). 35 → 38 for the 2.0 grid-only wave (labels /
-// locale, the onReady handle with layout reconciliation) — the start of the push
-// toward heavyweight-grid parity. At ~35 KB gzip it is still ~14× smaller than
+// locale, the onReady handle with layout reconciliation, merged cells) — the start of the push
+// toward heavyweight-grid parity. At ~37 KB gzip it is still ~13× smaller than
 // typical heavyweight grids (~500 KB) — the "tiny" claim holds. Heavy optional UI
 // (filter menu, tool panel) stays lazy and is excluded below — the always-loaded core.
 // The grid core (`js`) is the always-loaded promise.

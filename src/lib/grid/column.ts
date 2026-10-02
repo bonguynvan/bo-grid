@@ -19,6 +19,16 @@ interface ColBase {
       Keep it cheap and pure — it's called during sort/filter. Computed columns
       aren't editable. In-memory mode (a server source owns its own derivations). */
   value?: (row: GridRow) => unknown;
+  /** Merge this column's cell down over adjacent rows. `true` joins rows with
+      equal (non-blank) values; a function decides for each adjacent pair.
+      Hierarchical: a run also breaks wherever a spanning column to its left
+      breaks, and at group headers. A drawing rule only — sort, filter, copy and
+      export still see every row's own value. In-memory mode only. */
+  spanRows?: boolean | ((a: GridRow, b: GridRow) => boolean);
+  /** How many columns this cell covers for a given row (default 1). Covered
+      cells are not drawn. Clamped at a pinned/scrolling boundary and the last
+      column; the leftmost claim wins. Ignored under `virtualizeColumns`. */
+  colSpan?: (row: GridRow) => number;
   /** Fixed width in px. Ignored when `flex` is set. */
   width?: number;
   /** Min/max width (px) enforced while drag-resizing this column. */

@@ -996,6 +996,24 @@ if (heatCells === 0) fail('Correlation matrix rendered no heatmap-coloured cells
 if (corrPinned === 0) fail('Correlation matrix label column did not pin');
 
 // Leaderboard: custom rank/progress cells + podium row highlighting.
+// Blotter: merged cells. spanRows draws one tall cell per run (aria-rowspan)
+// with transparent covers below it; colSpan note rows cover Qty/Price.
+await solo('blotter', '.bo-grid .row', 'Blotter example rendered no rows');
+const blotRuns = [...document.querySelectorAll('.bo-grid [aria-rowspan]')];
+const blotCovers = document.querySelectorAll('.bo-grid .spancover').length;
+const blotColSpans = document.querySelectorAll('.bo-grid [aria-colspan="3"]').length;
+if (blotRuns.length === 0) fail('Blotter: spanRows drew no merged cells');
+if (blotCovers === 0) fail('Blotter: covered cells under a run did not render as covers');
+if (blotColSpans === 0) fail('Blotter: colSpan note rows did not span 3 columns');
+if (!blotRuns.every((c) => Number(c.getAttribute('aria-rowspan')) > 1 && parseFloat(c.style.height) > 0))
+  fail('Blotter: a merged cell is missing its run height');
+// The account column runs hierarchically above the order column: the first
+// account run must be at least as tall as the first order run inside it.
+const blotAcct = blotRuns.find((c) => c.getAttribute('aria-colindex') === '1');
+const blotOrder = blotRuns.find((c) => c.getAttribute('aria-colindex') === '2');
+if (!blotAcct || !blotOrder || parseFloat(blotAcct.style.height) < parseFloat(blotOrder.style.height))
+  fail('Blotter: account run is not hierarchical over the order run');
+
 await solo('leaderboard', '.bo-grid .row', 'Leaderboard example rendered no rows');
 const lbBars = document.querySelectorAll('.bo-grid .row .bar .fill').length;
 const lbPodium = document.querySelectorAll('.bo-grid .row.podium-row').length;
@@ -1211,7 +1229,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale + computed-col, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars + ${obDirected} derived flashes, vnboard ${vnRows} rows + ${vnSession.textContent?.trim()} session (bo-grid/trading), ladder ${ladderRowsInitial}/120 visible + lock/page/recenter ok, timesales ${tsRows} trades (capped, newest-first), correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), csv ${csvRows}→${csvAfter} rows + json ${csvJson} + auto ${csvAuto} (csv/tsv/json/auto import), print ${printGridRows} virt/${printPreviewRows} all-rows, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars + ${obDirected} derived flashes, vnboard ${vnRows} rows + ${vnSession.textContent?.trim()} session (bo-grid/trading), ladder ${ladderRowsInitial}/120 visible + lock/page/recenter ok, timesales ${tsRows} trades (capped, newest-first), correlation ${heatCells} heat cells/${corrPinned} pinned, blotter ${blotRuns.length} runs/${blotCovers} covers/${blotColSpans} col-spans, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), csv ${csvRows}→${csvAfter} rows + json ${csvJson} + auto ${csvAuto} (csv/tsv/json/auto import), print ${printGridRows} virt/${printPreviewRows} all-rows, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

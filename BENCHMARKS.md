@@ -10,7 +10,7 @@ excluded — you already ship the Svelte runtime):
 
 | Asset | gzip |
 | --- | --- |
-| `bo-grid` core JS | **~35 KB** |
+| `bo-grid` core JS | **~37 KB** |
 | `bo-grid` CSS | **~4 KB** |
 | `bo-grid/realtime` (optional) | **~1 KB** |
 | `bo-grid/trading` (optional) | **~1 KB** |
