@@ -9,6 +9,15 @@ All notable changes to this project are documented here. Format follows
 [TradeCanvas](https://github.com/bonguynvan/tradecanvas) for charts. The goal
 from here is feature parity with heavyweight grids.
 
+### Changed
+
+- **New demo landing page — a trading broadsheet.** Newsprint paper and ink by
+  default (a "terminal" palette behind the theme toggle), Fraunces + JetBrains
+  Mono, a masthead with the live HOSE session, a ticker tape, a lead story whose
+  figure is a live price board fed through `api.patchRows`, real benchmark
+  figures, a listings table of AG Grid Enterprise-only features that are free
+  here, and numbered example contents.
+
 ### Removed
 
 - **BREAKING: the `bo-grid/charts` entry** (`LineChart`, `BarChart`,
