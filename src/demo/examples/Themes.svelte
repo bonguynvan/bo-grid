@@ -10,6 +10,8 @@
     'high-contrast-light',
     'midnight',
     'terminal',
+    'tradecanvas',
+    'tradecanvas-light',
   ];
   let active = $state<ThemePreset>('midnight');
 
@@ -75,9 +77,9 @@
     color: var(--text);
   }
   .tp-btn.on {
-    color: #0a0a0a;
-    background: var(--up);
-    border-color: var(--up);
+    color: var(--on-accent);
+    background: var(--accent);
+    border-color: var(--accent);
   }
   .tp-btn:focus-visible {
     outline: 2px solid var(--up);

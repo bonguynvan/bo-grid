@@ -37,7 +37,29 @@ describe('themeVars', () => {
       'high-contrast-light',
       'midnight',
       'terminal',
+      'tradecanvas',
+      'tradecanvas-light',
     ]);
+  });
+
+  it('the TradeCanvas presets keep every text colour at WCAG AA (4.5:1) on every row surface', () => {
+    const lum = (hex: string) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+      const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+      return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    };
+    const contrast = (a: string, b: string) => {
+      const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    };
+    for (const name of ['tradecanvas', 'tradecanvas-light'] as const) {
+      const t = themePresets[name];
+      for (const fg of ['text', 'textDim', 'up', 'down', 'amber'] as const) {
+        for (const bg of ['bg', 'headerBg', 'rowA', 'rowB', 'rowHover'] as const) {
+          expect(contrast(t[fg]!, t[bg]!), `${name}: ${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    }
   });
 
   it('serializes layout/density tokens (radius / fontSize / cellPad)', () => {

@@ -174,6 +174,45 @@ export const terminalTheme: GridTheme = {
   scheme: 'dark',
 };
 
+// TradeCanvas: the palette TradeCanvas charts and TradingDek share — an ink
+// ground, flat panes split by hairlines, one amber accent, up/down kept for
+// prices. A grid themed with it sits flush next to a TradeCanvas chart.
+export const tradecanvasTheme: GridTheme = {
+  bg: '#11161e',
+  headerBg: '#161c25',
+  rowA: '#11161e',
+  rowB: '#11161e',
+  rowHover: '#161c25',
+  text: '#d9dde4',
+  textDim: '#7d8696',
+  border: '#1f2630',
+  up: '#3ccf91',
+  down: '#f0616d',
+  amber: '#f2a93b',
+  selFill: 'rgba(242,169,59,0.14)',
+  selBorder: '#f2a93b',
+  scheme: 'dark',
+};
+
+// TradeCanvas light: the same system on white. Accent and up/down are darkened
+// until they read at 4.5:1 as text.
+export const tradecanvasLightTheme: GridTheme = {
+  bg: '#ffffff',
+  headerBg: '#f6f7f9',
+  rowA: '#ffffff',
+  rowB: '#ffffff',
+  rowHover: '#f6f7f9',
+  text: '#0f131a',
+  textDim: '#5f6774',
+  border: '#dde1e7',
+  up: '#0b7a4b',
+  down: '#c0303d',
+  amber: '#9a5c06',
+  selFill: 'rgba(154,92,6,0.12)',
+  selBorder: '#9a5c06',
+  scheme: 'light',
+};
+
 /** All built-in presets, keyed by name (handy for a theme picker). */
 export const themePresets = {
   dark: darkTheme,
@@ -182,6 +221,8 @@ export const themePresets = {
   'high-contrast-light': highContrastLight,
   midnight: midnightTheme,
   terminal: terminalTheme,
+  tradecanvas: tradecanvasTheme,
+  'tradecanvas-light': tradecanvasLightTheme,
 } satisfies Record<string, GridTheme>;
 
 /** Built-in preset name. */

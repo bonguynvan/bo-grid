@@ -157,7 +157,8 @@ interface GridProps {
 
 ```ts
 import { themePresets, type ThemePreset } from 'bo-grid';
-// themePresets: 'dark' | 'light' | 'highContrastDark' | 'highContrastLight' | 'midnight' | 'terminal'
+// themePresets: 'dark' | 'light' | 'high-contrast-dark' | 'high-contrast-light' | 'midnight' | 'terminal'
+//               | 'tradecanvas' | 'tradecanvas-light'  (the TradeCanvas / TradingDek palette)
 ```
 Or pass a full `GridTheme` token object (`themeVars`, `darkTheme`, `lightTheme` are exported for reference/extension).
 
@@ -425,7 +426,7 @@ reconcileState(saved, columnKeys) → GridState | null, GRID_STATE_VERSION
 
 // Theming
 themeVars, darkTheme, lightTheme, highContrastDark, highContrastLight,
-midnightTheme, terminalTheme, themePresets
+midnightTheme, terminalTheme, tradecanvasTheme, tradecanvasLightTheme, themePresets
 
 // Sparkline canvas primitives (draw your own candlestick canvas)
 drawCandles(ctx, candles, w, h, colors?), setupHiDpiCanvas(canvas, cssW, cssH)
