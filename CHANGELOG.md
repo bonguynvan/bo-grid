@@ -45,7 +45,11 @@ from here is feature parity with heavyweight grids.
   objects; `patchRows([[id, fields], …])` writes ticks in place and repaints only
   the rendered rows it changed, skipping the reactive-proxy cost on every write
   (~2.7× cheaper writes; on the Price board a 30,000 events/s frame is ~4.5 ms
-  vs ~5.3 ms through `$state` rows, production build). Feed it straight from
+  vs ~5.3 ms through `$state` rows, production build). Repaints are per field:
+  only cells whose own field changed re-render, plus row-aware ones (renderers,
+  computed columns, and `format`/`cellClass`/`tooltip` functions that declare
+  the `row` parameter) — ~25% less render time and ~3× fewer over-budget frames
+  at 30,000 events/s than per-row repaints. Feed it straight from
   `createTickStream({ apply: (b) => api.patchRows(b) })`.
 - **Row recycling** — with uniform row heights the grid renders a fixed-length
   window and hands the row that scrolls out to the row that scrolls in, so its

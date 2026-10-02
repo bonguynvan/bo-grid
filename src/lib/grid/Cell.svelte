@@ -39,6 +39,7 @@
     cfRange = null,
     rowKey = null,
     version = 0,
+    fieldVersion = 0,
     flashTracker = null,
     colIndex,
     cellId,
@@ -88,6 +89,8 @@
     /** Bumped when `api.patchRows` changes this row, so plain (non-$state) row
         objects still repaint. */
     version?: number;
+    /** Bumped when `api.patchRows` changes this cell's own field. */
+    fieldVersion?: number;
     /** The grid's flash tracker; null when no column uses derived flash. */
     flashTracker?: FlashTracker | null;
     colIndex?: number;
@@ -181,8 +184,14 @@
   // goes through the $state getter — fine-grained reactivity is preserved even
   // though the key is only known at runtime. Computed columns derive from the
   // whole row via cellValue (their value() reads the row's $state getters too).
+  // Under api.patchRows a cell repaints on its own field's version; anything
+  // that may read OTHER fields of the row tracks the row's version instead. A
+  // function counts as reading the row when it declares a second parameter
+  // (`(value, row) => …`), so `(v) => …` formatters skip unrelated ticks.
+  const readsRow = (fn: unknown): boolean => typeof fn === 'function' && fn.length >= 2;
   const value = $derived.by(() => {
-    version;
+    if (col.value) version;
+    else fieldVersion;
     return cellValue(col, row);
   });
   // Typed inline editor: date columns edit with a date picker, numeric columns
@@ -202,19 +211,36 @@
   // fed through api.patchRows, that bump is the only signal that the row moved.
   const extraClass = $derived.by(() => {
     if (typeof col.cellClass !== 'function') return col.cellClass ?? '';
-    version;
+    if (readsRow(col.cellClass)) version;
     return col.cellClass(value, row) ?? '';
   });
   // The display string, shared by every text branch below.
   const text = $derived.by(() => {
-    version;
+    if (readsRow(col.format)) version;
     return formatCell(col, value, row);
+  });
+  // Row-wide reads that are not this cell's value: a `sub` field, a link's
+  // href(row), a sparkline's own series field, the legacy row-driven flash.
+  const subField = $derived('sub' in col && typeof col.sub === 'string' ? col.sub : undefined);
+  const rowTick = $derived(subField || col.type === 'link' || col.type === 'sparkline' || col.flash === true ? version : 0);
+  const subText = $derived.by(() => {
+    rowTick;
+    return subField ? row[subField] : undefined;
+  });
+  const candles = $derived.by(() => {
+    rowTick;
+    return col.type === 'sparkline' ? candlesOf(row, col.sparkKey) : [];
+  });
+  const linkHref = $derived.by(() => {
+    rowTick;
+    if (col.type !== 'link') return undefined;
+    return safeHref(col.href ? col.href(row) : String(value ?? ''));
   });
   // Styled floating tooltip text (opt-in via column `tooltip`); the grid root
   // renders the actual tooltip from this cell's `data-bo-tip` attribute.
   const tip = $derived.by(() => {
     if (!col.tooltip) return undefined;
-    version;
+    if (readsRow(col.tooltip)) version;
     return tooltipText(col, value, row);
   });
 
@@ -227,6 +253,7 @@
   const flash = $derived.by(() => {
     if (flashMode === null) return null;
     if (flashMode === 'row') {
+      rowTick;
       return { seq: Number(row.flashSeq ?? 0), dir: row.flashDir ?? 'up', on: true };
     }
     if (!flashTracker || rowKey == null) return null;
@@ -427,7 +454,7 @@
   {:else if col.type === 'custom'}
     {#if cellSnippet}{#key version}{@render cellSnippet({ row, column: col, value })}{/key}{:else}{value ?? ''}{/if}
   {:else if col.type === 'sparkline'}
-    <Sparkline candles={candlesOf(row, col.sparkKey)} />
+    <Sparkline {candles} />
   {:else if col.type === 'progress'}
     {@const lo = col.min ?? 0}
     {@const pct = Math.max(0, Math.min(100, (((Number(value) || 0) - lo) / (((col.max ?? 100) - lo) || 1)) * 100))}
@@ -453,9 +480,9 @@
     {/if}
   {:else if col.type === 'avatar'}
     <span class="bo-avatar" aria-hidden="true">{initials(String(value ?? ''))}</span>
-    <span class="bo-avatar-name">{value ?? ''}{#if col.sub}<em>{row[col.sub]}</em>{/if}</span>
+    <span class="bo-avatar-name">{value ?? ''}{#if subField}<em>{subText}</em>{/if}</span>
   {:else if col.type === 'link'}
-    {@const href = safeHref(col.href ? col.href(row) : String(value ?? ''))}
+    {@const href = linkHref}
     {#if href}<a
         class="bo-link"
         {href}
@@ -464,7 +491,7 @@
         onpointerdown={(e) => e.stopPropagation()}
         onclick={(e) => e.stopPropagation()}>{value ?? ''}</a>{:else}{value ?? ''}{/if}
   {:else if col.type === 'text'}
-    <strong>{text}</strong>{#if col.sub}<em>{row[col.sub]}</em>{/if}
+    <strong>{text}</strong>{#if subField}<em>{subText}</em>{/if}
   {:else if hasCf}
     {#if bar}<span class="bo-databar" style="left:{bar.left};width:{bar.width};background:{bar.color}"></span>{/if}
     <span class="bo-cf-val {flashClass}" style={flash?.on ? flashDuration(col) : undefined}>

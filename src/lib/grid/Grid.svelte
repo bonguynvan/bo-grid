@@ -1594,9 +1594,14 @@
   // screen pay nothing reactive; they read current values when they mount.
   // `dataVersion` keeps the whole-view readers (footer totals, group subtotals,
   // selection aggregates, conditional-format ranges) live, once per call.
-  // A $state record, not a SvelteMap: reading a missing key of a proxied object
-  // subscribes to that key alone, so bumping one row never wakes the others.
+  // $state records, not SvelteMaps: reading a missing key of a proxied object
+  // subscribes to that key alone, so bumping one row (or one field) never wakes
+  // the others. Row versions drive row-aware work (cellClass/format/tooltip that
+  // read the row, renderers); field versions drive a cell's own value, so a tick
+  // that moves two fields repaints two cells, not the whole row.
   const rowVersions: Record<string, number> = $state({});
+  const fieldVersions: Record<string, number> = $state({});
+  const fieldKey = (row: string | number, field: string): string => `${row}\u0001${field}`;
   let dataVersion = $state(0);
   const rowIndex = $derived(new Map(rows.map((r) => [getRowId(r), r] as const)));
 
@@ -1606,7 +1611,13 @@
     for (const item of renderItems) {
       if (item.kind !== 'data') continue;
       const key = getRowId(item.row);
-      if (changed.has(key)) rowVersions[key] = (rowVersions[key] ?? 0) + 1;
+      const fields = changed.get(key);
+      if (!fields) continue;
+      rowVersions[key] = (rowVersions[key] ?? 0) + 1;
+      for (const f of fields) {
+        const fk = fieldKey(key, f);
+        fieldVersions[fk] = (fieldVersions[fk] ?? 0) + 1;
+      }
     }
     dataVersion++;
     return changed.size;
@@ -2306,6 +2317,7 @@
                   cellSnippet={cell}
                   rowKey={getRowId(item.row)}
                   version={rowVersions[getRowId(item.row)]}
+                  fieldVersion={fieldVersions[fieldKey(getRowId(item.row), col.key)]}
                   {flashTracker}
                   selected={cellSelection && (m ? rectSelected(m.r0, m.r1, ci, m.c1) : sel.contains(item.vr, ci))}
                   focused={cellSelection && (m ? rectFocused(m.r0, m.r1, ci, m.c1) : sel.isFocus(item.vr, ci))}

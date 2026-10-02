@@ -196,10 +196,15 @@ hand the grid **plain objects** and let it write the ticks:
 <Grid {rows} {columns} getRowId={(r) => r.symbol} onReady={(a) => (api = a)} />
 ```
 
-`patchRows` writes into the rows and bumps a version only for the **rendered**
-rows it changed; their cells (including `cellClass`, `format` and renderers that
-read other fields of the row) repaint, off-screen rows pay nothing reactive and
-read current values when they scroll in. Footer totals, group subtotals and
+`patchRows` writes into the rows and repaints only the **rendered** cells whose
+field changed — a tick that moves the match price and volume repaints those two
+cells, not the row. Anything that may read *other* fields of the row repaints
+whenever the row changes: renderers (`render`, `component`, the `cell` snippet),
+computed columns, `sub` fields, and any `format` / `cellClass` / `tooltip`
+function that **declares the row parameter** — write `(value, row) => …` only
+when you read the row, and `(value) => …` otherwise, so a formatter skips ticks
+that don't concern it. Off-screen rows pay nothing reactive and read current
+values when they scroll in. Footer totals, group subtotals and
 selection aggregates stay live. Sort and filter catch up on the next view change,
 as with any live data.
 
