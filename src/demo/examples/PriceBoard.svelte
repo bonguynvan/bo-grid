@@ -1,6 +1,6 @@
 <script lang="ts">
   import { flushSync } from 'svelte';
-  import { Grid, type ColumnDef, type GridApi, type GridRow } from '../../lib';
+  import { Grid, type ColumnDef, type GridApi, type GridRow, type SortState } from '../../lib';
   import { createTickStream, createRowIndex, applyPatches } from '../../lib/realtime';
   import { vnBands, vnTickSize } from '../../lib/trading';
   import { ui } from '../theme.svelte';
@@ -121,13 +121,33 @@
     { type: 'price', key: 'floor', header: 'Sàn', width: 62, format: k, cellClass: 'pb-floor', sortable: false },
     price('bp3', 'G3'), qty('bv3', 'KL3'), price('bp2', 'G2'), qty('bv2', 'KL2'), price('bp1', 'G1'), qty('bv1', 'KL1'),
     { ...price('mp', 'Giá'), width: 62 }, qty('mv', 'KL'),
-    { type: 'number', key: 'chg', header: '+/-', width: 56, format: (v) => (Number(v) ? (Number(v) / 1000).toFixed(2) : ''), cellClass: (_v, r) => tone((r as Quote).mp, r), sortable: false },
+    { type: 'number', key: 'chg', header: '+/-', width: 56, format: (v) => (Number(v) ? (Number(v) / 1000).toFixed(2) : ''), cellClass: (_v, r) => tone((r as Quote).mp, r) },
     price('ap1', 'G1'), qty('av1', 'KL1'), price('ap2', 'G2'), qty('av2', 'KL2'), price('ap3', 'G3'), qty('av3', 'KL3'),
     price('hi', 'Cao'), price('lo', 'Thấp'), { ...qty('tv', 'Tổng KL'), width: 76 }, qty('fb', 'NN mua'), qty('fs', 'NN bán'),
   ];
 
   // ---- Live mode: a feed at `rate` events/s, drained once per frame ----
   let rate = $state(3000);
+  // Board height: a laptop pane, a desktop board, a wall-mounted trading screen.
+  let gridHeight = $state(620);
+  // "Top movers": sorted by change, re-sorted once a second while the feed runs
+  // (api.refresh — values move in place, so the order only catches up on demand).
+  let movers = $state(false);
+  let sort = $state<SortState[]>([]);
+  function setMovers(on: boolean) {
+    movers = on;
+    sort = on ? [{ key: 'chg', dir: 'desc' }] : [];
+    flushSync();
+  }
+  $effect(() => {
+    if (!live || !movers) return;
+    const h = setInterval(() => api?.refresh(), 1000);
+    return () => clearInterval(h);
+  });
+  function setHeight(h: number) {
+    gridHeight = h;
+    flushSync();
+  }
   let live = $state(false);
   const fps = new FpsMeter();
   $effect(() => {
@@ -202,6 +222,35 @@
     result = `${mode} · ${out.symbols} symbols · ${perFrame} events/frame · frame p50 ${out.total.p50} ms / p95 ${out.total.p95} ms (apply ${out.apply.p50} · render ${out.render.p50} · layout ${out.layout.p50}) · ${out.over16ms}/${frames} over 16.7 ms`;
     return out;
   }
+  // Sorted-board benchmark: ticks every frame, and a re-sort (api.refresh) every
+  // `refreshEvery` frames — 60 ≈ once a second. Refresh frames and ordinary
+  // frames are reported separately.
+  async function benchSorted(opts: { frames?: number; eventsPerSec?: number; refreshEvery?: number } = {}) {
+    const frames = opts.frames ?? 240;
+    const every = opts.refreshEvery ?? 60;
+    const perFrame = Math.round((opts.eventsPerSec ?? rate) / 60);
+    live = false;
+    setMovers(true);
+    rand = prng(11);
+    const plain: number[] = [], resort: number[] = [];
+    for (let f = 0; f < frames; f++) {
+      for (let i = 0; i < perFrame; i++) {
+        const q = rows[rint(0, rows.length - 1)];
+        stream.push(q.id, event(q));
+      }
+      const t0 = performance.now();
+      stream.flushNow();
+      const doRefresh = f % every === every - 1;
+      if (doRefresh) api?.refresh();
+      flushSync();
+      void host.offsetHeight;
+      (doRefresh ? resort : plain).push(performance.now() - t0);
+      if (f % 20 === 19) await Promise.resolve();
+    }
+    const stat = (xs: number[]) => ({ n: xs.length, p50: +pct(xs, 50).toFixed(2), p95: +pct(xs, 95).toFixed(2), max: +Math.max(...xs).toFixed(2) });
+    return { symbols: rows.length, eventsPerFrame: perFrame, refreshEvery: every, plain: stat(plain), refresh: stat(resort) };
+  }
+
   // Scroll benchmark: step the viewport `rowsPerFrame` rows at a time (a fast
   // wheel/drag through the board), rendering each step synchronously.
   async function benchScroll(opts: { frames?: number; rowsPerFrame?: number } = {}) {
@@ -229,7 +278,7 @@
     return { rowsPerFrame: opts.rowsPerFrame ?? 3, render: stat(render), layout: stat(layout), total: stat(total), over16ms: total.filter((t) => t > 16.7).length, frames };
   }
   $effect(() => {
-    (window as unknown as Record<string, unknown>).__priceBoard = { bench, benchScroll, setSize, load, last: () => lastResult, rows: () => rows, api: () => api };
+    (window as unknown as Record<string, unknown>).__priceBoard = { bench, benchScroll, benchSorted, setMovers, setSize, setHeight, load, last: () => lastResult, rows: () => rows, api: () => api };
   });
 </script>
 
@@ -250,13 +299,19 @@
       {#each [1000, 3000, 10000, 30000] as v (v)}<option value={v}>{v.toLocaleString()} events/s</option>{/each}
     </select>
   </label>
+  <label>Height
+    <select value={gridHeight} onchange={(e) => setHeight(Number(e.currentTarget.value))}>
+      {#each [620, 1400, 2400] as v (v)}<option value={v}>{v}px</option>{/each}
+    </select>
+  </label>
+  <button class="pb-btn" class:on={movers} onclick={() => setMovers(!movers)}>Top movers</button>
   <button class="pb-btn" class:on={live} onclick={() => (live = !live)}>{live ? 'Stop feed' : 'Start feed'}</button>
   <button class="pb-btn" onclick={() => bench()}>Benchmark</button>
   {#if live}<span class="pb-stat">{fps.fps} fps · {stream.pending} pending</span>{/if}
   {#if result}<span class="pb-stat">{result}</span>{/if}
 </div>
 <div class="gridwrap" bind:this={host}>
-  <Grid rows={rows as unknown as GridRow[]} {columns} height={620} theme={ui.theme} ariaLabel="Price board" onReady={(a) => (api = a)} />
+  <Grid rows={rows as unknown as GridRow[]} {columns} height={gridHeight} theme={ui.theme} ariaLabel="Price board" {sort} onSortChange={(s) => (sort = s)} onReady={(a) => (api = a)} />
 </div>
 
 <style>

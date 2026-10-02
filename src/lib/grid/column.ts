@@ -362,9 +362,44 @@ export function isEditable(col: ColumnDef): boolean {
   return !!col.editor || (!!col.type && !DISPLAY_ONLY.includes(col.type));
 }
 
+// One collator for every string comparison: `localeCompare` without a cached
+// collator rebuilds locale data per call, which dominates a large sort.
+const collate = new Intl.Collator().compare;
+
 function rawCompare(a: unknown, b: unknown): number {
   if (typeof a === 'number' && typeof b === 'number') return a - b;
-  return String(a ?? '').localeCompare(String(b ?? ''));
+  return collate(String(a ?? ''), String(b ?? ''));
+}
+
+/**
+ * Sort rows by `sorts`, reading each row's sort value(s) exactly once and
+ * sorting indices — n reads instead of ~2·n·log n. Matters when values come
+ * through reactive proxies or computed columns, and when a live board re-sorts
+ * every second. Stable; never mutates the input. Returns the input itself for
+ * an empty sort list.
+ */
+export function sortRows<T extends GridRow>(
+  rows: readonly T[],
+  sorts: readonly SortState[],
+  columns: readonly ColumnDef[],
+): T[] {
+  if (sorts.length === 0) return rows as T[];
+  const n = rows.length;
+  const specs = sorts.map((sort) => {
+    const col = columns.find((c) => c.key === sort.key);
+    const keys = new Array<unknown>(n);
+    for (let i = 0; i < n; i++) keys[i] = col?.value ? col.value(rows[i]) : rows[i][sort.key];
+    return { keys, dir: sort.dir === 'asc' ? 1 : -1, compare: col?.compare ?? rawCompare };
+  });
+  const order = Array.from({ length: n }, (_, i) => i);
+  order.sort((i, j) => {
+    for (const sp of specs) {
+      const d = sp.compare(sp.keys[i], sp.keys[j]);
+      if (d !== 0) return d * sp.dir;
+    }
+    return i - j;
+  });
+  return order.map((i) => rows[i]);
 }
 
 export function compareRows(a: GridRow, b: GridRow, sort: SortState, col?: ColumnDef): number {

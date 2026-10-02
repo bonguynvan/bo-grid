@@ -205,8 +205,24 @@ function that **declares the row parameter** — write `(value, row) => …` onl
 when you read the row, and `(value) => …` otherwise, so a formatter skips ticks
 that don't concern it. Off-screen rows pay nothing reactive and read current
 values when they scroll in. Footer totals, group subtotals and
-selection aggregates stay live. Sort and filter catch up on the next view change,
-as with any live data.
+selection aggregates stay live.
+
+Values that change in place never re-sort or re-filter the view by themselves —
+that would mean sorting on every tick. Call **`api.refresh()`** when the order
+should catch up, e.g. once a second on a "top movers" board:
+
+```ts
+setInterval(() => api.refresh(), 1000); // re-sort by the live change column
+```
+
+A refresh re-reads each row's sort value once (not once per comparison), and a
+row that keeps its position keeps its rendered cells; rows that moved repaint,
+so a re-sort costs one heavier frame — a few times an ordinary tick frame.
+
+On a wall-sized board the per-frame cost grows with the rows on screen
+(roughly linearly — 80 rows cost ~2.5× what 30 do). Keep frames inside budget
+with the stream's `cap` (rows applied per frame): ticks beyond it wait for the
+next frame instead of stretching this one.
 
 On the **Price board** demo (production build, 1,000 symbols, 24 columns, every
 changed cell flashing, ~30 rows on screen) a frame of a 30,000 events/s feed

@@ -7,7 +7,7 @@
   import { untrack } from 'svelte';
   import type { Snippet } from 'svelte';
   import type { ColumnDef, GridRow, SortState, SortDir, CellEditEvent, CellTypeDef } from './column';
-  import { colStyle, colWidth, isNumeric, isSortable, isEditable, compareBySorts, formatCell, cellValue } from './column';
+  import { colStyle, colWidth, isNumeric, isSortable, isEditable, sortRows, formatCell, cellValue } from './column';
   import { arrangePinned } from './pin';
   import { columnWindow, columnOffsets } from './colvirt';
   import { uniformHeights, variableHeights } from './rowheight';
@@ -964,8 +964,12 @@
     return c ? cellValue(c, row) : row[key];
   };
 
+  // Bumped by api.refresh(): the one way to make filter and sort catch up with
+  // values that changed in place (a live feed) without re-sorting every tick.
+  let viewTick = $state(0);
   const view = $derived.by(() => {
     if (source) return [] as GridRow[];
+    viewTick;
     const base = rows;
     const allCols = columns;
     const f = filter.trim().toLowerCase();
@@ -986,10 +990,7 @@
       if (hasColFilters) {
         r = r.filter((row) => passesFilters(row, active, valueOf, filterTypes));
       }
-      if (s.length > 0) {
-        const colOf = (k: string) => allCols.find((c) => c.key === k);
-        r = [...r].sort((a, b) => compareBySorts(a, b, s, colOf));
-      }
+      if (s.length > 0) r = sortRows(r, s, allCols);
       return r;
     });
   });
@@ -1218,14 +1219,19 @@
   // the keyed {#each} then sees an identical item and skips the row entirely.
   // Rebuilding every item on each scroll step made every on-screen cell
   // re-evaluate its props just to mount the one row that scrolled in.
-  let itemCache = new Map<number, { src: unknown; item: RenderItem }>();
+  type ItemEntry = { src: unknown; depth?: number; kids?: boolean; item: RenderItem };
+  let itemCache = new Map<number, ItemEntry>();
   const renderItems = $derived.by<RenderItem[]>(() => {
     const out: RenderItem[] = [];
     const prev = itemCache;
-    const next = new Map<number, { src: unknown; item: RenderItem }>();
-    const reuse = (vr: number, src: unknown, make: () => RenderItem): RenderItem => {
+    const next = new Map<number, ItemEntry>();
+    // Data items are keyed by their row object (plus tree shape), not by the
+    // VisualRow wrapper that every sort/filter rebuilds: after a re-sort, a row
+    // that kept its position keeps its item and skips repainting.
+    const reuse = (vr: number, src: unknown, make: () => RenderItem, depth?: number, kids?: boolean): RenderItem => {
       const hit = prev.get(vr);
-      const entry = hit && hit.src === src ? hit : { src, item: make() };
+      const entry =
+        hit && hit.src === src && hit.depth === depth && hit.kids === kids ? hit : { src, depth, kids, item: make() };
       next.set(vr, entry);
       return entry.item;
     };
@@ -1239,15 +1245,23 @@
       for (let vr = start; vr < renderEnd; vr++) {
         const item = flat[vr];
         if (!item) continue;
-        out.push(
-          reuse(vr, item, () =>
-            item.kind === 'group'
-              ? { vr, kind: 'group', group: item.group }
-              : item.kind === 'treeloading'
-                ? { vr, kind: 'treeloading', depth: item.depth }
-                : { vr, kind: 'data', row: item.row, depth: item.depth, hasChildren: item.hasChildren },
-          ),
-        );
+        if (item.kind === 'data') {
+          out.push(
+            reuse(
+              vr,
+              item.row,
+              () => ({ vr, kind: 'data', row: item.row, depth: item.depth, hasChildren: item.hasChildren }),
+              item.depth,
+              item.hasChildren,
+            ),
+          );
+        } else {
+          out.push(
+            reuse(vr, item, () =>
+              item.kind === 'group' ? { vr, kind: 'group', group: item.group } : { vr, kind: 'treeloading', depth: item.depth },
+            ),
+          );
+        }
       }
     }
     itemCache = next;
@@ -1605,6 +1619,10 @@
   let dataVersion = $state(0);
   const rowIndex = $derived(new Map(rows.map((r) => [getRowId(r), r] as const)));
 
+  function refresh(): void {
+    viewTick++;
+  }
+
   function patchRows(patches: Iterable<readonly [string | number, Record<string, unknown>]>): number {
     const changed = patchRowsInPlace(rowIndex, patches);
     if (changed.size === 0) return 0;
@@ -1696,7 +1714,7 @@
 
   $effect(() => {
     untrack(() =>
-      onReady?.({ scrollToRow, focusCell, getSelectedRows, autosizeColumns, exportCSV: exportViewCSV, getState, applyState, patchRows }),
+      onReady?.({ scrollToRow, focusCell, getSelectedRows, autosizeColumns, exportCSV: exportViewCSV, getState, applyState, patchRows, refresh }),
     );
   });
 

@@ -51,6 +51,12 @@ from here is feature parity with heavyweight grids.
   the `row` parameter) — ~25% less render time and ~3× fewer over-budget frames
   at 30,000 events/s than per-row repaints. Feed it straight from
   `createTickStream({ apply: (b) => api.patchRows(b) })`.
+- **`api.refresh()`** — re-run filter and sort against current values. Live
+  values never re-sort the view on their own (that would sort on every tick);
+  a "top movers" board calls this once a second. Sorting now reads each row's
+  sort value once and sorts indices (`sortRows`, exported), with a cached
+  collator for strings; items of rows that keep their position are reused. A
+  re-sort frame on the Price board is ~35–40% cheaper.
 - **Row recycling** — with uniform row heights the grid renders a fixed-length
   window and hands the row that scrolls out to the row that scrolls in, so its
   cells update in place instead of remounting; render items are also reused

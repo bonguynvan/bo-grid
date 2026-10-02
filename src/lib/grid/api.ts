@@ -30,6 +30,11 @@ export interface GridApi {
       Sort and filter catch up on the next view change, as for any live data.
       Returns how many rows changed. */
   patchRows(patches: Iterable<readonly [string | number, Record<string, unknown>]>): number;
+  /** Re-run filter and sort against the rows' current values. Values that
+      change in place (a feed) never re-sort the view by themselves — that would
+      mean re-sorting on every tick — so call this when the order should catch
+      up, e.g. every second on a "top movers" board. */
+  refresh(): void;
 }
 
 /** The `scrollTop` that brings a row of `rowH` at `rowTop` into a viewport of

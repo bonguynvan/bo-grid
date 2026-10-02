@@ -179,6 +179,7 @@ interface GridApi {
   exportCSV(filename?: string): Promise<void>;  // current view (filtered + sorted)
   getState(): GridState;                   // { version, order, widths, hidden, pinned, sorts, filters } — JSON-safe
   applyState(state: unknown): boolean;     // reconciled against current columns; false for a foreign version
+  refresh(): void;                         // re-run filter+sort on current values (live values never re-sort by themselves) — e.g. every 1s for top movers
   patchRows(patches: Iterable<[rowId, Partial<Row>]>): number;  // BUSY FEEDS: rows may be plain objects ($state.raw); writes in place, repaints only rendered cells whose field changed (+ row-aware ones). format/cellClass/tooltip: declare `(value, row)` ONLY if the fn reads other row fields
 }
 ```

@@ -58,6 +58,20 @@ Production build, Chrome on a Windows desktop:
 | Scroll 3 rows / frame | ~2.5 ms | ~5.7 ms | 0 / 120 |
 | Scroll 10 rows / frame | ~8 ms | ~17 ms | 6 / 120 |
 
+Board height scales the tick cost with the rows on screen (one session, so
+comparable with each other but not with the table above):
+
+| Rows on screen | 10,000 events/s p50 | 30,000 events/s p50 |
+| --- | --- | --- |
+| 31 (620 px) | ~3 ms | ~8 ms |
+| 52 (1,400 px) | ~5 ms | ~14 ms |
+| 80 (2,400 px) | ~7.6 ms | ~22 ms |
+
+A sorted "top movers" board re-sorted with `api.refresh()` once a second pays
+one heavier frame per refresh (in a slower session: ~42 ms at 1,000–1,600
+symbols, down from ~65–70 ms before sort keys were read once per row), with
+ordinary frames unchanged at a few ms.
+
 At 30,000 events/s a frame applies ~500 coalesced ticks. The split is roughly
 0.6 ms writing rows (`patchRows`; 1.6 ms through `$state` proxies), 2 ms for
 Svelte to update the cells, and 1.8 ms of browser style + layout. Rows off screen

@@ -1022,6 +1022,16 @@ await solo('priceboard', '.bo-grid .row', 'Price board example rendered no rows'
   if (!after.querySelector('.flash')) fail('Price board: patched cell did not flash');
   if (document.querySelectorAll('.bo-grid .head [role=columnheader]').length !== 24)
     fail('Price board: expected 24 columns');
+  // Top movers: sorted by change, values move in place, api.refresh() re-sorts.
+  pb.setMovers(true);
+  await wait(30);
+  const last = pb.rows()[pb.rows().length - 1];
+  pb.api().patchRows([[last.id, { chg: 999_999 }]]);
+  pb.api().refresh();
+  await wait(30);
+  const topSym = document.querySelector('.bo-grid .viewport .row [aria-colindex="1"]')?.textContent.trim();
+  if (topSym !== last.symbol) fail(`Price board: refresh() did not re-sort (top is ${topSym}, expected ${last.symbol})`);
+  pb.setMovers(false);
 }
 
 await solo('blotter', '.bo-grid .row', 'Blotter example rendered no rows');

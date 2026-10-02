@@ -37,6 +37,7 @@ export type {
   BuiltinCellType,
 } from './grid/column';
 export { resolveColumns } from './grid/celltype';
+export { sortRows } from './grid/column';
 export type { DefaultColumn } from './grid/celltype';
 export type { AggKind, AggResult } from './grid/aggregate';
 

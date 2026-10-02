@@ -1,5 +1,5 @@
 import type { GridRow, SortState } from './column';
-import { compareBySorts } from './column';
+import { sortRows } from './column';
 import { passesFilters, type AnyFilter, type FilterTypes } from './filtering';
 
 export interface RowRange {
@@ -67,7 +67,7 @@ export function createArraySource(all: readonly GridRow[], opts: ArraySourceOpti
     }
     const sorts = params.sorts?.length ? params.sorts : params.sort ? [params.sort] : [];
     if (sorts.length > 0) {
-      rows = [...rows].sort((a, b) => compareBySorts(a, b, sorts));
+      rows = sortRows(rows, sorts, []);
     }
     const total = rows.length;
     return { rows: rows.slice(params.range.start, params.range.end), total };
