@@ -2,7 +2,7 @@
 // trading screens: price-limit tone (ceiling/floor/reference colouring),
 // tick-aware price formatting, and session state.
 //
-// A separate entry, like `bo-grid/charts` and `bo-grid/realtime`: pure
+// A separate entry, like `bo-grid/realtime`: pure
 // functions only, no Grid/Cell changes, so it adds nothing to the grid core
 // unless imported, and none of this is baked into `ColumnDef` — wire it up via
 // the existing `render`/`cell`/`cellClass`/`format` hooks (see the README).

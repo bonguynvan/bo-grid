@@ -12,10 +12,9 @@ editing bo-grid code, fetch and read
 accurate API (every `ColumnDef`/`<Grid>` prop, every subpath export) — do not
 guess a prop name or invent a plausible-sounding one.
 
-**Four separate entry points** — importing one adds nothing to the others,
+**Four entry points (main + three subpaths)** — importing one adds nothing to the others,
 and each export lives in exactly one place:
 - `bo-grid` — the `Grid` component + core types/helpers.
-- `bo-grid/charts` — SVG charts (`LineChart`, `BarChart`, `DonutChart`, `StackedBarChart`, `CandlestickChart`, `DepthChart`, `Legend`).
 - `bo-grid/realtime` — `createTickStream`, `TradeTape`, `centeredWindow`, `applyPatches` (feed pipeline).
 - `bo-grid/trading` — `resolveTone`, `vnBands`, `fmtTradingPrice`, `sessionStateAt` (VN/APAC market conventions).
 - `bo-grid/element` — the `<bo-grid>` web component (React/Vue/Angular/vanilla).
@@ -47,6 +46,6 @@ optional and unnecessary otherwise.
 `render(ctx) => Node | string` function from React/Vue/vanilla/`<bo-grid>`
 (snippets don't exist outside Svelte).
 
-**Before generating non-trivial code** (new column types, a realtime feed, a
-chart, the web component), check `llms-full.txt` above rather than
+**Before generating non-trivial code** (new column types, a realtime feed, the
+web component), check `llms-full.txt` above rather than
 extrapolating from this summary — it has the full, current prop lists.

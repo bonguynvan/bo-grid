@@ -78,12 +78,6 @@ export const EXAMPLES: Example[] = [
     load: () => import('./Team.svelte'),
   },
   {
-    id: 'dashboard',
-    title: 'Dashboard',
-    blurb: 'KPI cards and in-cell charts via the bo-grid/charts companion (line, bar, donut).',
-    load: () => import('./Dashboard.svelte'),
-  },
-  {
     id: 'wide',
     title: 'Wide',
     blurb: '60+ columns with horizontal column virtualization and a pinned label column.',

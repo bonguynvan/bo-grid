@@ -16,18 +16,19 @@ const DIR = 'lib-dist';
 // for the analytics + scale wave (conditional formatting, computed columns, more
 // rich types, column virtualization). 32 → 35 for the 1.0 adopter-experience wave
 // (styled tooltips, JS render hook, header tooltips, auto-fit height, controlled
-// active row, pager page-size). At ~32 KB gzip it is still ~15× smaller than
+// active row, pager page-size). 35 → 38 for the 2.0 grid-only wave (labels /
+// locale, the onReady handle with layout reconciliation) — the start of the push
+// toward heavyweight-grid parity. At ~35 KB gzip it is still ~14× smaller than
 // typical heavyweight grids (~500 KB) — the "tiny" claim holds. Heavy optional UI
 // (filter menu, tool panel) stays lazy and is excluded below — the always-loaded core.
-// The grid core (`js`) is the always-loaded promise. The optional charts
-// companion (`bo-grid/charts`) is a separate entry a consumer only pays for if
-// they import it — budgeted on its own so it also stays tiny.
-// `realtime` (bo-grid/realtime) is the tick pipeline — a separate entry for the
-// same reason as charts: the core must not grow for consumers who don't stream.
+// The grid core (`js`) is the always-loaded promise.
+// `realtime` (bo-grid/realtime) is the tick pipeline — a separate entry a
+// consumer only pays for if they import it: the core must not grow for
+// consumers who don't stream.
 // `trading` (bo-grid/trading) is APAC market-convention helpers (price-limit
 // tone, tick-aware formatting, session state) — pure functions, no Grid/Cell
 // changes, own budget for the same reason.
-const BUDGET_KB = { js: 35, css: 6, charts: 8, realtime: 2, trading: 2 }; // gzipped, Svelte excluded
+const BUDGET_KB = { js: 38, css: 6, realtime: 2, trading: 2 }; // gzipped, Svelte excluded
 
 const gzipKb = (path) => gzipSync(readFileSync(path)).length / 1024;
 const jsFiles = readdirSync(DIR).filter((f) => f.endsWith('.js'));
@@ -58,12 +59,10 @@ function eagerClosure(entry) {
 }
 
 const core = eagerClosure('bo-grid.js');
-const chartsSet = jsFiles.includes('charts.js') ? eagerClosure('charts.js') : new Set();
 const realtimeSet = jsFiles.includes('realtime.js') ? eagerClosure('realtime.js') : new Set();
 const tradingSet = jsFiles.includes('trading.js') ? eagerClosure('trading.js') : new Set();
 
 let coreJs = 0;
-let chartsJs = 0;
 let realtimeJs = 0;
 let tradingJs = 0;
 let lazyJs = 0;
@@ -71,7 +70,6 @@ const lazy = [];
 for (const f of jsFiles) {
   const kb = gzipKb(`${DIR}/${f}`);
   if (core.has(f)) coreJs += kb;
-  else if (chartsSet.has(f)) chartsJs += kb;
   else if (realtimeSet.has(f)) realtimeJs += kb;
   else if (tradingSet.has(f)) tradingJs += kb;
   else {
@@ -86,7 +84,6 @@ const rows = [
   ['JS   ', coreJs, BUDGET_KB.js],
   ['CSS  ', css, BUDGET_KB.css],
 ];
-if (chartsSet.size) rows.push(['charts', chartsJs, BUDGET_KB.charts]);
 if (realtimeSet.size) rows.push(['realtime', realtimeJs, BUDGET_KB.realtime]);
 if (tradingSet.size) rows.push(['trading', tradingJs, BUDGET_KB.trading]);
 

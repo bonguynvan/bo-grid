@@ -276,6 +276,27 @@ tested geometry holds for these too.
 - [x] Charts budget recalibrated 3 → 4 KB for both (now ~4.2/8 KB). Dashboard
   demo gets two more cards.
 
+## 2.0 · Grid-only focus — in progress
+
+bo-grid becomes a pure data grid, aiming at feature parity with heavyweight
+grids such as AG Grid. Standalone charting moves out: the
+[TradeCanvas](https://github.com/bonguynvan/tradecanvas) library covers it.
+
+- [x] **Removed `bo-grid/charts`** (breaking). In-cell sparklines stay — they
+  are a column type, part of the grid.
+- [x] **Localization** — `labels` (every built-in string, overridable per grid)
+  and `locale` (built-in number/date/relative formatting).
+- [x] **Grid handle** — `onReady(api)`: `scrollToRow`, `focusCell`,
+  `getSelectedRows`, `autosizeColumns`, `exportCSV`, `getState`/`applyState`
+  with saved-layout reconciliation.
+- [ ] **Merged cells** — value-driven `rowSpan`, row-driven `colSpan`, and
+  explicit key-addressed `merges` regions.
+- [ ] **Cell-type registry** — register custom column types instead of only
+  `type: 'custom'`.
+- [ ] **Custom filter types** — register a filter kind with its own editor.
+- [ ] **Layered source layout** — split the grid into pure `core/`, runes
+  `reactive/` and `ui/` tiers with an enforced import rule.
+
 ## Candidate themes for later versions
 
 The roadmap's planned features are all shipped, plus cross-framework support and
@@ -286,14 +307,15 @@ CSV round-trip. Remaining ideas are polish or demand-driven:
 - Driven by real-world usage now that it's published — open an issue with what's
   missing.
 
-Note: the eager grid core is ~94% of its 35 KB budget; the next sizable *core*
-feature should recalibrate it (still ~15× smaller than heavyweight grids). The
-charts (8 KB), realtime (2 KB) and trading (2 KB) companions, each on its own
-budget, are the model for keeping the core tiny — a new capability belongs in a
+Note: the eager grid core is ~93% of its 38 KB budget (recalibrated from 35 KB
+for the 2.0 wave); each sizable *core* feature recalibrates it explicitly (still
+~14× smaller than heavyweight grids). The
+realtime (2 KB) and trading (2 KB) companions, each on its own budget, are the
+model for keeping the core tiny — a new capability belongs in a
 subpath unless it is genuinely part of the grid's identity.
 
-Out of scope by design (they fight the "tiny" positioning): a heavyweight
-integrated-charting engine in the core (the companion package is the answer),
+Out of scope by design (they fight the "tiny" positioning): any
+charting engine (use TradeCanvas alongside the grid),
 viewport row model, RTL — unless real demand appears.
 
 Ideas and feedback welcome — open an issue.

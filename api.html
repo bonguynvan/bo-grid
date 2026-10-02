@@ -155,7 +155,6 @@
         <a href="#grid">Grid</a>
         <a href="#columns">Columns</a>
         <a href="#element">Web&nbsp;component</a>
-        <a href="#charts">Charts</a>
         <a href="#realtime">Realtime</a>
         <a href="#trading">Trading</a>
         <a href="#source">Source</a>
@@ -195,7 +194,7 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>columnsPanel</td><td><span class="type">boolean</span></td><td>A "Columns" button opening a checklist panel to toggle column visibility (restore hidden columns). Lazy-loaded.</td></tr>
           <tr><td>virtualizeColumns</td><td><span class="type">boolean</span></td><td>Render only columns in the horizontal window (+ overscan) for 100+ column grids; forces fixed-width scroll, pinned columns always render.</td></tr>
           <tr><td>onColumnVisibilityChange</td><td><span class="type">(hidden: string[]) =&gt; void</span></td><td>Called with all hidden column keys when the runtime set changes (column-menu hide/show).</td></tr>
-          <tr><td>emptyMessage</td><td><span class="type">string</span></td><td>Text shown when there are no rows. Default <code>'No matching rows'</code>.</td></tr>
+          <tr><td>emptyMessage</td><td><span class="type">string</span></td><td>Text shown when there are no rows. Defaults to <code>labels.noRows</code>.</td></tr>
           <tr><td>loading</td><td><span class="type">boolean</span></td><td>Show a loading overlay (consumer-driven async in in-memory mode).</td></tr>
           <tr><td>rowMenu</td><td><span class="type">(row) =&gt; {'{'} label, onSelect {'}'}[]</span></td><td>Right-click row menu items; each runs <code>onSelect</code> and closes. Keyboard: <kbd>ContextMenu</kbd> / <kbd>Shift</kbd>+<kbd>F10</kbd> opens it at the focused cell.</td></tr>
           <tr><td>detail</td><td><span class="type">Snippet&lt;[{'{'} row {'}'}]&gt;</span></td><td>Master-detail panel under each row; adds a leading expand toggle. In-memory mode.</td></tr>
@@ -216,6 +215,9 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>groupBy</td><td><span class="type">string[]</span></td><td>Column keys to group by (nested). In-memory mode only. Default <code>[]</code>.</td></tr>
           <tr><td>aggregations</td><td><span class="type">AggKind[]</span></td><td>Stats shown in the selection footer. Default all five.</td></tr>
           <tr><td>persistKey</td><td><span class="type">string</span></td><td>Persist the user's column order and widths to <code>localStorage</code> under this key.</td></tr>
+          <tr><td>labels</td><td><span class="type">Partial&lt;GridLabels&gt;</span></td><td>Override any string the grid renders itself (menus, filter editor, pager, aria labels). Merged over English defaults; interpolated entries are functions, e.g. <code>filterFor: (h) =&gt; `Lọc ${h}`</code>. <code>DEFAULT_LABELS</code> lists every key.</td></tr>
+          <tr><td>locale</td><td><span class="type">string</span></td><td>BCP 47 locale for built-in <code>price</code>/<code>date</code>/<code>currency</code>/<code>relative</code> formatting, the aggregation bar and the pager. A column's own <code>locale</code> wins.</td></tr>
+          <tr><td>onReady</td><td><span class="type">(api: GridApi) =&gt; void</span></td><td>Called once on mount with the grid handle: <code>scrollToRow(key, align?)</code>, <code>focusCell(rowKey, colKey)</code>, <code>getSelectedRows()</code>, <code>autosizeColumns(keys?)</code>, <code>exportCSV(filename?)</code>, <code>getState()</code> / <code>applyState(state)</code> (layout snapshot reconciled against the current columns).</td></tr>
           <tr><td>source</td><td><span class="type">RowSource</span></td><td>Windowed/server data source. See <a href="#source">Server-side</a>.</td></tr>
           <tr><td>resizable</td><td><span class="type">boolean</span></td><td>Allow drag-to-resize column widths. Default <code>true</code>; opt out per column with <code>resizable: false</code>.</td></tr>
           <tr><td>rowSelection</td><td><span class="type">boolean</span></td><td>Show a leading checkbox column for whole-row selection (keyed by <code>getRowId</code>); <kbd>Space</kbd> toggles the focused row. Default <code>false</code>.</td></tr>
@@ -361,35 +363,6 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
       <pre><code>import { createBoGrid, type BoGridConfig } from 'bo-grid/element';
 const config: BoGridConfig = { columns, rows, height: '100%' };
 document.body.append(createBoGrid(config));</code></pre>
-
-      <!-- ============ CHARTS ============ -->
-      <h2 id="charts">Charts <span class="tag">companion</span></h2>
-      <p>For dashboards, <code>bo-grid/charts</code> ships tiny, dependency-free SVG charts. It is a <strong>separate import</strong>, so it adds nothing to the grid core (~4&nbsp;KB gzip on its own). Use them standalone or inside a grid cell via a <code>custom</code> column. Theme with <code>color</code>/<code>colors</code> props or <code>--boc-color</code> / <code>--boc-1…6</code> CSS vars.</p>
-      <table>
-        <thead><tr><th>Component</th><th>Key props</th><th>Renders</th></tr></thead>
-        <tbody>
-          <tr><td>LineChart</td><td><span class="type">data: number[]; area?; color?</span></td><td>Line (optional filled area).</td></tr>
-          <tr><td>BarChart</td><td><span class="type">data: number[]; gap?; color?</span></td><td>Bars from a zero axis (signed-aware).</td></tr>
-          <tr><td>DonutChart</td><td><span class="type">data: number[] | {value,color?}[]; thickness?</span></td><td>Donut, or pie when <code>thickness ≥ size/2</code>.</td></tr>
-          <tr><td>StackedBarChart</td><td><span class="type">data: number[][]; grouped?; seriesLabels?</span></td><td>Multi-series bars (<code>data[series][category]</code>) — stacked, or <code>grouped</code> side-by-side.</td></tr>
-          <tr><td>CandlestickChart</td><td><span class="type">data: Candle[]; gap?; upColor?; downColor?</span></td><td>OHLC candlesticks — body open→close, wick high→low.</td></tr>
-          <tr><td>DepthChart</td><td><span class="type">bids: number[]; asks: number[]; bidColor?; askColor?</span></td><td>Order-book depth — bid/ask sizes nearest-to-spread first; cumulative depth computed for you.</td></tr>
-          <tr><td>Legend</td><td><span class="type">items: {label, color?}[]</span></td><td>Swatch + label list, palette-aware.</td></tr>
-        </tbody>
-      </table>
-      <p>Bar / stacked / donut elements carry an SVG <code>&lt;title&gt;</code> for native hover tooltips (the value, plus a label when set); candlestick bodies carry the full OHLC as a title, depth bars carry the side and cumulative size.</p>
-      <pre><code><span class="tok-key">import</span> { LineChart, BarChart, DonutChart, CandlestickChart, DepthChart } <span class="tok-key">from</span> <span class="tok-str">'bo-grid/charts'</span>;
-
-&lt;LineChart data={[3, 5, 4, 8, 6, 9]} area /&gt;
-&lt;DonutChart data={[{ value: 5 }, { value: 3 }]} /&gt;
-&lt;CandlestickChart data={candles} width={220} height={60} /&gt;
-&lt;DepthChart bids={[40, 90, 60]} asks={[55, 70, 45]} width={220} height={60} /&gt;</code></pre>
-      <div class="note">
-        <code>DepthChart</code>'s <code>bids</code>/<code>asks</code> are per-level sizes ordered <strong>nearest-to-spread first</strong> — pass raw sizes, not a
-        pre-summed running total; the cumulative depth is computed for you. Both sides share <strong>one</strong> vertical scale (the larger side's total
-        depth), so a lopsided book doesn't let the thin side visually fill the chart.
-      </div>
-      <p>The SVG geometry helpers (<code>linePoints</code>, <code>barRects</code>, <code>donutArcs</code>, <code>candleGeometry</code>, <code>depthBars</code>, <code>extent</code>, …) are exported too, for building your own charts.</p>
 
       <!-- ============ REALTIME ============ -->
       <h2 id="realtime">Realtime <span class="tag">bo-grid/realtime</span></h2>

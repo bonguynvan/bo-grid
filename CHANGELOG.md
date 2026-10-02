@@ -5,6 +5,17 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+**bo-grid is now grid-only.** Standalone charting is out of scope — use
+[TradeCanvas](https://github.com/bonguynvan/tradecanvas) for charts. The goal
+from here is feature parity with heavyweight grids.
+
+### Removed
+
+- **BREAKING: the `bo-grid/charts` entry** (`LineChart`, `BarChart`,
+  `DonutChart`, `StackedBarChart`, `CandlestickChart`, `DepthChart`, `Legend`
+  and the SVG geometry helpers) and the Dashboard demo. The grid's own
+  `sparkline` column type, `Sparkline` and `drawCandles` are unchanged.
+
 ### Added
 
 - **`onReady(api)` grid handle** — `scrollToRow(key, align?)`,

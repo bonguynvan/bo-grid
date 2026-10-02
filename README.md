@@ -1,7 +1,7 @@
 # bo-grid
 
 Tiny, fast **Svelte 5** data grid for fintech UIs — canvas sparklines, batched
-realtime cell updates, and virtual scrolling, with a core that gzips to ~33 KB
+realtime cell updates, and virtual scrolling, with a core that gzips to ~35 KB
 (Svelte external; unused exports tree-shake). A free alternative to the heavyweight
 grids that paywall these features.
 
@@ -13,8 +13,7 @@ grids that paywall these features.
 
 The demo is a gallery of grid types — a realtime **Trading desk**, a grouped
 **Portfolio** with subtotals and pivot, an editable **Spreadsheet**, a live
-**Order book**, a **Correlation** heatmap, a **Dashboard** with in-cell charts, a
-**Wide** 60-column grid, a server-backed **Lazy tree**, and more — all on one
+**Order book**, a **Correlation** heatmap, a **Wide** 60-column grid, a server-backed **Lazy tree**, and more — all on one
 page, each grid lazy-mounting as you scroll (jump between them from the side rail).
 
 > **Status: actively developed.** Working: config-driven columns, virtual scroll,
@@ -38,7 +37,7 @@ page, each grid lazy-mounting as you scroll (jump between them from the side rai
 | Price | $$$ / dev / year | Free (MIT) |
 | Sparklines | paid tier | built in |
 | Realtime cell updates | DIY / complex | built-in primitive |
-| Bundle | hundreds of KB | **~33 KB gzip core** ([benchmarks](./BENCHMARKS.md)) |
+| Bundle | hundreds of KB | **~35 KB gzip core** ([benchmarks](./BENCHMARKS.md)) |
 | Svelte | wrapper | native Svelte 5 |
 
 bo-grid ships most of the features other grids put behind a **paid (Enterprise)**
@@ -73,7 +72,7 @@ Works with **SvelteKit / SSR** out of the box — `<Grid>` server-renders to HTM
 without touching `window`/`document`/`localStorage` (a CI gate, `pnpm ssr`,
 proves it). The package is `sideEffects: false`, so unused exports tree-shake
 away. See the **[SvelteKit guide](./docs/sveltekit.md)** for `load`-function data,
-server-side / lazy loading, realtime feeds, import helpers, charts, printing, and
+server-side / lazy loading, realtime feeds, import helpers, printing, and
 layout persistence.
 
 ## Usage
@@ -180,7 +179,7 @@ up/down: purple at the ceiling (limit up), cyan at the floor (limit down),
 yellow at the unchanged reference, green/red for an ordinary move — a signal a
 plain up/down grid can't give you. `bo-grid/trading` is the pure-function
 toolkit for that, plus tick-aware price formatting and session state. It's a
-**separate entry**, like charts and realtime — no `ColumnDef` changes, wired up
+**separate entry**, like realtime — no `ColumnDef` changes, wired up
 through the `cell`/`render` hook you already have:
 
 ```ts
@@ -413,54 +412,6 @@ const columns: ColumnDef[] = [
 
 In-memory mode (a server `source` owns its own derivations). Keep `value()` cheap
 and pure — it's called during sort and filter.
-
-## Charts (companion)
-
-For dashboards, `bo-grid/charts` ships tiny, dependency-free SVG charts —
-`LineChart`, `BarChart`, `DonutChart`, `StackedBarChart` (stacked or `grouped`
-multi-series), `CandlestickChart`, `DepthChart`, and a `Legend`. They're a
-**separate import**, so they add nothing to the grid core (~4 KB gzip on their
-own). Use them standalone, or inside a grid cell via a `custom` column.
-Bar/stacked/donut elements carry an SVG `<title>`, so hovering shows the value
-(accessible, zero-JS).
-
-```svelte
-<script>
-  import { LineChart, BarChart, DonutChart, StackedBarChart, Legend } from 'bo-grid/charts';
-</script>
-
-<LineChart data={[3, 5, 4, 8, 6, 9]} width={160} height={40} area />
-<BarChart data={[4, 8, 6, 9, 7]} color="var(--up)" />
-<DonutChart data={[{ value: 5, label: 'A' }, { value: 3, label: 'B' }]} />
-
-<!-- data[series][category]; stacked by default, `grouped` for side-by-side -->
-<StackedBarChart data={[[3, 5, 2], [4, 1, 6]]} seriesLabels={['Q1', 'Q2']} />
-<Legend items={[{ label: 'Q1' }, { label: 'Q2' }]} />
-```
-
-Theme them with `color` / `colors` props, or by setting `--boc-color` and
-`--boc-1`…`--boc-6` CSS vars on any ancestor. The geometry helpers (`linePoints`,
-`barRects`, `donutArcs`, …) are exported too, for rolling your own SVG charts. See
-the **Dashboard** example for charts inside grid cells.
-
-#### Candlestick & depth charts
-
-The two trading-specific chart shapes, built on the same `Candle` type as the
-grid's own `sparkline` column:
-
-```svelte
-<CandlestickChart data={candles} width={220} height={60} />
-<!-- bids/asks: sizes ordered NEAREST-TO-SPREAD FIRST; cumulative depth is
-     computed for you, don't pre-sum it -->
-<DepthChart bids={[40, 90, 60]} asks={[55, 70, 45]} width={220} height={60} />
-```
-
-`CandlestickChart` colours by `upColor`/`downColor` (defaulting to
-`--boc-up`/`--boc-down`, then a fixed green/red). `DepthChart` shares **one**
-vertical scale across both sides, so a lopsided book doesn't let the thin side
-visually fill the chart — the whole point of a depth chart is comparing the
-two. The geometry helpers (`candleGeometry`, `depthBars`) are exported too. See
-the **Dashboard** example.
 
 ## Row height
 

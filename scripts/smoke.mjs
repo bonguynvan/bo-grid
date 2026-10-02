@@ -1030,39 +1030,6 @@ const teamHeadTip = document.querySelector('.bo-grid .head .h[data-bo-tip]');
 if (!teamHeadTip) fail('Team: header tooltip did not set data-bo-tip on a columnheader');
 if (!document.querySelector('.bo-grid .head .h .hinfo')) fail('Team: headerInfo icon not rendered');
 
-// Dashboard: the bo-grid/charts companion — KPI cards (standalone charts) plus
-// in-cell charts (a LineChart in each grid row's custom Trend cell).
-await solo('dashboard', '.boc-line', 'Dashboard charts did not render (lazy chunk)');
-const dashLines = document.querySelectorAll('.boc-line').length;
-const dashBars = document.querySelectorAll('.boc-bar rect').length;
-const dashArcs = document.querySelectorAll('.boc-donut path').length;
-const dashStacked = document.querySelectorAll('.boc-stacked rect').length;
-const dashLegend = document.querySelectorAll('.boc-legend li').length;
-if (dashBars === 0) fail('Dashboard: bar chart did not render');
-if (dashArcs === 0) fail('Dashboard: donut chart did not render');
-if (dashStacked === 0) fail('Dashboard: stacked bar chart did not render (v0.19)');
-if (dashLegend === 0) fail('Dashboard: legend did not render (v0.19)');
-// Hover tooltips: chart elements carry a <title> (the value).
-if (!document.querySelector('.boc-bar rect title')) fail('Dashboard: bar chart tooltips (<title>) missing');
-// >1 line = the KPI card line + one LineChart per grid row (charts inside cells).
-if (dashLines < 2) fail(`Dashboard: in-cell line charts did not render (${dashLines} line charts)`);
-// Candlestick (bodies + wicks) and depth chart (bid/ask bars either side of the spread).
-const dashCandleBodies = document.querySelectorAll('.boc-candle rect').length;
-const dashCandleWicks = document.querySelectorAll('.boc-candle line').length;
-if (dashCandleBodies === 0) fail('Dashboard: candlestick bodies did not render');
-if (dashCandleWicks === 0) fail('Dashboard: candlestick wicks did not render');
-if (dashCandleBodies !== dashCandleWicks) {
-  fail(`Dashboard: candlestick body/wick count mismatch (${dashCandleBodies} bodies vs ${dashCandleWicks} wicks)`);
-}
-const dashDepthBars = document.querySelectorAll('.boc-depth rect').length;
-if (dashDepthBars === 0) fail('Dashboard: depth chart bars did not render');
-const dashDepthSides = new Set(
-  [...document.querySelectorAll('.boc-depth rect title')].map((t) => t.textContent?.split(' ')[0]),
-);
-if (!dashDepthSides.has('bid') || !dashDepthSides.has('ask')) {
-  fail(`Dashboard: depth chart did not render both bid and ask sides (got: ${[...dashDepthSides].join(', ')})`);
-}
-
 // Wide grid (v0.16): 60+ columns in fixed-width horizontal-scroll mode with a
 // pinned label column. (Column windowing needs real layout + ResizeObserver,
 // which jsdom lacks, so it renders all columns here — windowing is unit-tested
@@ -1244,7 +1211,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale + computed-col, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars + ${obDirected} derived flashes, vnboard ${vnRows} rows + ${vnSession.textContent?.trim()} session (bo-grid/trading), ladder ${ladderRowsInitial}/120 visible + lock/page/recenter ok, timesales ${tsRows} trades (capped, newest-first), correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut/${dashStacked} stacked/${dashLegend} legend/${dashCandleBodies} candles/${dashDepthBars} depth bars (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), csv ${csvRows}→${csvAfter} rows + json ${csvJson} + auto ${csvAuto} (csv/tsv/json/auto import), print ${printGridRows} virt/${printPreviewRows} all-rows, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars + ${obDirected} derived flashes, vnboard ${vnRows} rows + ${vnSession.textContent?.trim()} session (bo-grid/trading), ladder ${ladderRowsInitial}/120 visible + lock/page/recenter ok, timesales ${tsRows} trades (capped, newest-first), correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), csv ${csvRows}→${csvAfter} rows + json ${csvJson} + auto ${csvAuto} (csv/tsv/json/auto import), print ${printGridRows} virt/${printPreviewRows} all-rows, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

@@ -159,17 +159,6 @@ page can still SSR a first window from `load`.
 (`RowSource`, `loadChildren`/`hasChildren`, and `lazyGroups`/`loadGroup` are all in
 the [API reference](https://bonguynvan.github.io/bo-grid/api.html).)
 
-## Charts
-
-The optional charts companion is a separate import and SSR-safe (plain SVG):
-
-```svelte
-<script>
-  import { LineChart, BarChart, DonutChart } from 'bo-grid/charts';
-</script>
-<LineChart data={data.trend} area />
-```
-
 ## Printing & export (client actions)
 
 Export/print are user actions — call them from an event handler. `printTable` opens

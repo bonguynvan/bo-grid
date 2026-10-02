@@ -10,9 +10,8 @@ excluded — you already ship the Svelte runtime):
 
 | Asset | gzip |
 | --- | --- |
-| `bo-grid` core JS | **~33 KB** |
+| `bo-grid` core JS | **~35 KB** |
 | `bo-grid` CSS | **~4 KB** |
-| `bo-grid/charts` (optional) | **~4 KB** |
 | `bo-grid/realtime` (optional) | **~1 KB** |
 | `bo-grid/trading` (optional) | **~1 KB** |
 
@@ -22,9 +21,8 @@ core bundles run into the hundreds of KB before features. A few notes:
 - The number is the **whole public API** measured eagerly. A consumer who imports
   only what they use (e.g. `import { Grid }`) tree-shakes the rest — the package is
   `sideEffects: false` — so the IO/print helpers don't ship unless imported.
-- The **charts companion** (`bo-grid/charts`), the **realtime tick pipeline**
-  (`bo-grid/realtime`) and the **trading conventions** helpers (`bo-grid/trading`)
-  are separate entries on their own budgets; none adds anything to the grid
+- The **realtime tick pipeline** (`bo-grid/realtime`) and the **trading
+  conventions** helpers (`bo-grid/trading`) are separate entries on their own budgets; none adds anything to the grid
   unless you import it.
 - **Excel export** is a **dynamic import** of the optional `xlsx` peer — it never
   lands in the core bundle unless you call `exportXLSX`.
@@ -63,8 +61,6 @@ don't):
 | `FlashTracker.observe()` (derived flash) | 1,000,000 cell observations | ~52 ms |
 | `TradeTape.push()` (time & sales) | 1,000,000 trades → 500-cap ring buffer | ~9 ms |
 | `TradeTape.toArray()` (tape snapshot) | 10,000 snapshots of a full 500-trade tape | ~14 ms |
-| `candleGeometry()` (candlestick chart) | 10,000 calls over 500 candles | ~131 ms |
-| `depthBars()` (depth chart) | 10,000 calls over 500 levels | ~112 ms |
 
 The headline: **~79 ns to locate the first visible row at any scroll position in
 a million-row variable-height dataset.** A 60 fps frame budget is 16.7 ms, so that
@@ -80,10 +76,6 @@ frame keeps a burst well inside the 16.7 ms budget. Derived per-cell flash costs
 be, and is, negligible. `TradeTape` appends at **~88M trades/sec** (a true ring
 buffer — O(1) regardless of how long the session runs) and snapshots a full
 500-trade tape in ~1.4 µs, call it once per render rather than per trade.
-Chart geometry (`candleGeometry`/`depthBars`) costs **~13 µs per call** at a
-generous 500-candle/500-level scale — a chart recomputes this once per render
-via `$derived`, not per row like the grid, so the real series a dashboard
-shows (tens to low hundreds of candles) cost a small fraction of that.
 
 ```sh
 pnpm bench   # runs the hot-path benchmarks above

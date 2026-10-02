@@ -2,8 +2,8 @@
 // and the grid: coalesced price updates, a capped trade tape, and the
 // windowing math for a centered/scroll-locked price ladder.
 //
-// A separate entry, like `bo-grid/charts`: it adds nothing to the grid core
-// unless you import it, and it keeps its own size budget.
+// A separate entry: it adds nothing to the grid core unless you import it,
+// and it keeps its own size budget.
 export {
   TickBuffer,
   createTickStream,
