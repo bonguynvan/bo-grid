@@ -18,6 +18,11 @@ from here is feature parity with heavyweight grids.
 
 ### Fixed
 
+- **Date filters and the date editor use the viewer's calendar day.** A `date`
+  cell displays its value as a local day, but the filter matched — and the
+  editor wrote — the UTC day, so east or west of UTC a cell showing the 15th
+  could fail "on the 15th". Filter, editor and display now agree; `before` and
+  `after` exclude the chosen day, `between` includes both ends.
 - **Header and body columns line up exactly.** The body's vertical scrollbar
   no longer shifts the last column's header out of line: the body and every
   header row (header, header groups, filter row) reserve the same scrollbar

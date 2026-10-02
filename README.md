@@ -507,7 +507,8 @@ the header (rows must match every non-empty column filter; in-memory mode).
 For richer filtering, set `filterMenu` to add a **funnel to each column header**.
 Clicking it opens a menu whose control matches the column type — text
 (contains / equals / starts / ends), number (`=, ≠, <, ≤, >, ≥, between`), or date
-(before / after / on / between). Set `col.filter: 'set'` for a **set filter** — a
+(before / after / on / between — whole calendar days in the viewer's time zone,
+the same day the cell shows). Set `col.filter: 'set'` for a **set filter** — a
 searchable checkbox list of the column's distinct values (All / None). The menu
 is lazy-loaded on first open, so it costs nothing until used; disable it per
 column with `col.filter: false`:

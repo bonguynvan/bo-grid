@@ -8,6 +8,7 @@ import type { Component } from 'svelte';
 import type { ColumnDef, GridRow } from './column';
 import { isNumeric } from './column';
 import type { GridLabels } from './labels';
+import { dayStart } from './date';
 
 export type FilterKind = 'text' | 'number' | 'date' | 'set';
 export type TextOp = 'contains' | 'notContains' | 'equals' | 'starts' | 'ends';
@@ -65,7 +66,6 @@ export function isBuiltinFilter(f: AnyFilter): f is ColumnFilter {
   return BUILTIN_KINDS.has(f.kind);
 }
 
-const DAY = 86_400_000;
 
 /** Pick the default filter control for a column from its type. */
 export function defaultFilterKind(col: ColumnDef): FilterKind {
@@ -131,8 +131,14 @@ export function matchesFilter(value: unknown, f: AnyFilter, row?: GridRow, types
       if (value === null || value === undefined || value === '') return false;
       const n = Number(value);
       if (!Number.isFinite(n)) return false; // non-numeric is excluded while active
-      if (f.kind === 'date' && f.op === 'on') {
-        return Math.floor(n / DAY) === Math.floor(f.a / DAY); // same (UTC) day
+      if (f.kind === 'date') {
+        // Whole local calendar days, matching how the cell displays the value.
+        const d = dayStart(n);
+        const a = dayStart(f.a);
+        if (f.op === 'on') return d === a;
+        if (f.op === 'before') return d < a;
+        if (f.op === 'after') return d > a;
+        return d >= a && d <= (f.b != null ? dayStart(f.b) : Infinity);
       }
       switch (f.op) {
         case 'eq':
@@ -140,12 +146,10 @@ export function matchesFilter(value: unknown, f: AnyFilter, row?: GridRow, types
         case 'ne':
           return n !== f.a;
         case 'lt':
-        case 'before':
           return n < f.a;
         case 'le':
           return n <= f.a;
         case 'gt':
-        case 'after':
           return n > f.a;
         case 'ge':
           return n >= f.a;

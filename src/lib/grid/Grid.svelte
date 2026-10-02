@@ -38,6 +38,7 @@
   import RowMenu from './RowMenu.svelte';
   import { resolveLabels, type GridLabels } from './labels';
   import { resolveColumns } from './celltype';
+  import { fromDateInput } from './date';
   import { scrollTopFor, type GridApi, type ScrollAlign } from './api';
   import { buildMergePlan, combinedFlex, type MergePlan, type SpanRun } from './merge';
   import { GRID_STATE_VERSION, reconcileState, type GridState } from './state';
@@ -375,8 +376,9 @@
     if (!row) return false;
     let value: string | number = raw;
     if (col.type === 'date') {
-      // The date editor emits a yyyy-mm-dd string; store the column's ms value.
-      const ms = Date.parse(`${raw}T00:00:00Z`);
+      // The date editor emits a yyyy-mm-dd string; store local midnight of that
+      // day, the same day the cell displays.
+      const ms = fromDateInput(raw);
       if (!Number.isFinite(ms)) return false;
       value = ms;
     } else if (isNumeric(col)) {

@@ -63,22 +63,31 @@ describe('matchesFilter — number', () => {
   });
 });
 
-describe('matchesFilter — date', () => {
-  const jan15 = Date.UTC(2024, 0, 15, 9);
-  const jan15later = Date.UTC(2024, 0, 15, 22);
-  const jan20 = Date.UTC(2024, 0, 20);
-  it('before / after compare instants', () => {
-    expect(matchesFilter(jan15, { kind: 'date', op: 'before', a: jan20 })).toBe(true);
-    expect(matchesFilter(jan20, { kind: 'date', op: 'after', a: jan15 })).toBe(true);
+describe('matchesFilter — date (local calendar days)', () => {
+  // Local-time constructors: a date cell shows the viewer's local day, so the
+  // filter must match on that same day, in any time zone.
+  const at = (d: number, h = 0, m = 0) => new Date(2024, 0, d, h, m).getTime();
+  const day = (d: number) => new Date(2024, 0, d).getTime();
+  it('on matches any time on that local day', () => {
+    expect(matchesFilter(at(15, 0, 0), { kind: 'date', op: 'on', a: day(15) })).toBe(true);
+    expect(matchesFilter(at(15, 23, 59), { kind: 'date', op: 'on', a: day(15) })).toBe(true);
+    expect(matchesFilter(at(16, 0, 0), { kind: 'date', op: 'on', a: day(15) })).toBe(false);
   });
-  it('on matches any instant in the same day', () => {
-    expect(matchesFilter(jan15later, { kind: 'date', op: 'on', a: jan15 })).toBe(true);
-    expect(matchesFilter(jan20, { kind: 'date', op: 'on', a: jan15 })).toBe(false);
+  it('before excludes the day itself', () => {
+    expect(matchesFilter(at(14, 23, 59), { kind: 'date', op: 'before', a: day(15) })).toBe(true);
+    expect(matchesFilter(at(15, 0, 1), { kind: 'date', op: 'before', a: day(15) })).toBe(false);
   });
-  it('between is inclusive', () => {
-    expect(matchesFilter(jan15, { kind: 'date', op: 'between', a: jan15, b: jan20 })).toBe(true);
+  it('after excludes the day itself', () => {
+    expect(matchesFilter(at(15, 23, 0), { kind: 'date', op: 'after', a: day(15) })).toBe(false);
+    expect(matchesFilter(at(16, 0, 0), { kind: 'date', op: 'after', a: day(15) })).toBe(true);
+  });
+  it('between includes both end days', () => {
+    expect(matchesFilter(at(15, 0, 0), { kind: 'date', op: 'between', a: day(15), b: day(20) })).toBe(true);
+    expect(matchesFilter(at(20, 23, 59), { kind: 'date', op: 'between', a: day(15), b: day(20) })).toBe(true);
+    expect(matchesFilter(at(21, 0, 0), { kind: 'date', op: 'between', a: day(15), b: day(20) })).toBe(false);
   });
 });
+
 
 describe('matchesFilter — set (excluded values)', () => {
   const f: ColumnFilter = { kind: 'set', excluded: ['Closed', 'Void'] };

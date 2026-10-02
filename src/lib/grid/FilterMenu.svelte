@@ -5,6 +5,7 @@
   import { untrack } from 'svelte';
   import type { GridLabels } from './labels';
   import type { ColumnDef } from './column';
+  import { fromDateInput, toDateInput } from './date';
   import {
     isFilterActive,
     isBuiltinFilter,
@@ -70,9 +71,6 @@
     { op: 'between', label: L.opBetween },
   ]);
 
-  const toMs = (s: string): number => (s ? Date.parse(`${s}T00:00:00Z`) : NaN);
-  const toDateInput = (ms: number): string =>
-    Number.isFinite(ms) ? new Date(ms).toISOString().slice(0, 10) : '';
 
   // Local draft, seeded once from the active filter. The menu is recreated each
   // time it opens, so capturing the initial prop value (not tracking it) is what
@@ -109,7 +107,7 @@
     if (kind === 'number') {
       f = { kind: 'number', op: numOp, a: numA ?? NaN, b: numB ?? undefined };
     } else if (kind === 'date') {
-      f = { kind: 'date', op: dateOp, a: toMs(dateA), b: dateB ? toMs(dateB) : undefined };
+      f = { kind: 'date', op: dateOp, a: fromDateInput(dateA), b: dateB ? fromDateInput(dateB) : undefined };
     } else if (kind === 'set') {
       f = { kind: 'set', excluded: [...excluded] };
     } else {

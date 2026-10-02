@@ -16,6 +16,7 @@
     safeHref,
   } from './column';
   import { heatColor } from './heatmap';
+  import { toDateInput } from './date';
   import { FlashTracker, resolveFlashMode, isFresh, FLASH_MS } from './flash';
   import Sparkline from '../sparkline/Sparkline.svelte';
 
@@ -160,7 +161,7 @@
   const editorType = $derived(col.type === 'date' ? 'date' : isNumeric(col) ? 'number' : 'text');
   const editorValue = $derived(
     col.type === 'date' && Number.isFinite(Number(value))
-      ? new Date(Number(value)).toISOString().slice(0, 10)
+      ? toDateInput(Number(value))
       : String(value ?? ''),
   );
   // Alignment kind: numbers right-align (tabular); sparkline + text-like rich
