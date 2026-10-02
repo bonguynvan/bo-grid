@@ -2,7 +2,7 @@
 
 > Tiny, fast Svelte 5 data grid for fintech UIs — canvas sparklines, batched
 > realtime cell updates, and virtual scrolling, with a core that gzips to
-> ~37 KB (Svelte peer excluded). Free MIT alternative to heavyweight
+> ~40 KB (Svelte peer excluded). Free MIT alternative to heavyweight
 > enterprise grids for grouping, pivot, tree data, master-detail, range
 > selection, and Excel export.
 

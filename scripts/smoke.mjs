@@ -110,6 +110,18 @@ try {
 }
 await new Promise((r) => setTimeout(r, 600));
 
+// Landing hero: Fig. 1 is a live mini board. Check it rendered, then take it out
+// of the page so every assertion below still finds the Trading desk grid first.
+{
+  const heroGrid = document.querySelector('.lp-fig .bo-grid');
+  if (!heroGrid) fail('landing: hero board (Fig. 1) did not render');
+  if (heroGrid.querySelectorAll('.row').length === 0) fail('landing: hero board rendered no rows');
+  if (!/VNM|FPT|HPG/.test(heroGrid.textContent || '')) fail('landing: hero board is missing its symbols');
+  if (!document.querySelector('.lp-wordmark')) fail('landing: masthead wordmark missing');
+  if (document.querySelectorAll('.lp-list li').length < 10) fail('landing: listings table missing');
+  document.querySelector('.lp-fig')?.remove();
+}
+
 const rowCount = document.querySelectorAll('.row').length;
 const hasHeader = !!document.querySelector('.bo-grid .head');
 const canvases = document.querySelectorAll('canvas').length;
@@ -268,6 +280,11 @@ if (document.querySelector('.bo-grid.grid')?.getAttribute('aria-label') !== 'Mar
 // and every grid to the light preset, then restores dark.
 const themeBtn = document.querySelector('.lp-theme');
 if (!themeBtn) fail('global theme toggle not found in the nav');
+// Start from the dark (terminal) theme whatever the page default is.
+if (document.documentElement.classList.contains('light')) {
+  click(themeBtn);
+  await wait(40);
+}
 click(themeBtn);
 await wait(40);
 if (!document.documentElement.classList.contains('light')) {

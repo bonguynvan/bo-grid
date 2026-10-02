@@ -337,7 +337,7 @@ CSV round-trip. Remaining ideas are polish or demand-driven:
 - Driven by real-world usage now that it's published — open an issue with what's
   missing.
 
-Note on size: the eager core is ~37 KB gzip. Feature growth is expected on the
+Note on size: the eager core is ~40 KB gzip. Feature growth is expected on the
 way to heavyweight-grid parity and is not capped; `pnpm size:lib` reports the
 number on every run so optimization has a target, and only fails on an
 accidental blow-up. The

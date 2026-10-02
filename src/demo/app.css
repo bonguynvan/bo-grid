@@ -1,44 +1,58 @@
+/* Demo page tokens. Two deliberate palettes rather than one inverted:
+   "broadsheet" (default) — newsprint paper, ink, a highlighter mark — and
+   "terminal" (html.dark) — a phosphor-on-black trading screen. The legacy names
+   (--bg, --text, --text-dim, --border, --up, --down…) stay, because every
+   example reads them. */
 :root {
-  /* dark-first tokens (proposal §UI Design Details) */
-  --bg: #1a1a1a;
-  --header-bg: #0f0f0f;
-  --row-a: #131313;
-  --row-b: #0f0f0f;
-  --row-hover: #1f1f24;
-  --text: #e5e5e5;
-  --text-dim: #8a8a8a;
-  --border: rgba(255, 255, 255, 0.06);
+  --paper: #f2ede3;
+  --paper-2: #e8e1d2;
+  --ink: #161512;
+  --ink-dim: #5e594f;
+  --rule: #161512;
+  --rule-soft: rgba(22, 21, 18, 0.16);
+  --mark: #c99a12;
+  --mark-bg: #f3d46b;
+  --up: #0c7a4e;
+  --down: #c3262c;
+  --amber: #b26a00;
+  --card: #fbf8f1;
 
-  --up: #34d399;
-  --down: #f87171;
-  --amber: #f59e0b;
-  --blue-fill: rgba(99, 102, 241, 0.18);
+  --bg: var(--paper);
+  --header-bg: var(--paper-2);
+  --row-a: var(--card);
+  --row-b: var(--paper);
+  --row-hover: #ece4d3;
+  --text: var(--ink);
+  --text-dim: var(--ink-dim);
+  --border: var(--rule-soft);
+  --blue-fill: rgba(201, 154, 18, 0.2);
 
   --row-h: 36px;
   --header-h: 28px;
 
-  --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-  --sans: Inter, "Segoe UI", system-ui, sans-serif;
+  --serif: 'Fraunces', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --sans: var(--mono);
 
-  color-scheme: dark;
+  color-scheme: light;
 }
 
-/* Light page theme (toggled on <html> from the nav) — an intentional light
-   palette, not an inversion. Drives the page chrome; grids follow via their own
-   theme prop. */
-html.light {
-  --bg: #ffffff;
-  --header-bg: #f6f7f9;
-  --row-a: #ffffff;
-  --row-b: #fafbfc;
-  --row-hover: #eef1f5;
-  --text: #14171c;
-  --text-dim: #687280;
-  --border: rgba(0, 0, 0, 0.1);
-  --up: #059669;
-  --down: #dc2626;
-  --amber: #b45309;
-  color-scheme: light;
+html.dark {
+  --paper: #0d0e0c;
+  --paper-2: #151713;
+  --ink: #e9e5d8;
+  --ink-dim: #8d887b;
+  --rule: #e9e5d8;
+  --rule-soft: rgba(233, 229, 216, 0.14);
+  --mark: #f2c14e;
+  --mark-bg: #5a4612;
+  --up: #3ddc97;
+  --down: #ff6b6b;
+  --amber: #f59e0b;
+  --card: #111310;
+  --row-hover: #1b1e19;
+  --blue-fill: rgba(242, 193, 78, 0.16);
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -49,10 +63,15 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
   -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--mark-bg);
+  color: var(--ink);
 }
 
 #app { min-height: 100vh; display: flex; flex-direction: column; }
