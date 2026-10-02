@@ -4,8 +4,10 @@
  * The header filter-menu UI (lazy-loaded) writes these; `passesFilters` applies
  * them. Filtering is a snapshot operation, not a per-frame one.
  */
+import type { Component } from 'svelte';
 import type { ColumnDef, GridRow } from './column';
 import { isNumeric } from './column';
+import type { GridLabels } from './labels';
 
 export type FilterKind = 'text' | 'number' | 'date' | 'set';
 export type TextOp = 'contains' | 'notContains' | 'equals' | 'starts' | 'ends';
@@ -19,6 +21,49 @@ export type ColumnFilter =
   // Set filter holds the *excluded* values (the unchecked boxes); a row passes
   // when its value is not excluded. Empty list = everything passes.
   | { kind: 'set'; excluded: string[] };
+
+/** A filter of a kind registered through <Grid filterTypes>: any JSON-safe
+    shape carrying its `kind`. */
+export interface CustomFilter {
+  kind: string;
+  [field: string]: unknown;
+}
+
+/** Any filter a column can hold: built-in or registered. */
+export type AnyFilter = ColumnFilter | CustomFilter;
+
+/** Props of a registered filter type's editor, drawn inside the filter menu. */
+export interface FilterEditorProps<F extends CustomFilter = CustomFilter> {
+  /** The draft: the active filter when the menu opened, or null. */
+  filter: F | null;
+  /** Replace the draft. Apply (or Enter) commits it; Clear removes the filter. */
+  onChange: (next: F | null) => void;
+  column: ColumnDef;
+  /** The column's distinct values, when the type sets `needsValues`. */
+  values: string[];
+  labels: GridLabels;
+}
+
+/** A filter kind for <Grid filterTypes>; a column selects it with `filter: 'name'`. */
+export interface FilterTypeDef<F extends CustomFilter = CustomFilter> {
+  /** Does one cell value pass? Called only while the filter is active. */
+  test: (value: unknown, filter: F, row: GridRow) => boolean;
+  /** Is the filter narrowing anything? Default: always active. */
+  isActive?: (filter: F) => boolean;
+  /** Editor for the middle of the filter menu. */
+  component: Component<FilterEditorProps<F>>;
+  /** Collect the column's distinct values for the editor (like the set filter). */
+  needsValues?: boolean;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type FilterTypes = Record<string, FilterTypeDef<any>>;
+
+const BUILTIN_KINDS: ReadonlySet<string> = new Set<FilterKind>(['text', 'number', 'date', 'set']);
+
+export function isBuiltinFilter(f: AnyFilter): f is ColumnFilter {
+  return BUILTIN_KINDS.has(f.kind);
+}
 
 const DAY = 86_400_000;
 
@@ -43,9 +88,15 @@ export function emptyFilter(kind: FilterKind): ColumnFilter {
   }
 }
 
-/** Whether a filter actually constrains anything (else it's a no-op). */
-export function isFilterActive(f: ColumnFilter | undefined | null): boolean {
+/** Whether a filter actually constrains anything (else it's a no-op). A kind
+    that is neither built-in nor registered is inactive: a grid that silently
+    empties is worse than one that silently does not filter. */
+export function isFilterActive(f: AnyFilter | undefined | null, types?: FilterTypes): boolean {
   if (!f) return false;
+  if (!isBuiltinFilter(f)) {
+    const def = types?.[f.kind];
+    return !!def && (def.isActive ? def.isActive(f) : true);
+  }
   switch (f.kind) {
     case 'text':
       return f.q.trim().length > 0;
@@ -58,8 +109,9 @@ export function isFilterActive(f: ColumnFilter | undefined | null): boolean {
 }
 
 /** Does one cell value satisfy one filter? An inactive filter passes everything. */
-export function matchesFilter(value: unknown, f: ColumnFilter): boolean {
-  if (!isFilterActive(f)) return true;
+export function matchesFilter(value: unknown, f: AnyFilter, row?: GridRow, types?: FilterTypes): boolean {
+  if (!isFilterActive(f, types)) return true;
+  if (!isBuiltinFilter(f)) return (types as FilterTypes)[f.kind].test(value, f, row ?? ({ id: 0 } as GridRow));
   switch (f.kind) {
     case 'text': {
       const hay = String(value ?? '').toLowerCase();
@@ -113,12 +165,13 @@ const byKey: ValueResolver = (row, key) => row[key];
 /** AND across every active per-column filter. */
 export function passesFilters(
   row: GridRow,
-  filters: Record<string, ColumnFilter>,
+  filters: Record<string, AnyFilter>,
   valueOf: ValueResolver = byKey,
+  types?: FilterTypes,
 ): boolean {
   for (const key in filters) {
     const f = filters[key];
-    if (isFilterActive(f) && !matchesFilter(valueOf(row, key), f)) return false;
+    if (isFilterActive(f, types) && !matchesFilter(valueOf(row, key), f, row, types)) return false;
   }
   return true;
 }

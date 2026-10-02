@@ -7,7 +7,7 @@
     type GridRow,
     type PivotConfig,
     type SortState,
-    type ColumnFilter,
+    type AnyFilter,
   } from '../../lib';
   import { ui } from '../theme.svelte';
   import { generateTickers } from '../data/generate';
@@ -111,7 +111,7 @@
   });
 
   // Controlled filters: the example owns the column-filter map (mirrors sort).
-  let columnFilters = $state<Record<string, ColumnFilter>>({});
+  let columnFilters = $state<Record<string, AnyFilter>>({});
 
   // Controlled sort: the example owns the sort order, so it can show and clear it.
   let sortState = $state<SortState[]>([]);

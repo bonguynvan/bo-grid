@@ -39,7 +39,18 @@ export { resolveColumns } from './grid/celltype';
 export type { AggKind, AggResult } from './grid/aggregate';
 
 // Column filter model (for controlled filtering via `columnFilters`/`onFilterChange`)
-export type { ColumnFilter, FilterKind, TextOp, NumberOp, DateOp } from './grid/filtering';
+export type {
+  ColumnFilter,
+  FilterKind,
+  TextOp,
+  NumberOp,
+  DateOp,
+  AnyFilter,
+  CustomFilter,
+  FilterEditorProps,
+  FilterTypeDef,
+  FilterTypes,
+} from './grid/filtering';
 
 // Value formatters (handy when building custom cell content)
 export { fmtPrice, fmtPercent, fmtVolume, fmtDate, fmtCurrency, relativeTime } from './format/format';

@@ -295,7 +295,8 @@ grids such as AG Grid. Standalone charting moves out: the
   no rule derives (block trades, report captions).
 - [x] **Cell-type registry** — `cellTypes` + `cellType: 'name'`, with
   `extends` for built-in behaviour and a Svelte `component` renderer.
-- [ ] **Custom filter types** — register a filter kind with its own editor.
+- [x] **Custom filter types** — `filterTypes` + `filter: 'name'`, editor drawn
+  inside the standard menu frame.
 - [ ] **Layered source layout** — split the grid into pure `core/`, runes
   `reactive/` and `ui/` tiers with an enforced import rule.
 

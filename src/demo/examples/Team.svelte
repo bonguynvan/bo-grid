@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Grid, type CellTypeDef, type ColumnDef, type GridRow } from '../../lib';
   import CountryCell from './cells/CountryCell.svelte';
+  import { bandFilter } from './filters/workloadBand';
   import { ui } from '../theme.svelte';
 
   // A people/CRM board — shows bo-grid is a general business grid, not just
@@ -75,6 +76,9 @@
   const cellTypes: Record<string, CellTypeDef> = {
     country: { extends: 'text', component: CountryCell, filter: 'set', width: 140 },
   };
+  // A registered filter kind: the Workload column filters by capacity band
+  // with its own editor inside the standard filter menu.
+  const filterTypes = { band: bandFilter };
 
   const columns: ColumnDef[] = [
     // Pinned so the wide board scrolls horizontally with the person in view.
@@ -107,6 +111,7 @@
       key: 'workload',
       header: 'Workload',
       width: 140,
+      filter: 'band',
       min: 0,
       max: 100,
       headerTooltip: 'Share of capacity allocated this sprint (0–100%).',
@@ -130,6 +135,7 @@
     rows={gridRows}
     {columns}
     {cellTypes}
+    {filterTypes}
     {cellSelection}
     theme={ui.theme}
     filterMenu

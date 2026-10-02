@@ -32,6 +32,14 @@ from here is feature parity with heavyweight grids.
 
 ### Added
 
+- **Custom filter types** — `<Grid filterTypes>` registers a filter kind with
+  its own `test`, optional `isActive`, and an editor `component` drawn inside
+  the standard filter menu (which keeps its title, Clear/Apply and Enter);
+  columns opt in with `filter: 'name'`. Custom filters are plain objects with a
+  `kind`, so they flow through `columnFilters`, `onFilterChange`, `getState()`,
+  `RowSource` and `createArraySource({ filterTypes })`. An unregistered kind
+  filters nothing. The `columnFilters` / `onFilterChange` types widen to
+  `Record<string, AnyFilter>`. New demo: a workload-band filter on Team.
 - **Registered cell types** — `<Grid cellTypes>` maps a name to column
   defaults (format, compare, align, filter, width, a Svelte `component`…) and an
   `extends` built-in type for sorting, filtering and export; columns opt in

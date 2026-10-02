@@ -1,6 +1,6 @@
 import type { GridRow, SortState } from './column';
 import type { RowRange, RowSource } from './source';
-import type { ColumnFilter } from './filtering';
+import type { AnyFilter } from './filtering';
 
 /**
  * Drives a RowSource for the grid: fetches the visible window, caches rows by
@@ -29,7 +29,7 @@ export class RowSourceController {
   private keyOf(
     sorts: readonly SortState[],
     filter: string,
-    columnFilters?: Record<string, ColumnFilter>,
+    columnFilters?: Record<string, AnyFilter>,
   ): string {
     const cf = columnFilters ? JSON.stringify(columnFilters) : '';
     return `${sorts.map((s) => `${s.key}:${s.dir}`).join(',')}|${filter}|${cf}`;
@@ -39,7 +39,7 @@ export class RowSourceController {
     range: RowRange,
     sorts: SortState[],
     filter: string,
-    columnFilters?: Record<string, ColumnFilter>,
+    columnFilters?: Record<string, AnyFilter>,
   ): Promise<void> {
     const key = this.keyOf(sorts, filter, columnFilters);
     if (key !== this.key) {

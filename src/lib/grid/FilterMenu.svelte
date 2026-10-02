@@ -4,10 +4,14 @@
   // the parent owns open/close + position and applies the resulting filter.
   import { untrack } from 'svelte';
   import type { GridLabels } from './labels';
+  import type { ColumnDef } from './column';
   import {
     isFilterActive,
+    isBuiltinFilter,
     type ColumnFilter,
-    type FilterKind,
+    type AnyFilter,
+    type CustomFilter,
+    type FilterTypeDef,
     type TextOp,
     type NumberOp,
     type DateOp,
@@ -23,17 +27,23 @@
     onApply,
     onClose,
     labels,
+    column,
+    custom,
   }: {
-    kind: FilterKind;
+    kind: string;
     header: string;
-    filter: ColumnFilter | null;
+    filter: AnyFilter | null;
     /** Distinct column values for a set filter's checklist. */
     values?: string[];
     x: number;
     y: number;
-    onApply: (f: ColumnFilter | null) => void;
+    onApply: (f: AnyFilter | null) => void;
     onClose: () => void;
     labels: GridLabels;
+    column: ColumnDef;
+    /** A registered filter type: the menu keeps its frame and draws this
+        type's editor in the middle. */
+    custom?: FilterTypeDef;
   } = $props();
 
   const L = $derived(labels);
@@ -67,7 +77,8 @@
   // Local draft, seeded once from the active filter. The menu is recreated each
   // time it opens, so capturing the initial prop value (not tracking it) is what
   // we want.
-  const init = untrack(() => filter);
+  const initial = untrack(() => filter);
+  const init = initial && isBuiltinFilter(initial) ? initial : null;
   let textOp = $state<TextOp>(init?.kind === 'text' ? init.op : 'contains');
   let textQ = $state(init?.kind === 'text' ? init.q : '');
   let numOp = $state<NumberOp>(init?.kind === 'number' ? init.op : 'eq');
@@ -89,7 +100,11 @@
     excluded = n;
   }
 
-  function build(): ColumnFilter | null {
+  // A registered type's draft, edited by its own component.
+  let draft = $state<CustomFilter | null>(initial && !isBuiltinFilter(initial) ? initial : null);
+
+  function build(): AnyFilter | null {
+    if (custom) return draft && isFilterActive(draft, { [kind]: custom }) ? draft : null;
     let f: ColumnFilter;
     if (kind === 'number') {
       f = { kind: 'number', op: numOp, a: numA ?? NaN, b: numB ?? undefined };
@@ -126,7 +141,12 @@
 >
   <div class="bo-fm-head">{header}</div>
 
-  {#if kind === 'number'}
+  {#if custom}
+    {@const Editor = custom.component}
+    <div class="bo-fm-custom">
+      <Editor filter={draft} onChange={(f) => (draft = f)} {column} {values} {labels} />
+    </div>
+  {:else if kind === 'number'}
     <select class="bo-fm-op" bind:value={numOp} aria-label={L.operator}>
       {#each NUMBER_OPS as o (o.op)}<option value={o.op}>{o.label}</option>{/each}
     </select>

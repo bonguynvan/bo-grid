@@ -1041,6 +1041,34 @@ const teamCountry = document.querySelectorAll('.bo-grid .country-cell');
 if (teamCountry.length === 0) fail('Team: registered cellType component did not render');
 if (!teamCountry[0].querySelector('.dot') || !/[A-Za-z]{3,}/.test(teamCountry[0].textContent))
   fail(`Team: country cell content looks wrong ("${teamCountry[0].textContent.trim()}")`);
+// Registered filter type: the Workload column's `filter: 'band'` opens the
+// standard menu frame around the demo's own editor; picking "Over 80%" and
+// applying keeps only rows whose progress fill is above 80%, Clear restores.
+const teamRowsBefore = document.querySelectorAll('.bo-grid .row').length;
+const workloadFunnel = () =>
+  [...document.querySelectorAll('.bo-grid .head .h')]
+    .find((h) => h.querySelector('.label')?.textContent?.trim() === 'Workload')
+    ?.querySelector('.funnel');
+if (!workloadFunnel()) fail('Team: funnel did not render on the Workload header');
+workloadFunnel().dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await waitFor('.bo-filtermenu .band-filter', 'Team: registered filter editor did not render in the menu');
+[...document.querySelectorAll('.bo-filtermenu .band')]
+  .find((b) => b.textContent.trim() === 'Over 80%')
+  .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(20);
+document.querySelector('.bo-filtermenu .bo-fm-apply').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(40);
+const bandFills = [...document.querySelectorAll('.bo-grid .row .bo-progress-fill')].map((f) => parseFloat(f.style.width));
+if (bandFills.length === 0 || bandFills.length >= teamRowsBefore)
+  fail(`Team: band filter did not narrow the rows (${bandFills.length} of ${teamRowsBefore})`);
+if (!bandFills.every((w) => w > 80)) fail(`Team: band filter kept a row outside the band (${bandFills.join(', ')})`);
+workloadFunnel().dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await waitFor('.bo-filtermenu .band.on', 'Team: reopened band filter lost its selection');
+[...document.querySelectorAll('.bo-filtermenu .bo-fm-btn')]
+  .find((b) => b.textContent.trim() === 'Clear')
+  .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(40);
+if (document.querySelectorAll('.bo-grid .row').length !== teamRowsBefore) fail('Team: clearing the band filter did not restore the rows');
 // link safety: the email column produces mailto: anchors (safeHref passed it).
 const teamLink = document.querySelector('.bo-grid .bo-link');
 if (!/^mailto:/.test(teamLink?.getAttribute('href') || '')) fail('Team: link href not applied (safeHref)');

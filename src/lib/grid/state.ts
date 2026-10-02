@@ -1,5 +1,5 @@
 import type { SortState } from './column';
-import type { ColumnFilter } from './filtering';
+import type { AnyFilter } from './filtering';
 import type { WidthMap } from './sizing';
 
 /** Bumped when the shape changes incompatibly. A saved state from another
@@ -20,7 +20,7 @@ export interface GridState {
   /** Runtime pin overrides, by column key. */
   pinned: Record<string, PinSide>;
   sorts: SortState[];
-  filters: Record<string, ColumnFilter>;
+  filters: Record<string, AnyFilter>;
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
@@ -92,10 +92,10 @@ export function reconcileState(saved: unknown, columnKeys: readonly string[]): G
     }
   }
 
-  const filters: Record<string, ColumnFilter> = {};
+  const filters: Record<string, AnyFilter> = {};
   if (isRecord(saved.filters)) {
     for (const [k, f] of Object.entries(saved.filters)) {
-      if (exists.has(k) && isRecord(f) && typeof f.kind === 'string') filters[k] = f as unknown as ColumnFilter;
+      if (exists.has(k) && isRecord(f) && typeof f.kind === 'string') filters[k] = f as unknown as AnyFilter;
     }
   }
 

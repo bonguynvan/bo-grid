@@ -143,6 +143,7 @@ interface GridProps {
   footer?: boolean;                    // totals row
   persistKey?: string;                 // localStorage key for layout persistence
   cellTypes?: Record<string, CellTypeDef>;  // reusable column types: { name: { extends?: BuiltinType, ...column defaults, component? } }; columns use `cellType: 'name'` INSTEAD of `type`
+  filterTypes?: Record<string, FilterTypeDef>;  // custom filter kinds: { name: { test(value, filter, row), isActive?(filter), component, needsValues? } }; editor props { filter, onChange, column, values, labels }; filter objects are { kind: name, ...fields }
   labels?: Partial<GridLabels>;        // override any built-in UI string; interpolated entries are functions, e.g. filterFor: (h) => `Lọc ${h}`
   locale?: string;                     // BCP 47; default locale for price/date/currency/relative formatting, agg bar, pager
   onReady?: (api: GridApi) => void;    // called once on mount — see §3.3
@@ -218,7 +219,7 @@ interface ColBase {
   component?: Component<{ value: unknown; row: GridRow; column: ColumnDef; text: string }>;  // Svelte cell renderer, display-only
   resizable?: boolean;
   group?: string;              // spanning header group label
-  filter?: false | 'text' | 'number' | 'date' | 'set';
+  filter?: false | 'text' | 'number' | 'date' | 'set' | string;   // string = name of a registered filterTypes entry
 
   // Conditional formatting (numeric columns only)
   dataBar?: { min?: number; max?: number; color?: string; negative?: string };

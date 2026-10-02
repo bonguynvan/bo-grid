@@ -23,10 +23,11 @@
   import {
     passesFilters,
     isFilterActive,
+    isBuiltinFilter,
     defaultFilterKind,
     distinctValues,
-    type ColumnFilter,
-    type FilterKind,
+    type AnyFilter,
+    type FilterTypes,
   } from './filtering';
   import type { RowSource } from './source';
   import { RowSourceController } from './source.svelte';
@@ -45,6 +46,7 @@
     rows = [],
     columns: columnsIn = [],
     cellTypes,
+    filterTypes,
     height,
     filter = '',
     groupBy = [],
@@ -168,9 +170,9 @@
     /** Controlled column filters (keyed by column key). When set, the grid
         reflects these and reports changes via `onFilterChange` instead of holding
         its own. Omit for uncontrolled filtering. */
-    columnFilters?: Record<string, ColumnFilter>;
+    columnFilters?: Record<string, AnyFilter>;
     /** Called with the full column-filter map whenever a header filter changes. */
-    onFilterChange?: (filters: Record<string, ColumnFilter>) => void;
+    onFilterChange?: (filters: Record<string, AnyFilter>) => void;
     /** Show a pinned totals row: each column with a `groupAgg` shows that
         aggregate over all (filtered) rows. In-memory mode only. Default false. */
     footer?: boolean;
@@ -216,6 +218,10 @@
         `component` renderer…) under its own fields, and the built-in type
         named by `extends` for sorting, filtering and export. */
     cellTypes?: Record<string, CellTypeDef>;
+    /** Custom filter kinds, by name. A column selects one with `filter: 'name'`;
+        the header filter menu draws its `component` and the view keeps rows
+        for which `test` passes. An unregistered kind filters nothing. */
+    filterTypes?: FilterTypes;
     /** BCP 47 locale for the grid's own number formatting (aggregation bar,
         pager row count). Default: the runtime's locale. */
     locale?: string;
@@ -426,9 +432,9 @@
   // Structured per-column filters from the header filter menu (v0.3), keyed by
   // column key. Menu filters take precedence over the filterRow text inputs.
   // Controlled by the `columnFilters` prop when provided, else internal state.
-  let internalColumnFilters = $state<Record<string, ColumnFilter>>({});
+  let internalColumnFilters = $state<Record<string, AnyFilter>>({});
   const activeColumnFilters = $derived(columnFilters ?? internalColumnFilters);
-  function setColumnFilters(next: Record<string, ColumnFilter>): void {
+  function setColumnFilters(next: Record<string, AnyFilter>): void {
     if (columnFilters === undefined) internalColumnFilters = next; // uncontrolled: own it
     onFilterChange?.(next); // always notify
   }
@@ -960,7 +966,7 @@
     // Active per-column filters: menu-driven structured filters (columnFilters)
     // take precedence; filterRow text inputs (colFilters) fill in the rest as
     // case-insensitive "contains".
-    const active: Record<string, ColumnFilter> = { ...activeColumnFilters };
+    const active: Record<string, AnyFilter> = { ...activeColumnFilters };
     for (const [k, v] of Object.entries(colFilters)) {
       if (!active[k] && v.trim()) active[k] = { kind: 'text', op: 'contains', q: v };
     }
@@ -970,7 +976,7 @@
       if (f) r = r.filter((row) => allCols.some((c) => String(cellValue(c, row) ?? '').toLowerCase().includes(f)));
       if (q) r = r.filter((row) => allCols.some((c) => String(cellValue(c, row) ?? '').toLowerCase().includes(q)));
       if (hasColFilters) {
-        r = r.filter((row) => passesFilters(row, active, valueOf));
+        r = r.filter((row) => passesFilters(row, active, valueOf, filterTypes));
       }
       if (s.length > 0) {
         const colOf = (k: string) => allCols.find((c) => c.key === k);
@@ -1478,13 +1484,13 @@
   let FilterMenuComp = $state<typeof import('./FilterMenu.svelte').default | null>(null);
   let filterUi = $state<{
     key: string;
-    kind: FilterKind;
-    header: string;
+    kind: string;
+    column: ColumnDef;
     values: string[];
     x: number;
     y: number;
   } | null>(null);
-  function filterKindFor(col: ColumnDef): FilterKind {
+  function filterKindFor(col: ColumnDef): string {
     return typeof col.filter === 'string' ? col.filter : defaultFilterKind(col);
   }
   async function openFilterMenu(col: ColumnDef, anchor: { left: number; bottom: number }) {
@@ -1492,11 +1498,12 @@
     // A set filter needs distinct values; in source mode they can't be
     // enumerated, so fall back to the column's typed filter.
     if (source && kind === 'set') kind = defaultFilterKind(col);
-    const values = !source && kind === 'set' ? distinctValues(rows, col.key, valueOf) : [];
+    const wantsValues = kind === 'set' || !!filterTypes?.[kind]?.needsValues;
+    const values = !source && wantsValues ? distinctValues(rows, col.key, valueOf) : [];
     if (!FilterMenuComp) FilterMenuComp = (await import('./FilterMenu.svelte')).default;
-    filterUi = { key: col.key, kind, header: col.header, values, x: anchor.left, y: anchor.bottom + 2 };
+    filterUi = { key: col.key, kind, column: col, values, x: anchor.left, y: anchor.bottom + 2 };
   }
-  function applyColumnFilter(key: string, f: ColumnFilter | null): void {
+  function applyColumnFilter(key: string, f: AnyFilter | null): void {
     const next = { ...activeColumnFilters };
     if (f) next[key] = f;
     else delete next[key];
@@ -2024,7 +2031,7 @@
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <span
             class="funnel"
-            class:on={isFilterActive(activeColumnFilters[col.key])}
+            class:on={isFilterActive(activeColumnFilters[col.key], filterTypes)}
             role="button"
             tabindex="-1"
             aria-label={L.filterFor(col.header)}
@@ -2319,7 +2326,9 @@
     {@const key = filterUi.key}
     <Menu
       kind={filterUi.kind}
-      header={filterUi.header}
+      header={filterUi.column.header}
+      column={filterUi.column}
+      custom={isBuiltinFilter({ kind: filterUi.kind }) ? undefined : filterTypes?.[filterUi.kind]}
       filter={activeColumnFilters[key] ?? null}
       values={filterUi.values}
       x={filterUi.x}

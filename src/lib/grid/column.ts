@@ -116,7 +116,7 @@ export interface ColBase {
   /** Header filter-menu control for this column (requires `filterMenu` on
       <Grid>). Defaults to the column's type; `'set'` shows a value checklist;
       `false` disables filtering for this column. */
-  filter?: false | FilterKind;
+  filter?: false | FilterKind | (string & {});
   /** Conditional formatting — a horizontal bar painted behind the cell value,
       scaled across the column's value range. The range is auto-computed over the
       current view (in-memory) unless `min`/`max` are given; pass `min: 0` for
