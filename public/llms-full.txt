@@ -142,6 +142,7 @@ interface GridProps {
   // Misc
   footer?: boolean;                    // totals row
   persistKey?: string;                 // localStorage key for layout persistence
+  cellTypes?: Record<string, CellTypeDef>;  // reusable column types: { name: { extends?: BuiltinType, ...column defaults, component? } }; columns use `cellType: 'name'` INSTEAD of `type`
   labels?: Partial<GridLabels>;        // override any built-in UI string; interpolated entries are functions, e.g. filterFor: (h) => `Lọc ${h}`
   locale?: string;                     // BCP 47; default locale for price/date/currency/relative formatting, agg bar, pager
   onReady?: (api: GridApi) => void;    // called once on mount — see §3.3
@@ -214,6 +215,7 @@ interface ColBase {
   wrap?: boolean;
   format?: (value: unknown, row?: GridRow) => string;   // custom display formatter
   render?: (ctx: { value: unknown; row: GridRow; column: ColumnDef }) => string | Node | null | undefined;  // JS cell renderer (framework-agnostic — §4.4)
+  component?: Component<{ value: unknown; row: GridRow; column: ColumnDef; text: string }>;  // Svelte cell renderer, display-only
   resizable?: boolean;
   group?: string;              // spanning header group label
   filter?: false | 'text' | 'number' | 'date' | 'set';
@@ -400,6 +402,9 @@ fmtPrice, fmtPercent, fmtVolume, fmtDate, fmtCurrency, relativeTime
 // Data helpers
 aggregate(values: number[]) → {sum,avg,count,min,max} | null (empty → null)
 heatColor(value, min, max), pivot(rows, config)
+
+// Registered cell types (same resolution the grid does; feed to toCSV/printTable/pivot)
+resolveColumns(columns, cellTypes?, locale?) → ColumnDef[]
 
 // Merged cells (pure planning, for custom renderers)
 buildMergePlan({ columns, count, rowAt, sectionOf, breakAfter?, colSpan? }) → MergePlan | null, colSpanRow(columns, row, sectionOf)

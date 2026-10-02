@@ -6,7 +6,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import type { Snippet } from 'svelte';
-  import type { ColumnDef, GridRow, SortState, SortDir, CellEditEvent } from './column';
+  import type { ColumnDef, GridRow, SortState, SortDir, CellEditEvent, CellTypeDef } from './column';
   import { colStyle, isNumeric, isSortable, isEditable, compareBySorts, formatCell, cellValue } from './column';
   import { arrangePinned } from './pin';
   import { columnWindow, columnOffsets } from './colvirt';
@@ -36,13 +36,15 @@
   import Pager from './Pager.svelte';
   import RowMenu from './RowMenu.svelte';
   import { resolveLabels, type GridLabels } from './labels';
+  import { resolveColumns } from './celltype';
   import { scrollTopFor, type GridApi, type ScrollAlign } from './api';
   import { buildMergePlan, combinedFlex, type MergePlan, type SpanRun } from './merge';
   import { GRID_STATE_VERSION, reconcileState, type GridState } from './state';
 
   let {
     rows = [],
-    columns = [],
+    columns: columnsIn = [],
+    cellTypes,
     height,
     filter = '',
     groupBy = [],
@@ -209,6 +211,11 @@
         changes. Interpolated entries are functions so translations can reorder
         the parts. Resolved per grid. */
     labels?: Partial<GridLabels>;
+    /** Reusable column types, by name. A column with `cellType: 'name'` gets
+        that entry's defaults (format, compare, align, filter, width, a
+        `component` renderer…) under its own fields, and the built-in type
+        named by `extends` for sorting, filtering and export. */
+    cellTypes?: Record<string, CellTypeDef>;
     /** BCP 47 locale for the grid's own number formatting (aggregation bar,
         pager row count). Default: the runtime's locale. */
     locale?: string;
@@ -281,6 +288,10 @@
     /** Render content for `type: 'custom'` columns. */
     cell?: Snippet<[{ row: GridRow; column: ColumnDef; value: unknown }]>;
   } = $props();
+
+  // Registered cell types and the grid locale, resolved once — every read of
+  // `columns` below sees plain built-in column types.
+  const columns = $derived(resolveColumns(columnsIn, cellTypes, locale));
 
   const ROW_H = 36;
   const OVERSCAN = 6;
@@ -528,10 +539,7 @@
     onRowSelectionChange?.([...selectedRows]);
   }
 
-  const localized = $derived(
-    locale ? columns.map((c) => (c.locale ? c : ({ ...c, locale } as ColumnDef))) : columns,
-  );
-  const ordered = $derived(order.length === localized.length ? order.map((i) => localized[i]) : localized);
+  const ordered = $derived(order.length === columns.length ? order.map((i) => columns[i]) : columns);
   // Columns hidden at runtime via the column menu, unioned with the controlled
   // `hiddenColumns` prop.
   let runtimeHidden = $state<string[]>([]);

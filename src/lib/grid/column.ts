@@ -1,3 +1,4 @@
+import type { Component } from 'svelte';
 import type { Candle } from '../types';
 import { fmtPrice, fmtPercent, fmtVolume, fmtDate, fmtCurrency, relativeTime, type DateStyle } from '../format/format';
 import type { AggKind } from './aggregate';
@@ -5,7 +6,7 @@ import type { FilterKind } from './filtering';
 
 export type Align = 'left' | 'right';
 
-interface ColBase {
+export interface ColBase {
   /** Field on the row to read for this column's value. */
   key: string;
   header: string;
@@ -103,6 +104,10 @@ interface ColBase {
       returning a Node for that). Overrides the cell's display only — sort,
       filter, tooltip, copy and export still use the value/`format`. */
   render?: (ctx: CellRenderContext) => string | Node | null | undefined;
+  /** Svelte component that draws this cell (receives `value`, `row`, `column`
+      and the formatted `text`). Display only, like `render`. Usually supplied by
+      a registered `cellTypes` entry, but any column can set it. */
+  component?: Component<CellTypeProps>;
   /** Set false to disable drag-to-resize on this column (default on). */
   resizable?: boolean;
   /** Parent header label. Consecutive columns sharing a `group` render under a
@@ -208,7 +213,31 @@ export type ColumnDef =
   | (ColBase & { type: 'avatar'; sub?: string }) // value: display name
   | (ColBase & { type: 'link'; href?: (row: GridRow) => string; newTab?: boolean }) // value: text
   // Rendered by the consumer's `cell` snippet on <Grid>.
-  | (ColBase & { type: 'custom' });
+  | (ColBase & { type: 'custom' })
+  // A type registered through <Grid cellTypes>; resolved to a built-in type
+  // (its `extends`) before the grid reads it. Extra keys are type options.
+  | (ColBase & { type?: undefined; cellType: string; [option: string]: unknown });
+
+/** Props a `component` cell renderer receives. */
+export interface CellTypeProps {
+  value: unknown;
+  row: GridRow;
+  column: ColumnDef;
+  /** The value formatted the way copy, export and tooltips see it. */
+  text: string;
+}
+
+/** Built-in column types a registered cell type can build on. */
+export type BuiltinCellType = Exclude<ColumnDef['type'], undefined>;
+
+/** A reusable column type for <Grid cellTypes>: defaults merged under each
+    column that names it, plus an optional `component` to draw the cell.
+    `extends` picks the built-in type whose formatting, sorting, filtering and
+    alignment it inherits (default: `custom` when it draws itself, else `text`). */
+export type CellTypeDef = Omit<Partial<ColBase>, 'key' | 'header'> & {
+  extends?: BuiltinCellType;
+  [option: string]: unknown;
+};
 
 /** Semantic colour for a `badge` value (mapped via the column's `tones`). */
 export type BadgeTone = 'up' | 'down' | 'amber' | 'info' | 'neutral';
@@ -298,7 +327,7 @@ const DISPLAY_ONLY = ['sparkline', 'custom', 'tags', 'badge', 'boolean', 'avatar
 
 export function isEditable(col: ColumnDef): boolean {
   // Computed columns have no underlying field to write back to.
-  return !!col.editable && !col.value && !DISPLAY_ONLY.includes(col.type);
+  return !!col.editable && !col.value && !!col.type && !DISPLAY_ONLY.includes(col.type);
 }
 
 function rawCompare(a: unknown, b: unknown): number {
@@ -344,6 +373,7 @@ export function colWidth(col: ColumnDef): number {
 
 export function isNumeric(col: ColumnDef): boolean {
   // Non-numeric (text-aligned / structured) types; everything else is a number.
+  if (!col.type) return false;
   return !['text', 'sparkline', 'custom', 'tags', 'badge', 'boolean', 'avatar', 'link'].includes(col.type);
 }
 

@@ -293,8 +293,8 @@ grids such as AG Grid. Standalone charting moves out: the
   `colSpan`, virtualization- and pin-aware.
 - [ ] **Explicit merge regions** — key-addressed rectangles for layout facts
   no rule derives (block trades, report captions).
-- [ ] **Cell-type registry** — register custom column types instead of only
-  `type: 'custom'`.
+- [x] **Cell-type registry** — `cellTypes` + `cellType: 'name'`, with
+  `extends` for built-in behaviour and a Svelte `component` renderer.
 - [ ] **Custom filter types** — register a filter kind with its own editor.
 - [ ] **Layered source layout** — split the grid into pure `core/`, runes
   `reactive/` and `ui/` tiers with an enforced import rule.

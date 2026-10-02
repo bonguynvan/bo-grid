@@ -323,6 +323,47 @@ value / `format`:
   } }
 ```
 
+**A Svelte component per column:** set `component` on any column. It receives
+`{ value, row, column, text }` (`text` is the value as copy/export see it):
+
+```ts
+import StatusPill from './StatusPill.svelte';
+{ type: 'text', key: 'status', header: 'Status', component: StatusPill }
+```
+
+### Registered cell types
+
+When the same kind of column appears across grids — a country, a money amount,
+an order status — define it once and name it. `cellTypes` maps a name to column
+defaults; a column says `cellType: 'name'` and gets them under its own fields:
+
+```svelte
+<script lang="ts">
+  import { Grid, type CellTypeDef, type ColumnDef } from 'bo-grid';
+  import CountryCell from './CountryCell.svelte';
+
+  const cellTypes: Record<string, CellTypeDef> = {
+    country: { extends: 'text', component: CountryCell, filter: 'set', width: 140 },
+    money: { extends: 'number', decimals: 0, format: (v) => `$${Number(v).toLocaleString()}` },
+  };
+  const columns: ColumnDef[] = [
+    { cellType: 'country', key: 'country', header: 'Country' },
+    { cellType: 'money', key: 'rate', header: 'Rate', width: 96 }, // own fields win
+  ];
+</script>
+
+<Grid {rows} {columns} {cellTypes} height={560} />
+```
+
+- **`extends`** names the built-in type the new one builds on — its formatting,
+  sorting, filtering, alignment, aggregation and export. Defaults to `custom`
+  when the entry draws itself (`component` or `render`), otherwise `text`.
+- An entry can set any column field: `format`, `compare`, `align`, `filter`,
+  `width`, `cellClass`, `tooltip`, `editable`, type options like `decimals`…
+- An unknown `cellType` renders as plain text rather than failing.
+- Outside the grid, `resolveColumns(columns, cellTypes)` gives the same
+  resolved columns to `toCSV`, `printTable` or `pivot`.
+
 ### Tooltips & truncation
 
 Long cell values truncate with an **ellipsis** by default. Set `tooltip` on a

@@ -344,6 +344,9 @@
       onclick={(e) => e.stopPropagation()}
       ondblclick={(e) => e.stopPropagation()}
     />
+  {:else if col.component}
+    {@const Renderer = col.component}
+    <Renderer {value} {row} column={col} text={formatCell(col, value, row)} />
   {:else if col.render}
     {#if typeof rendered === 'string'}
       <span class="bo-render">{@html rendered}</span>

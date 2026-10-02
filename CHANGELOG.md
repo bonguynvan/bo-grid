@@ -18,6 +18,12 @@ from here is feature parity with heavyweight grids.
 
 ### Added
 
+- **Registered cell types** — `<Grid cellTypes>` maps a name to column
+  defaults (format, compare, align, filter, width, a Svelte `component`…) and an
+  `extends` built-in type for sorting, filtering and export; columns opt in
+  with `cellType: 'name'`. Any column can also take a Svelte `component`
+  renderer directly. Exports `resolveColumns`, `CellTypeDef`, `CellTypeProps`,
+  `BuiltinCellType`.
 - **Merged cells** — `spanRows` merges a column's cell down over adjacent rows
   with equal values (or per a comparator), hierarchically left to right;
   `colSpan(row)` makes a cell cover several columns. Display-only: sort,

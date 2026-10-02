@@ -1035,6 +1035,12 @@ for (const [sel, label] of [
 ]) {
   if (document.querySelectorAll(sel).length === 0) fail(`Team: ${label} cell type did not render`);
 }
+// Registered cell type: `cellType: 'country'` resolves through <Grid cellTypes>
+// and draws with its Svelte component (region dot + country name).
+const teamCountry = document.querySelectorAll('.bo-grid .country-cell');
+if (teamCountry.length === 0) fail('Team: registered cellType component did not render');
+if (!teamCountry[0].querySelector('.dot') || !/[A-Za-z]{3,}/.test(teamCountry[0].textContent))
+  fail(`Team: country cell content looks wrong ("${teamCountry[0].textContent.trim()}")`);
 // link safety: the email column produces mailto: anchors (safeHref passed it).
 const teamLink = document.querySelector('.bo-grid .bo-link');
 if (!/^mailto:/.test(teamLink?.getAttribute('href') || '')) fail('Team: link href not applied (safeHref)');

@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Grid, type ColumnDef, type GridRow } from '../../lib';
+  import { Grid, type CellTypeDef, type ColumnDef, type GridRow } from '../../lib';
+  import CountryCell from './cells/CountryCell.svelte';
   import { ui } from '../theme.svelte';
 
   // A people/CRM board — shows bo-grid is a general business grid, not just
@@ -16,6 +17,7 @@
     rating: number;
     skills: string[];
     remote: boolean;
+    country: string;
     note: string;
   }
 
@@ -23,6 +25,7 @@
   const LAST = ['Chen', 'Patel', 'Kim', 'Garcia', 'Nguyen', 'Haddad', 'Rossi', 'Silva', 'Okafor', 'Novak'];
   const ROLES = ['Engineer', 'Designer', 'PM', 'Analyst', 'Researcher', 'Writer'];
   const STATUS = ['Active', 'Away', 'Offline'];
+  const COUNTRIES = ['VN', 'SG', 'JP', 'DE', 'US', 'IN', 'BR'];
   const SKILLS = ['TypeScript', 'Svelte', 'Design', 'SQL', 'Rust', 'Figma', 'Python', 'Go', 'CSS', 'Data viz'];
   // Deliberately long so the Notes column truncates with an ellipsis and reveals
   // the full text in the styled floating tooltip on hover.
@@ -55,6 +58,7 @@
         rating: 1 + ((id * 3) % 5),
         skills,
         remote: id % 3 !== 0,
+        country: COUNTRIES[(id * 5) % COUNTRIES.length],
         note: NOTES[id % NOTES.length],
       };
     });
@@ -65,6 +69,12 @@
 
   // Toggle the blue range-selection highlight on/off (display vs. spreadsheet feel).
   let cellSelection = $state(true);
+
+  // A registered column type: any column can say `cellType: 'country'` and get
+  // the flag renderer, a set filter and a fixed width — defined once.
+  const cellTypes: Record<string, CellTypeDef> = {
+    country: { extends: 'text', component: CountryCell, filter: 'set', width: 140 },
+  };
 
   const columns: ColumnDef[] = [
     // Pinned so the wide board scrolls horizontally with the person in view.
@@ -80,6 +90,7 @@
       // Function tooltip: custom text built from other fields on the row.
       tooltip: (value, row) => `${value} · ${row.role} · ${row.remote ? 'Remote' : 'Office'}`,
     },
+    { cellType: 'country', key: 'country', header: 'Country' },
     { type: 'relative', key: 'lastActive', header: 'Last active', width: 124 },
     {
       type: 'currency',
@@ -118,6 +129,7 @@
   <Grid
     rows={gridRows}
     {columns}
+    {cellTypes}
     {cellSelection}
     theme={ui.theme}
     filterMenu

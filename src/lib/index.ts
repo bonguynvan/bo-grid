@@ -31,7 +31,11 @@ export type {
   DataBarConfig,
   IconRule,
   ColorScaleConfig,
+  CellTypeDef,
+  CellTypeProps,
+  BuiltinCellType,
 } from './grid/column';
+export { resolveColumns } from './grid/celltype';
 export type { AggKind, AggResult } from './grid/aggregate';
 
 // Column filter model (for controlled filtering via `columnFilters`/`onFilterChange`)
