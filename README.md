@@ -1,9 +1,9 @@
 # bo-grid
 
-Tiny, fast **Svelte 5** data grid for fintech UIs — canvas sparklines, batched
-realtime cell updates, and virtual scrolling, with a core that gzips to ~40 KB
-(Svelte external; unused exports tree-shake). A free alternative to the heavyweight
-grids that paywall these features.
+Fast **Svelte 5** data grid for trading screens — built to keep a busy price
+board inside the frame budget (tens of thousands of ticks a second, row-recycled
+scrolling), with the features heavyweight grids paywall, in a ~40 KB gzip core
+(Svelte external; unused exports tree-shake).
 
 **[Live demo](https://bonguynvan.github.io/bo-grid/)** ·
 **[API reference](https://bonguynvan.github.io/bo-grid/api.html)** ·
@@ -11,10 +11,12 @@ grids that paywall these features.
 **[Benchmarks](./BENCHMARKS.md)** ·
 **[Roadmap](./ROADMAP.md)**
 
-The demo is a gallery of grid types — a realtime **Trading desk**, a grouped
-**Portfolio** with subtotals and pivot, an editable **Spreadsheet**, a live
-**Order book**, a **Correlation** heatmap, a **Wide** 60-column grid, a server-backed **Lazy tree**, and more — all on one
-page, each grid lazy-mounting as you scroll (jump between them from the side rail).
+The demo is a gallery of 21 grids — a realtime **Trading desk**, a full VN-style
+**Price board** under a busy-market feed (with its own benchmark), an execution
+**Blotter** with merged cells, a grouped **Portfolio** with subtotals and pivot, an
+editable **Spreadsheet**, a live **Order book**, a **Wide** 60-column grid, a
+server-backed **Lazy tree**, and more — all on one page, each grid mounting as you
+reach it (jump between them from the contents rail).
 
 > **Status: actively developed.** Working: config-driven columns, virtual scroll,
 > sort (single / multi / controlled), filtering (global, per-column row, header
@@ -24,7 +26,9 @@ page, each grid lazy-mounting as you scroll (jump between them from the side rai
 > datasets, CSV/Excel export, column management (reorder, resize, pin L/R, hide,
 > autosize, tool panel, column menu), spreadsheet editing (inline + typed editors,
 > validation, copy/paste, fill handle, undo/redo), row selection, pagination,
-> sparklines, realtime flash, heatmaps, theming, and full keyboard a11y.
+> sparklines, realtime flash, heatmaps, theming, and full keyboard a11y — plus
+> merged cells, registered cell types and filter types, custom editors,
+> localization, layout save/restore and a realtime fast path (`api.patchRows`).
 > **SSR/SvelteKit-safe.**
 > Unit tests (Vitest), type-check, a headless mount smoke-test, an SSR render
 > check, and library + demo bundle-size reports all run in CI. A formal WCAG audit

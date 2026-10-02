@@ -5,9 +5,30 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
-**bo-grid is now grid-only.** Standalone charting is out of scope — use
-[TradeCanvas](https://github.com/bonguynvan/tradecanvas) for charts. The goal
-from here is feature parity with heavyweight grids.
+**bo-grid is now grid-only, and built for busy markets.** Standalone charting is
+out of scope — use [TradeCanvas](https://github.com/bonguynvan/tradecanvas) for
+charts. This release adds a realtime fast path and a round of measured
+performance work on price-board workloads, the first AG Grid parity features
+(merged cells, registered cell and filter types, custom editors, localization,
+layout save/restore), alignment and layout fixes, and a new demo site.
+
+### Breaking changes — upgrading from 1.x
+
+- **`bo-grid/charts` is gone.** Import charts from
+  [TradeCanvas](https://github.com/bonguynvan/tradecanvas) instead. The grid's
+  own `sparkline` column type, `Sparkline` and `drawCandles` are unchanged.
+- **`CellEditEvent.value` is `unknown`** (was `string | number`), and
+  `validate(value, row)` receives `unknown`: custom editors and `parse` can
+  commit any value. Built-in editors still produce numbers for numeric columns,
+  epoch ms for `date` and strings otherwise — narrow before use.
+- **`columnFilters` / `onFilterChange` carry `Record<string, AnyFilter>`** (was
+  `ColumnFilter`), so registered filter kinds fit. Retype any state you keep.
+- **Date filters and the date editor use the viewer's calendar day**, matching
+  what the cell displays (they used the UTC day). `before` / `after` now
+  exclude the chosen day.
+- **Grids whose columns don't fit now scroll horizontally** instead of clipping
+  the last columns, and fixed-width (pinned / virtualized) grids stretch `flex`
+  columns to fill the viewport.
 
 ### Changed
 

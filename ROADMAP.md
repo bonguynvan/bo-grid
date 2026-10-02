@@ -276,7 +276,7 @@ tested geometry holds for these too.
 - [x] Charts budget recalibrated 3 → 4 KB for both (now ~4.2/8 KB). Dashboard
   demo gets two more cards.
 
-## 2.0 · Grid-only focus — in progress
+## 2.0 · Grid-only, built for busy markets — done
 
 bo-grid becomes a pure data grid, aiming at feature parity with heavyweight
 grids such as AG Grid. Standalone charting moves out: the
@@ -298,7 +298,19 @@ grids such as AG Grid. Standalone charting moves out: the
 - [x] **Custom filter types** — `filterTypes` + `filter: 'name'`, editor drawn
   inside the standard menu frame.
 - [ ] **Layered source layout** — split the grid into pure `core/`, runes
-  `reactive/` and `ui/` tiers with an enforced import rule.
+  `reactive/` and `ui/` tiers with an enforced import rule. *(moved to 2.1)*
+- [x] **Busy-market performance**, measured on a VN-style price board
+  (production build, same-session A/B): `api.patchRows` on plain rows with
+  per-field repaints, flashes that never rebuild DOM, row recycling and reused
+  render items for scrolling (3.5–9× cheaper), `api.refresh()` with sort keys
+  read once per row for live re-sorts, `flashColor: false` for price-limit tones.
+- [x] **Layout fixes** — header/body alignment to the subpixel, flex fill in
+  fixed-width mode, horizontal scroll instead of clipping.
+- [x] **New demo site** — a trading broadsheet with a live price board as its
+  lead figure.
+
+Remaining 2.0 ideas (explicit merge regions, layered source layout) and the
+parity backlog below move to **2.1+**.
 
 ### Parity backlog (vs AG Grid), in priority order
 
