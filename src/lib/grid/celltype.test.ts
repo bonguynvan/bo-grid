@@ -74,3 +74,33 @@ describe('resolveColumns', () => {
     expect(def).toEqual({ extends: 'number', width: 100 });
   });
 });
+
+describe('resolveColumns — defaultColumn', () => {
+  it('applies shared defaults under every column', () => {
+    const cols: ColumnDef[] = [
+      { type: 'text', key: 'a', header: 'A' },
+      { type: 'number', key: 'b', header: 'B', resizable: true },
+    ];
+    const [a, b] = resolveColumns(cols, undefined, undefined, { resizable: false, minWidth: 60 });
+    expect(a.resizable).toBe(false);
+    expect(a.minWidth).toBe(60);
+    expect(b.resizable).toBe(true);
+  });
+
+  it('layers default < registered type < column', () => {
+    const types: Record<string, CellTypeDef> = { money: { extends: 'number', width: 120, align: 'right' } };
+    const [c] = resolveColumns([{ cellType: 'money', key: 'p', header: 'P', width: 90 }], types, undefined, {
+      width: 200,
+      align: 'left',
+      sortable: false,
+    });
+    expect(c.width).toBe(90);
+    expect(c.align).toBe('right');
+    expect(c.sortable).toBe(false);
+  });
+
+  it('returns the same array when the defaults are empty', () => {
+    const cols: ColumnDef[] = [{ type: 'text', key: 'a', header: 'A' }];
+    expect(resolveColumns(cols, undefined, undefined, {})).toBe(cols);
+  });
+});

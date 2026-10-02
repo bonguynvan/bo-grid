@@ -142,6 +142,7 @@ interface GridProps {
   // Misc
   footer?: boolean;                    // totals row
   persistKey?: string;                 // localStorage key for layout persistence
+  defaultColumn?: Partial<ColumnDef>;  // applied under every column (column + cellType win) — AG Grid defaultColDef
   cellTypes?: Record<string, CellTypeDef>;  // reusable column types: { name: { extends?: BuiltinType, ...column defaults, component? } }; columns use `cellType: 'name'` INSTEAD of `type`
   filterTypes?: Record<string, FilterTypeDef>;  // custom filter kinds: { name: { test(value, filter, row), isActive?(filter), component, needsValues? } }; editor props { filter, onChange, column, values, labels }; filter objects are { kind: name, ...fields }
   labels?: Partial<GridLabels>;        // override any built-in UI string; interpolated entries are functions, e.g. filterFor: (h) => `Lọc ${h}`
@@ -217,6 +218,8 @@ interface ColBase {
   format?: (value: unknown, row?: GridRow) => string;   // custom display formatter
   render?: (ctx: { value: unknown; row: GridRow; column: ColumnDef }) => string | Node | null | undefined;  // JS cell renderer (framework-agnostic — §4.4)
   component?: Component<{ value: unknown; row: GridRow; column: ColumnDef; text: string }>;  // Svelte cell renderer, display-only
+  editor?: Component<{ value; row; column; seed: string | null; commit(value: unknown): void; cancel(): void }>;  // custom in-cell editor (needs editable: true); makes display types editable
+  parse?: (raw: string, row: GridRow) => unknown;  // typed/pasted text → stored value; undefined/NaN rejects
   resizable?: boolean;
   group?: string;              // spanning header group label
   filter?: false | 'text' | 'number' | 'date' | 'set' | string;   // string = name of a registered filterTypes entry

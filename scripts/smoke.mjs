@@ -1069,6 +1069,19 @@ await waitFor('.bo-filtermenu .band.on', 'Team: reopened band filter lost its se
   .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 await wait(40);
 if (document.querySelectorAll('.bo-grid .row').length !== teamRowsBefore) fail('Team: clearing the band filter did not restore the rows');
+// Custom cell editor: double-clicking a rating cell opens the demo's star
+// editor (a display-only type made editable); clicking a star commits it.
+const ratingCell = () =>
+  [...document.querySelectorAll('.bo-grid .row')][0]?.querySelector('.bo-rating')?.closest('.c');
+ratingCell().dispatchEvent(new window.MouseEvent('dblclick', { bubbles: true }));
+await waitFor('.bo-grid .rating-editor', 'Team: custom rating editor did not open');
+[...document.querySelectorAll('.bo-grid .rating-editor .star')][4].dispatchEvent(
+  new window.MouseEvent('click', { bubbles: true }),
+);
+await wait(40);
+if (document.querySelector('.bo-grid .rating-editor')) fail('Team: rating editor did not close after commit');
+if (ratingCell()?.querySelector('.bo-rating')?.getAttribute('aria-label') !== '5 out of 5')
+  fail('Team: rating editor commit did not update the cell');
 // link safety: the email column produces mailto: anchors (safeHref passed it).
 const teamLink = document.querySelector('.bo-grid .bo-link');
 if (!/^mailto:/.test(teamLink?.getAttribute('href') || '')) fail('Team: link href not applied (safeHref)');

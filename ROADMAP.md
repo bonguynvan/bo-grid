@@ -300,6 +300,33 @@ grids such as AG Grid. Standalone charting moves out: the
 - [ ] **Layered source layout** — split the grid into pure `core/`, runes
   `reactive/` and `ui/` tiers with an enforced import rule.
 
+### Parity backlog (vs AG Grid), in priority order
+
+What a team moving off AG Grid most often reaches for and bo-grid lacks:
+
+1. [x] **Custom cell editors** (`editor` component), a value parser for typed
+   and pasted text (`parse`), and `defaultColumn` for shared column settings.
+2. [ ] **Two-condition column filters** — `A and/or B` inside the text, number
+   and date filters.
+3. [ ] **Row grouping from the UI** — "Group by this column" in the column
+   menu and a drag-to-group panel, with removable group chips.
+4. [ ] **Collapsible header groups** — a header group that folds to one column.
+5. [ ] **Bottom pinned rows** — `pinnedBottomRows` beside `pinnedRows`.
+6. [ ] **Status bar** — row counts (total / filtered / selected) next to the
+   selection aggregates.
+7. [ ] **Find in grid** — Ctrl/⌘+F highlight and step through matches.
+8. [ ] **Auto row height** — measure wrapped content per row.
+9. [ ] **Explicit merge regions** (above) and **multiple selection ranges**.
+10. [ ] **RTL layout.**
+
+Already at parity: virtual rows/columns, pinning, sort/filter (text, number,
+date, set, custom), quick filter, floating filter row, grouping with
+aggregation, tree data (incl. lazy), master-detail, pivot, server-side rows,
+inline editing with undo/redo, fill handle, clipboard, CSV/Excel export,
+column move/resize/autosize/hide, tool panel, merged cells, cell renderers and
+registered types, sparklines, cell flash, themes, localization, keyboard and
+ARIA, state save/restore.
+
 ## Candidate themes for later versions
 
 The roadmap's planned features are all shipped, plus cross-framework support and

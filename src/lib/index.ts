@@ -33,9 +33,11 @@ export type {
   ColorScaleConfig,
   CellTypeDef,
   CellTypeProps,
+  CellEditorProps,
   BuiltinCellType,
 } from './grid/column';
 export { resolveColumns } from './grid/celltype';
+export type { DefaultColumn } from './grid/celltype';
 export type { AggKind, AggResult } from './grid/aggregate';
 
 // Column filter model (for controlled filtering via `columnFilters`/`onFilterChange`)

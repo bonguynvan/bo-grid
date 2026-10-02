@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Grid, type CellTypeDef, type ColumnDef, type GridRow } from '../../lib';
   import CountryCell from './cells/CountryCell.svelte';
+  import RatingEditor from './cells/RatingEditor.svelte';
   import { bandFilter } from './filters/workloadBand';
   import { ui } from '../theme.svelte';
 
@@ -117,7 +118,8 @@
       headerTooltip: 'Share of capacity allocated this sprint (0–100%).',
       headerInfo: true,
     },
-    { type: 'rating', key: 'rating', header: 'Rating', width: 110, max: 5 },
+    // A custom editor makes the display-only rating widget editable.
+    { type: 'rating', key: 'rating', header: 'Rating', width: 110, max: 5, editable: true, editor: RatingEditor },
     // Long free text in a narrow column: truncates with an ellipsis, full text
     // on hover via the styled floating tooltip.
     { type: 'text', key: 'note', header: 'Notes', width: 220, tooltip: true },
@@ -136,6 +138,7 @@
     {columns}
     {cellTypes}
     {filterTypes}
+    onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}
     {cellSelection}
     theme={ui.theme}
     filterMenu

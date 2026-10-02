@@ -37,6 +37,12 @@ from here is feature parity with heavyweight grids.
 
 ### Added
 
+- **Custom cell editors, `parse` and `defaultColumn`** — an `editor` component
+  replaces the built-in input (and makes display widgets like `rating`
+  editable); `parse(raw, row)` turns typed or pasted text into the stored value
+  for the built-in editor, paste and fill; `defaultColumn` applies settings
+  under every column. `CellEditEvent.value` and `validate` now carry
+  `unknown`. Exports `CellEditorProps`, `DefaultColumn`.
 - **Custom filter types** — `<Grid filterTypes>` registers a filter kind with
   its own `test`, optional `isActive`, and an editor `component` drawn inside
   the standard filter menu (which keeps its title, Clear/Apply and Enter);

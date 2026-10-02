@@ -78,9 +78,19 @@ export interface ColBase {
   pinned?: boolean | 'left' | 'right';
   /** Allow inline editing (double-click or Enter on the focused cell). */
   editable?: boolean;
-  /** Validate an edited value before it commits (inline edit or paste). Return
-      false to reject and keep the old value. Receives the coerced value. */
-  validate?: (value: string | number, row: GridRow) => boolean;
+  /** Validate an edited value before it commits (inline edit, custom editor,
+      paste, fill). Return false to reject and keep the old value. Receives the
+      parsed value. */
+  validate?(value: unknown, row: GridRow): boolean;
+  /** Turn typed or pasted text into the stored value (runs before the built-in
+      number/date coercion, which it replaces). Return `undefined` or a
+      non-finite number to reject the input. */
+  parse?: (raw: string, row: GridRow) => unknown;
+  /** Svelte component that edits this cell in place of the built-in input.
+      Makes any column type editable (with `editable: true`), including display
+      widgets like `rating` or `tags`. It calls `commit(value)` to save — any
+      value, no parsing — or `cancel()`; Escape cancels. */
+  editor?: Component<CellEditorProps>;
   /** Editable choices: when set, editing renders a `<select>` of these options
       instead of a text input (enum/status columns). */
   options?: string[];
@@ -185,8 +195,24 @@ export interface CellRenderContext {
 export interface CellEditEvent {
   row: GridRow;
   column: ColumnDef;
-  /** Parsed value: a number for numeric columns, otherwise the raw string. */
-  value: string | number;
+  /** The new value: a number for numeric columns, epoch ms for `date`, the
+      result of the column's `parse` when set, whatever a custom `editor`
+      committed, otherwise the typed string. */
+  value: unknown;
+}
+
+/** Props a custom cell `editor` component receives. */
+export interface CellEditorProps {
+  /** The cell's current value. */
+  value: unknown;
+  row: GridRow;
+  column: ColumnDef;
+  /** The key that started type-to-edit, or null when opened by double-click/Enter. */
+  seed: string | null;
+  /** Save `value` (validated, then emitted through onCellEdit) and close. */
+  commit: (value: unknown) => void;
+  /** Close without saving. */
+  cancel: () => void;
 }
 
 /**
@@ -327,7 +353,8 @@ const DISPLAY_ONLY = ['sparkline', 'custom', 'tags', 'badge', 'boolean', 'avatar
 
 export function isEditable(col: ColumnDef): boolean {
   // Computed columns have no underlying field to write back to.
-  return !!col.editable && !col.value && !!col.type && !DISPLAY_ONLY.includes(col.type);
+  if (!col.editable || col.value) return false;
+  return !!col.editor || (!!col.type && !DISPLAY_ONLY.includes(col.type));
 }
 
 function rawCompare(a: unknown, b: unknown): number {

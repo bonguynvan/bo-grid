@@ -49,6 +49,7 @@
     onCellClick,
     onCellDblClick,
     onEditCommit,
+    onEditCommitValue,
     onEditCancel,
     onFillStart,
     labels,
@@ -97,6 +98,8 @@
     onCellClick?: (r: number, c: number, e: MouseEvent) => void;
     onCellDblClick?: (r: number, c: number) => void;
     onEditCommit?: (raw: string) => void;
+    /** A custom editor's committed value (typed, not a string to parse). */
+    onEditCommitValue?: (value: unknown) => void;
     onEditCancel?: () => void;
     onFillStart?: () => void;
     labels: GridLabels;
@@ -140,6 +143,25 @@
       cancelled = true;
       (e.currentTarget as HTMLInputElement).blur();
     }
+  }
+  // Custom editors: keys stay inside the editor (no grid navigation), Escape
+  // cancels, and focus leaving the editor altogether cancels — an editor saves
+  // by calling commit() itself.
+  function onCustomEditKey(e: KeyboardEvent) {
+    e.stopPropagation();
+    if (e.key === 'Escape') onEditCancel?.();
+  }
+  function onCustomEditFocusOut(e: FocusEvent) {
+    const host = e.currentTarget as HTMLElement;
+    setTimeout(() => {
+      if (!host.isConnected || !host.contains(document.activeElement)) onEditCancel?.();
+    }, 0);
+  }
+  function focusFirst(node: HTMLElement) {
+    const target = node.querySelector<HTMLElement>(
+      '[autofocus], input, select, textarea, button, [tabindex]:not([tabindex="-1"])',
+    );
+    (target ?? node).focus();
   }
   function onEditBlur(e: FocusEvent) {
     const v = (e.currentTarget as HTMLInputElement).value;
@@ -319,7 +341,28 @@
       {/if}
     </span>
   {/if}
-  {#if editing && col.options && col.options.length > 0}
+  {#if editing && col.editor}
+    {@const Editor = col.editor}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <span
+      class="bo-edit-custom"
+      use:focusFirst
+      onkeydown={onCustomEditKey}
+      onfocusout={onCustomEditFocusOut}
+      onpointerdown={(e) => e.stopPropagation()}
+      onclick={(e) => e.stopPropagation()}
+      ondblclick={(e) => e.stopPropagation()}
+    >
+      <Editor
+        {value}
+        {row}
+        column={col}
+        {seed}
+        commit={(v: unknown) => onEditCommitValue?.(v)}
+        cancel={() => onEditCancel?.()}
+      />
+    </span>
+  {:else if editing && col.options && col.options.length > 0}
     <select
       class="bo-edit"
       value={String(value ?? '')}
@@ -436,6 +479,13 @@
 </span>
 
 <style>
+  .bo-edit-custom {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+  }
   .c {
     position: relative;
     display: flex;

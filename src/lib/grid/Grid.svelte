@@ -37,8 +37,8 @@
   import Pager from './Pager.svelte';
   import RowMenu from './RowMenu.svelte';
   import { resolveLabels, type GridLabels } from './labels';
-  import { resolveColumns } from './celltype';
-  import { fromDateInput } from './date';
+  import { resolveColumns, type DefaultColumn } from './celltype';
+  import { parseCellInput } from './edit';
   import { scrollTopFor, type GridApi, type ScrollAlign } from './api';
   import { buildMergePlan, combinedFlex, type MergePlan, type SpanRun } from './merge';
   import { GRID_STATE_VERSION, reconcileState, type GridState } from './state';
@@ -46,6 +46,7 @@
   let {
     rows = [],
     columns: columnsIn = [],
+    defaultColumn,
     cellTypes,
     filterTypes,
     height,
@@ -218,6 +219,9 @@
         that entry's defaults (format, compare, align, filter, width, a
         `component` renderer…) under its own fields, and the built-in type
         named by `extends` for sorting, filtering and export. */
+    /** Settings applied under every column — its own fields (and a registered
+        `cellType`) win. Like AG Grid's `defaultColDef`. */
+    defaultColumn?: DefaultColumn;
     cellTypes?: Record<string, CellTypeDef>;
     /** Custom filter kinds, by name. A column selects one with `filter: 'name'`;
         the header filter menu draws its `component` and the view keeps rows
@@ -298,7 +302,7 @@
 
   // Registered cell types and the grid locale, resolved once — every read of
   // `columns` below sees plain built-in column types.
-  const columns = $derived(resolveColumns(columnsIn, cellTypes, locale));
+  const columns = $derived(resolveColumns(columnsIn, cellTypes, locale, defaultColumn));
 
   const ROW_H = 36;
   const OVERSCAN = 6;
@@ -346,7 +350,7 @@
   // re-emits onCellEdit with the previous value. History is keyed by row object
   // reference + column, so it survives sort/filter/reorder. Multi-cell ops
   // (paste, fill) record as one grouped step.
-  type EditCell = { row: GridRow; col: ColumnDef; old: string | number; value: string | number };
+  type EditCell = { row: GridRow; col: ColumnDef; old: unknown; value: unknown };
   const UNDO_LIMIT = 100;
   let undoStack: EditCell[][] = [];
   let redoStack: EditCell[][] = [];
@@ -366,28 +370,23 @@
     if (group.length) pushUndo(group);
   }
 
-  // Coerce + validate a raw string for cell (r,c) and emit onCellEdit, recording
-  // it for undo. Returns true if written, false if rejected (not editable,
-  // missing row, or invalid number). Shared by inline edit, paste and fill.
+  // Parse a raw string for cell (r,c) and write it. Shared by the built-in
+  // inline editor, paste and fill. False when rejected (not editable, missing
+  // row, unparseable, or refused by `validate`).
   function writeCell(r: number, c: number, raw: string): boolean {
     const col = cols[c];
-    if (!col || !isEditable(col)) return false;
     const row = dataAt(r);
-    if (!row) return false;
-    let value: string | number = raw;
-    if (col.type === 'date') {
-      // The date editor emits a yyyy-mm-dd string; store local midnight of that
-      // day, the same day the cell displays.
-      const ms = fromDateInput(raw);
-      if (!Number.isFinite(ms)) return false;
-      value = ms;
-    } else if (isNumeric(col)) {
-      const n = Number(raw);
-      if (!Number.isFinite(n)) return false; // reject invalid number, keep old value
-      value = n;
-    }
+    if (!col || !row || !isEditable(col)) return false;
+    const parsed = parseCellInput(col, raw, row);
+    return parsed.ok && writeValue(r, c, parsed.value);
+  }
+  // Validate an already-typed value, emit onCellEdit and record it for undo.
+  function writeValue(r: number, c: number, value: unknown): boolean {
+    const col = cols[c];
+    const row = dataAt(r);
+    if (!col || !row || !isEditable(col)) return false;
     if (col.validate && !col.validate(value, row)) return false; // consumer rejected it
-    const old = (row[col.key] ?? '') as string | number;
+    const old = row[col.key] ?? '';
     onCellEdit?.({ row, column: col, value });
     if (onCellEdit) {
       const entry: EditCell = { row, col, old, value };
@@ -415,6 +414,12 @@
     editing = null;
     editSeed = null;
     writeCell(r, c, raw);
+  }
+  // A custom editor's typed value: no parsing, still validated.
+  function commitValue(r: number, c: number, value: unknown) {
+    editing = null;
+    editSeed = null;
+    writeValue(r, c, value);
   }
 
   const collapsed = new Set<string>();
@@ -2271,7 +2276,9 @@
                   onCellClick={onCellClick ? onCellClicked : undefined}
                   onCellDblClick={startEdit}
                   onEditCommit={(raw) => commitEdit(item.vr, ci, raw)}
+                  onEditCommitValue={(v) => commitValue(item.vr, ci, v)}
                   onEditCancel={() => {
+                    if (editing?.r !== item.vr || editing?.c !== ci) return;
                     editing = null;
                     editSeed = null;
                   }}
