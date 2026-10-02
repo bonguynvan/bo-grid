@@ -48,7 +48,7 @@
 </div>
 
 <div class="gridwrap">
-  <Grid {rows} {columns} theme={ui.theme} height={ASSETS.length * 36 + 40} />
+  <Grid {rows} {columns} theme={ui.grid} height={ASSETS.length * 36 + 40} />
 </div>
 
 <style>

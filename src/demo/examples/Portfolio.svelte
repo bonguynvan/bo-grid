@@ -157,7 +157,7 @@
     columnsPanel={!pivotMode}
     {columnFilters}
     onFilterChange={(f) => (columnFilters = f)}
-    theme={ui.theme}
+    theme={ui.grid}
     persistKey="demo-portfolio"
     height={620}
     sort={sortState}
@@ -198,9 +198,9 @@
     cursor: pointer;
   }
   .pill.on {
-    color: #0a0a0a;
-    background: var(--up);
-    border-color: var(--up);
+    color: var(--on-accent);
+    background: var(--accent);
+    border-color: var(--accent);
   }
   .pill:disabled {
     opacity: 0.4;

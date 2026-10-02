@@ -1,25 +1,34 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f2ede3" />
+    <meta name="theme-color" content="#0c1016" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..800;1,9..144,300..800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&display=swap"
     />
-    <title>bo-grid — tiny, fast Svelte 5 data grid</title>
+    <!-- Apply the saved theme before first paint so a light-theme visitor never
+         sees a dark flash. Key matches src/demo/theme.svelte.ts. -->
+    <script>
+      try {
+        if (localStorage.getItem('bo-grid-theme') === 'light') {
+          document.documentElement.classList.replace('dark', 'light');
+        }
+      } catch (e) {}
+    </script>
+    <title>bo-grid — the Svelte 5 data grid for busy markets</title>
     <meta
       name="description"
-      content="A free, fintech-focused Svelte 5 data grid: canvas sparklines, batched realtime cell updates, virtual scrolling, grouping, pivot and tree data — most of what heavyweight grids paywall, in a ~40 KB gzip core."
+      content="A free Svelte 5 data grid for trading screens: realtime price boards, virtual scrolling, grouping, pivot and tree data — most of what heavyweight grids paywall, in a ~40 KB gzip core."
     />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="bo-grid — tiny, fast Svelte 5 data grid" />
+    <meta property="og:title" content="bo-grid — the Svelte 5 data grid for busy markets" />
     <meta
       property="og:description"
-      content="Sparklines, realtime, virtual scrolling, grouping, pivot, tree data — most of what heavyweight grids paywall, free and native to Svelte 5, in a ~40 KB gzip core."
+      content="Realtime price boards, virtual scrolling, grouping, pivot, tree data — most of what heavyweight grids paywall, free and native to Svelte 5, in a ~40 KB gzip core."
     />
     <meta name="twitter:card" content="summary_large_image" />
   </head>

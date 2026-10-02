@@ -80,14 +80,14 @@
   notes span Time·Qty·Price (<code>colSpan</code>). Sort, filter and copy still see every row.
 </p>
 <div class="gridwrap">
-  <Grid rows={gridRows} {columns} height={520} theme={ui.theme} ariaLabel="Execution blotter" />
+  <Grid rows={gridRows} {columns} height={520} theme={ui.grid} ariaLabel="Execution blotter" />
 </div>
 
 <style>
   .hint {
     margin: 0 0 10px;
     font-size: 12px;
-    color: var(--dim, #8a8a8a);
+    color: var(--text-dim);
   }
   .gridwrap :global(.side-buy) {
     color: var(--bo-up);

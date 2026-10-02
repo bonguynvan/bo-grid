@@ -40,12 +40,12 @@
     background: var(--bo-text-dim);
   }
   .dot.apac {
-    background: #f59e0b;
+    background: var(--accent);
   }
   .dot.emea {
-    background: #818cf8;
+    background: var(--info);
   }
   .dot.amer {
-    background: #34d399;
+    background: var(--ceil);
   }
 </style>

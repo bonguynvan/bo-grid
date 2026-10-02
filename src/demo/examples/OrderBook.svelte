@@ -99,7 +99,7 @@
   <Grid
     rows={gridRows}
     {columns}
-    theme={ui.theme}
+    theme={ui.grid}
     height={620}
     rowClass={(r) => (r as Level).side}
     {cell}

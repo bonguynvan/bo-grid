@@ -71,7 +71,7 @@ Alan Turing\tResearcher\t150000\t5`,
 <div class="io">
   <textarea class="csv-text" bind:value={text} spellcheck="false" aria-label="Import text"></textarea>
   <div class="gridwrap">
-    <Grid {rows} {columns} theme={ui.theme} height={260} ariaLabel="CSV data" />
+    <Grid {rows} {columns} theme={ui.grid} height={260} ariaLabel="CSV data" />
   </div>
 </div>
 
@@ -99,9 +99,9 @@ Alan Turing\tResearcher\t150000\t5`,
     color: var(--text);
   }
   .btn.primary {
-    color: #0a0a0a;
-    background: var(--up);
-    border-color: var(--up);
+    color: var(--on-accent);
+    background: var(--accent);
+    border-color: var(--accent);
   }
   .btn:focus-visible,
   .csv-format:focus-visible {

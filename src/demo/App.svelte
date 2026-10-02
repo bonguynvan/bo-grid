@@ -5,8 +5,9 @@
   import { ui, toggleTheme } from './theme.svelte';
   import { sessionStateAt, sessionLabel, VN_HOSE_SCHEDULE } from '../lib/trading';
 
-  // A broadsheet front page for a trading grid: masthead, ticker tape, a lead
-  // story whose figure is a live board, a listings table, then every example.
+  // The landing page, in the TradeCanvas / TradingDek "terminal" system: sharp
+  // panes split by 1px lines, mono figures, one amber accent, up/down kept for
+  // prices. The hero figure is a live board; every example follows.
   let activeId = $state(EXAMPLES[0].id);
 
   // One toggle drives the page chrome (a class on <html>) and every grid.
@@ -35,16 +36,14 @@
 
   const REPO = 'https://github.com/bonguynvan/bo-grid';
   const NPM = 'https://www.npmjs.com/package/bo-grid';
+  const TRADECANVAS = 'https://bonguynvan.github.io/tradecanvas/';
 
-  // Masthead dateline and the live HOSE session (evaluated in Vietnam time).
+  // The live HOSE session, evaluated in Vietnam time.
   let now = $state(new Date());
   $effect(() => {
     const h = setInterval(() => (now = new Date()), 30_000);
     return () => clearInterval(h);
   });
-  const dateline = $derived(
-    now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
-  );
   const session = $derived(sessionLabel(sessionStateAt(now, VN_HOSE_SCHEDULE)));
 
   const TAPE: Array<[string, string, number]> = [
@@ -69,18 +68,25 @@
     'Sparklines',
   ];
 
-  // Figures from BENCHMARKS.md (production build, the Price board demo).
+  // From BENCHMARKS.md and the size report — the grid's own work, not paint.
   const FIGURES: Array<[string, string]> = [
-    ['~4.5 ms', 'a frame at 30,000 ticks a second'],
-    ['~1 ms', 'a scroll step through 1,000 symbols'],
-    ['~40 KB', 'gzip core, Svelte excluded'],
-    ['$0', 'licence fees — MIT'],
+    ['30,000', 'ticks a second, coalesced to one update a frame'],
+    ['~1 ms', 'grid work per scroll step through 1,000 symbols'],
+    ['40 KB', 'gzip core, Svelte external, no runtime dependencies'],
+    ['$0', 'MIT licence, no enterprise tier'],
   ];
 
+  const INSTALL: Array<[string, string]> = [
+    ['npm', 'npm i bo-grid'],
+    ['pnpm', 'pnpm add bo-grid'],
+    ['yarn', 'yarn add bo-grid'],
+    ['bun', 'bun add bo-grid'],
+  ];
+  let pm = $state(0);
   let copied = $state(false);
   let copyTimer: ReturnType<typeof setTimeout>;
   function copyInstall() {
-    navigator.clipboard?.writeText('npm i bo-grid');
+    navigator.clipboard?.writeText(INSTALL[pm][1]);
     copied = true;
     clearTimeout(copyTimer);
     copyTimer = setTimeout(() => (copied = false), 1500);
@@ -88,606 +94,725 @@
   const num = (i: number) => String(i + 1).padStart(2, '0');
 </script>
 
-<div class="lp-bar">
-  <a class="lp-bar-brand" href="#top">bo-grid <span>v{__BO_GRID_VERSION__}</span></a>
-  <span class="lp-bar-date">{dateline}</span>
-  <nav class="lp-bar-links" aria-label="Site">
+<header class="lp-bar">
+  <a class="lp-brand" href="#top" aria-label="bo-grid, back to top">
+    <svg class="lp-mark" viewBox="0 0 20 20" aria-hidden="true">
+      <rect x="1.75" y="1.75" width="16.5" height="16.5" fill="none" stroke="currentColor" stroke-width="1.5" />
+      <path d="M1.75 7h16.5M1.75 12.5h16.5M7.5 7v11.25" fill="none" stroke="currentColor" stroke-width="1.5" />
+      <rect class="lp-mark-cell" x="8.25" y="7.75" width="9.25" height="4" />
+    </svg>
+    <span class="lp-brand-name">bo-grid</span>
+    <span class="lp-chip">v{__BO_GRID_VERSION__}</span>
+  </a>
+  <nav class="lp-nav" aria-label="Site">
     <a href="#examples">Examples</a>
     <a href="./api.html">API</a>
+    <a href="{REPO}/blob/main/BENCHMARKS.md">Benchmarks</a>
     <a href="{REPO}/blob/main/docs/frameworks.md">Frameworks</a>
-    <a href={NPM} target="_blank" rel="noreferrer">npm ↗</a>
-    <a href={REPO} target="_blank" rel="noreferrer">GitHub ↗</a>
-    <button
-      class="lp-theme"
-      type="button"
-      onclick={toggleTheme}
-      aria-label="Switch to {ui.theme === 'dark' ? 'broadsheet' : 'terminal'} theme"
-      title="Toggle theme"
-    >{ui.theme === 'dark' ? 'Broadsheet' : 'Terminal'}</button>
   </nav>
-</div>
-
-<header class="lp-mast" id="top">
-  <div class="lp-mast-row">
-    <span>Vol. 2 · Svelte 5 · MIT licence</span>
-    <span class="lp-session"><i aria-hidden="true"></i>HOSE · {session}</span>
+  <div class="lp-bar-end">
+    <span class="lp-session" title="Ho Chi Minh Stock Exchange session, Vietnam time"><i aria-hidden="true"></i>HOSE · {session}</span>
+    <a class="lp-btn lp-btn-sm" href={REPO} target="_blank" rel="noreferrer">GitHub</a>
+    <button class="lp-btn lp-btn-sm lp-theme" type="button" onclick={toggleTheme} aria-label="Switch to {ui.theme === 'dark' ? 'light' : 'dark'} theme">
+      {ui.theme === 'dark' ? 'Light' : 'Dark'}
+    </button>
   </div>
-  <h1 class="lp-wordmark">bo-grid</h1>
-  <p class="lp-motto">The data grid for busy markets</p>
 </header>
 
-<div class="lp-tape" aria-hidden="true">
-  <div class="lp-tape-track">
-    {#each [...TAPE, ...TAPE] as [sym, px, chg], i (i)}
-      <span class="lp-tick">
-        <b>{sym}</b>{px}
-        <em class:up={chg > 0} class:down={chg < 0}>{chg > 0 ? '▲' : chg < 0 ? '▼' : '■'} {Math.abs(chg).toFixed(2)}</em>
-      </span>
-    {/each}
-  </div>
-</div>
-
-<section class="lp-lead" aria-labelledby="lead-h">
-  <div class="lp-lead-copy">
-    <p class="lp-kicker"><span aria-hidden="true"></span>The lead · Realtime</p>
-    <h2 id="lead-h" class="lp-headline">A grid that keeps up with the tape.</h2>
-    <p class="lp-deck">
-      Built for price boards, bo-grid is a Svelte&nbsp;5 data grid that takes thirty thousand ticks a second
-      in a few milliseconds a frame, scrolls a thousand symbols in one-millisecond steps, and ships the
-      features heavyweight grids keep behind an enterprise licence — free.
-    </p>
-    <div class="lp-install">
-      <code><span aria-hidden="true">$</span> npm i bo-grid</code>
-      <button type="button" onclick={copyInstall} aria-label="Copy install command">{copied ? 'Copied' : 'Copy'}</button>
+<main id="top">
+  <section class="lp-hero" aria-labelledby="hero-h">
+    <div class="lp-hero-copy">
+      <p class="lp-eyebrow">Svelte 5 data grid · MIT</p>
+      <h1 id="hero-h" class="lp-wordmark">The data grid<span>for busy markets.</span></h1>
+      <p class="lp-deck">
+        Built for price boards: tens of thousands of ticks a second coalesced into one update a frame, a
+        thousand symbols scrolled in millisecond steps, and the features heavyweight grids keep behind an
+        enterprise licence, free.
+      </p>
+      <div class="lp-install">
+        <div class="lp-install-tabs" role="tablist" aria-label="Package manager">
+          {#each INSTALL as [name], i (name)}
+            <button type="button" role="tab" aria-selected={pm === i} class:on={pm === i} onclick={() => (pm = i)}>{name}</button>
+          {/each}
+        </div>
+        <button type="button" class="lp-install-cmd" class:copied onclick={copyInstall} aria-label="Copy install command">
+          <span class="lp-prompt" aria-hidden="true">$</span>
+          <code>{INSTALL[pm][1]}</code>
+          <span class="lp-copy">{copied ? 'COPIED' : 'COPY'}</span>
+        </button>
+      </div>
+      <div class="lp-cta">
+        <a class="lp-btn lp-btn-primary" href="#examples">Live examples</a>
+        <a class="lp-btn" href="./api.html">API reference</a>
+        <a class="lp-btn" href={NPM} target="_blank" rel="noreferrer">npm ↗</a>
+      </div>
     </div>
-    <p class="lp-links">
-      <a href="#examples">Read the live examples ↓</a>
-      <a href="./api.html">API reference</a>
-      <a href={REPO} target="_blank" rel="noreferrer">Source on GitHub ↗</a>
-    </p>
-  </div>
-  <figure class="lp-fig">
-    <HeroBoard />
-    <figcaption>
-      <b>Fig. 1</b> — A live board fed through <code>api.patchRows</code>: plain rows, coalesced ticks; only
-      changed cells repaint, and each one flashes.
-    </figcaption>
-  </figure>
-</section>
+    <figure class="lp-fig">
+      <div class="lp-pane-head">
+        <span class="lp-label">Price board · HOSE</span>
+        <span class="lp-live"><i aria-hidden="true"></i>Live</span>
+        <span class="lp-chip">Sample</span>
+      </div>
+      <HeroBoard />
+      <figcaption>Plain rows fed through <code>api.patchRows</code>; ticks coalesce per frame and only changed cells repaint.</figcaption>
+    </figure>
+  </section>
 
-<section class="lp-figures" aria-label="Key figures">
-  <dl>
-    {#each FIGURES as [value, label] (value)}
-      <div><dt>{value}</dt><dd>{label}</dd></div>
-    {/each}
-  </dl>
-</section>
-
-<section class="lp-listing" aria-labelledby="listing-h">
-  <header>
-    <p class="lp-kicker"><span aria-hidden="true"></span>Listings</p>
-    <h2 id="listing-h">Enterprise elsewhere. Free here.</h2>
-  </header>
-  <ul class="lp-list">
-    <li class="lp-list-head" aria-hidden="true"><span>Feature</span><span></span><span>AG Grid</span><span>bo-grid</span></li>
-    {#each LISTINGS as f (f)}
-      <li><span>{f}</span><span class="lp-leader" aria-hidden="true"></span><span class="lp-paid">Enterprise</span><span class="lp-free">Free</span></li>
-    {/each}
-  </ul>
-</section>
-
-<section class="lp-examples" id="examples" aria-labelledby="examples-h">
-  <header class="lp-sec-head">
-    <p class="lp-kicker"><span aria-hidden="true"></span>Section two</p>
-    <h2 id="examples-h">Live examples</h2>
-    <p>{EXAMPLES.length} boards on one page. Each mounts as you reach it — scroll, or pick one from the contents.</p>
-  </header>
-  <div class="lp-gallery">
-    <nav class="lp-toc" aria-label="Jump to example">
-      <p class="lp-toc-h">Contents</p>
-      <ol>
-        {#each EXAMPLES as ex, i (ex.id)}
-          <li>
-            <a href={`#ex-${ex.id}`} class:on={ex.id === activeId} aria-current={ex.id === activeId}>
-              <span>{num(i)}</span>{ex.title}
-            </a>
-          </li>
-        {/each}
-      </ol>
-    </nav>
-    <div class="lp-ex-list">
-      {#each EXAMPLES as ex, i (ex.id)}
-        <ExampleSection {ex} n={i + 1} eager={i === 0} />
+  <div class="lp-tape" aria-hidden="true">
+    <div class="lp-tape-track">
+      {#each [...TAPE, ...TAPE] as [sym, px, chg], i (i)}
+        <span class="lp-tick">
+          <b>{sym}</b>{px}
+          <em class:up={chg > 0} class:down={chg < 0}>{chg > 0 ? '▲' : chg < 0 ? '▼' : '■'} {Math.abs(chg).toFixed(2)}</em>
+        </span>
       {/each}
     </div>
   </div>
-</section>
+
+  <section class="lp-figures" aria-label="Key figures">
+    <dl>
+      {#each FIGURES as [value, label] (value)}
+        <div><dt>{value}</dt><dd>{label}</dd></div>
+      {/each}
+    </dl>
+  </section>
+
+  <section class="lp-listing" aria-labelledby="listing-h">
+    <header>
+      <p class="lp-eyebrow">Parity</p>
+      <h2 id="listing-h">Enterprise elsewhere. Free here.</h2>
+      <p class="lp-sub">Every feature below sits behind AG Grid's enterprise licence. In bo-grid it ships in the MIT package.</p>
+    </header>
+    <ul class="lp-list">
+      <li class="lp-list-head" aria-hidden="true"><span>Feature</span><span>AG Grid</span><span>bo-grid</span></li>
+      {#each LISTINGS as f (f)}
+        <li><span>{f}</span><span class="lp-paid">Enterprise</span><span class="lp-free">Free</span></li>
+      {/each}
+    </ul>
+  </section>
+
+  <section class="lp-examples" id="examples" aria-labelledby="examples-h">
+    <header class="lp-sec-head">
+      <p class="lp-eyebrow">Live examples</p>
+      <h2 id="examples-h">{EXAMPLES.length} boards, one page.</h2>
+      <p class="lp-sub">Each mounts as you reach it. Scroll, or jump from the contents.</p>
+    </header>
+    <div class="lp-gallery">
+      <nav class="lp-toc" aria-label="Jump to example">
+        <p class="lp-label">Contents</p>
+        <ol>
+          {#each EXAMPLES as ex, i (ex.id)}
+            <li>
+              <a href={`#ex-${ex.id}`} class:on={ex.id === activeId} aria-current={ex.id === activeId}>
+                <span>{num(i)}</span>{ex.title}
+              </a>
+            </li>
+          {/each}
+        </ol>
+      </nav>
+      <div class="lp-ex-list">
+        {#each EXAMPLES as ex, i (ex.id)}
+          <ExampleSection {ex} n={i + 1} eager={i === 0} />
+        {/each}
+      </div>
+    </div>
+  </section>
+</main>
 
 <footer class="lp-foot">
   <div class="lp-foot-cols">
-    <div>
-      <p class="lp-foot-brand">bo-grid</p>
-      <p>A free Svelte&nbsp;5 data grid for trading screens. MIT licensed.</p>
+    <div class="lp-foot-brand">
+      <p class="lp-brand-name">bo-grid</p>
+      <p>A free Svelte&nbsp;5 data grid for trading screens. Pairs with TradeCanvas for charts.</p>
     </div>
     <nav aria-label="Documentation">
+      <p class="lp-label">Docs</p>
       <a href="./api.html">API reference</a>
       <a href="{REPO}/blob/main/BENCHMARKS.md">Benchmarks</a>
       <a href="{REPO}/blob/main/docs/frameworks.md">Frameworks</a>
       <a href="{REPO}/blob/main/docs/sveltekit.md">SvelteKit guide</a>
     </nav>
     <nav aria-label="Elsewhere">
+      <p class="lp-label">Elsewhere</p>
       <a href={NPM} target="_blank" rel="noreferrer">npm</a>
       <a href={REPO} target="_blank" rel="noreferrer">GitHub</a>
-      <a href="https://bonguynvan.github.io/tradecanvas/" target="_blank" rel="noreferrer">TradeCanvas — charts ↗</a>
+      <a href={TRADECANVAS} target="_blank" rel="noreferrer">TradeCanvas charts ↗</a>
     </nav>
   </div>
-  <p class="lp-colophon">Set in Fraunces and JetBrains Mono. Built with Svelte 5. © 2026.</p>
+  <p class="lp-foot-base"><span>MIT licence · © 2026</span><span>Set in IBM Plex</span></p>
 </footer>
 
 <style>
   /* ---- shared ---- */
-  .lp-kicker {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0 0 14px;
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--ink-dim);
-  }
-  .lp-kicker span {
-    width: 9px;
-    height: 9px;
-    background: var(--down);
-  }
   a {
     color: inherit;
-  }
-  .lp-links a,
-  .lp-foot a,
-  .lp-bar-links a {
     text-decoration: none;
-  }
-  .lp-links a:hover,
-  .lp-foot a:hover,
-  .lp-bar-links a:hover {
-    background: linear-gradient(transparent 58%, var(--mark-bg) 58%);
   }
   a:focus-visible,
   button:focus-visible {
-    outline: 2px solid var(--ink);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
+  .lp-eyebrow {
+    margin: 0 0 14px;
+    font-family: var(--font-cond);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .lp-label {
+    margin: 0;
+    font-family: var(--font-cond);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .lp-chip {
+    padding: 1px 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 16px;
+    color: var(--text-3);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+  }
+  .lp-sub {
+    margin: 0;
+    max-width: 46ch;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-2);
+  }
+  .lp-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    padding: 0 16px;
+    font: 500 13px var(--font-sans);
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease,
+      transform 120ms ease;
+  }
+  .lp-btn:hover {
+    background: var(--panel-2);
+    border-color: var(--text-3);
+  }
+  .lp-btn:active {
+    transform: translateY(1px);
+  }
+  .lp-btn-sm {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+  .lp-btn-primary {
+    font-weight: 600;
+    color: var(--on-accent);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .lp-btn-primary:hover {
+    background: color-mix(in srgb, var(--accent) 86%, var(--text));
+    border-color: transparent;
+  }
 
-  /* ---- sticky utility bar ---- */
+  /* ---- top bar ---- */
   .lp-bar {
     position: sticky;
     top: 0;
     z-index: 40;
     display: flex;
     align-items: center;
-    gap: 20px;
-    padding: 8px clamp(16px, 4vw, 48px);
-    background: var(--paper);
-    border-bottom: 1px solid var(--rule);
-    font-family: var(--mono);
-    font-size: 12px;
+    gap: 24px;
+    height: 48px;
+    padding: 0 var(--gutter);
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: blur(12px) saturate(140%);
+    border-bottom: 1px solid var(--line);
   }
-  .lp-bar-brand {
-    font-weight: 700;
-    text-decoration: none;
+  .lp-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
   }
-  .lp-bar-brand span {
-    font-weight: 400;
-    color: var(--ink-dim);
+  .lp-mark {
+    width: 20px;
+    height: 20px;
+    color: var(--text);
   }
-  .lp-bar-date {
-    color: var(--ink-dim);
+  .lp-mark-cell {
+    fill: var(--accent);
   }
-  .lp-bar-links {
+  .lp-brand-name {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .lp-nav {
+    display: flex;
+    gap: 2px;
+  }
+  .lp-nav a {
+    padding: 5px 10px;
+    font-size: 13px;
+    color: var(--text-2);
+    border-radius: var(--radius-sm);
+    transition:
+      color 120ms ease,
+      background-color 120ms ease;
+  }
+  .lp-nav a:hover {
+    color: var(--text);
+    background: var(--panel-2);
+  }
+  .lp-bar-end {
     display: flex;
     align-items: center;
-    gap: 18px;
+    gap: 8px;
     margin-left: auto;
   }
-  .lp-theme {
-    padding: 3px 9px;
-    font: inherit;
-    color: var(--paper);
-    background: var(--ink);
-    border: 0;
-    cursor: pointer;
-  }
-  .lp-theme:hover {
-    background: var(--down);
-  }
-
-  /* ---- masthead ---- */
-  .lp-mast {
-    padding: 0 clamp(16px, 4vw, 48px);
-    text-align: center;
-  }
-  .lp-mast-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 3px double var(--rule);
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--ink-dim);
-  }
-  .lp-session {
+  .lp-session,
+  .lp-live {
     display: inline-flex;
     align-items: center;
     gap: 7px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-2);
   }
-  .lp-session i {
-    width: 7px;
-    height: 7px;
+  .lp-session {
+    margin-right: 6px;
+  }
+  .lp-session i,
+  .lp-live i {
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: var(--up);
+    box-shadow: 0 0 0 3px var(--up-dim);
     animation: lp-pulse 1.6s ease-in-out infinite;
   }
   @keyframes lp-pulse {
-    50% { opacity: 0.25; }
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  /* ---- hero ---- */
+  .lp-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    gap: clamp(32px, 4vw, 64px);
+    align-items: center;
+    padding: clamp(40px, 6vw, 88px) var(--gutter) clamp(40px, 5vw, 72px);
+    border-bottom: 1px solid var(--line);
   }
   .lp-wordmark {
-    margin: 0;
-    padding: 18px 0 0.2em;
-    font-family: var(--serif);
-    font-size: clamp(4.5rem, 15vw, 12rem);
-    font-weight: 800;
-    font-style: italic;
-    font-variation-settings: 'opsz' 144;
-    line-height: 0.9;
-    letter-spacing: -0.045em;
-  }
-  .lp-motto {
-    margin: 0;
-    padding: 10px 0 12px;
-    border-top: 1px solid var(--rule);
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 0.32em;
+    margin: 0 0 22px;
+    font-family: var(--font-cond);
+    font-size: clamp(2.8rem, 6.2vw, 5.4rem);
+    font-weight: 700;
+    line-height: 0.94;
+    letter-spacing: -0.012em;
     text-transform: uppercase;
+    text-wrap: balance;
+  }
+  .lp-wordmark span {
+    display: block;
+    color: var(--accent);
+  }
+  .lp-deck {
+    max-width: 36em;
+    margin: 0 0 28px;
+    font-size: clamp(15px, 1.1vw, 17px);
+    line-height: 1.6;
+    color: var(--text-2);
+  }
+  .lp-install {
+    display: inline-flex;
+    flex-direction: column;
+    max-width: 100%;
+    margin-bottom: 18px;
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .lp-install-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--line);
+  }
+  .lp-install-tabs button {
+    padding: 5px 12px;
+    font: 500 11px var(--font-mono);
+    color: var(--text-3);
+    background: transparent;
+    border: 0;
+    border-right: 1px solid var(--line);
+    cursor: pointer;
+  }
+  .lp-install-tabs button:hover {
+    color: var(--text);
+  }
+  .lp-install-tabs button.on {
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .lp-install-cmd {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 320px;
+    height: 42px;
+    padding: 0 14px;
+    font: 400 14px var(--font-mono);
+    color: var(--text);
+    text-align: left;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+  }
+  .lp-install-tabs button:focus-visible,
+  .lp-install-cmd:focus-visible {
+    outline-offset: -2px;
+  }
+  .lp-prompt {
+    color: var(--accent);
+  }
+  .lp-copy {
+    margin-left: auto;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+  }
+  .lp-install-cmd:hover .lp-copy {
+    color: var(--text);
+  }
+  .lp-install-cmd.copied .lp-copy {
+    color: var(--up);
+  }
+  .lp-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* hero figure: a pane with a header strip, like a desk pane */
+  .lp-fig {
+    margin: 0;
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-pop);
+    overflow: hidden;
+  }
+  .lp-pane-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 32px;
+    padding: 0 12px;
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--line);
+  }
+  .lp-pane-head .lp-live {
+    margin-left: auto;
+    color: var(--up);
+  }
+  .lp-fig :global(.bo-grid) {
+    border: 0;
+    border-radius: 0;
+  }
+  .lp-fig figcaption {
+    padding: 9px 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--text-3);
+    border-top: 1px solid var(--line);
+  }
+  .lp-fig code {
+    color: var(--text-2);
   }
 
   /* ---- ticker tape ---- */
-  /* A ticker is an LED band in either theme: fixed dark ground, light figures. */
   .lp-tape {
     overflow: hidden;
-    border-block: 1px solid var(--rule);
-    background: #12130f;
-    color: #ece7da;
+    background: var(--cell);
+    border-bottom: 1px solid var(--line);
   }
   .lp-tape-track {
     display: flex;
     width: max-content;
-    animation: lp-tape 48s linear infinite;
+    animation: lp-tape 52s linear infinite;
   }
   .lp-tape:hover .lp-tape-track {
     animation-play-state: paused;
   }
   @keyframes lp-tape {
-    to { transform: translateX(-50%); }
+    to {
+      transform: translateX(-50%);
+    }
   }
   .lp-tick {
     display: inline-flex;
     gap: 8px;
-    padding: 9px 22px;
-    font-family: var(--mono);
+    padding: 8px 20px;
+    font-family: var(--font-mono);
     font-size: 12px;
-    border-right: 1px solid rgba(236, 231, 218, 0.18);
+    color: var(--text-2);
+    border-right: 1px solid var(--line);
     white-space: nowrap;
+  }
+  .lp-tick b {
+    font-weight: 600;
+    color: var(--text);
   }
   .lp-tick em {
     font-style: normal;
-    color: #f2c14e;
+    color: var(--accent);
   }
   .lp-tick em.up {
-    color: #3ddc97;
+    color: var(--up);
   }
   .lp-tick em.down {
-    color: #ff7b72;
+    color: var(--down);
   }
 
-  /* ---- lead ---- */
-  .lp-lead {
-    display: grid;
-    grid-template-columns: minmax(0, 7fr) minmax(0, 6fr);
-    gap: clamp(28px, 4vw, 64px);
-    padding: clamp(36px, 6vw, 80px) clamp(16px, 4vw, 48px);
-    border-bottom: 1px solid var(--rule);
-  }
-  .lp-headline {
-    margin: 0 0 22px;
-    font-size: clamp(2.4rem, 5.4vw, 4.6rem);
-    font-weight: 700;
-    font-variation-settings: 'opsz' 144;
-    line-height: 0.98;
-    letter-spacing: -0.025em;
-  }
-  .lp-deck {
-    max-width: 34em;
-    margin: 0 0 26px;
-    font-size: clamp(1.05rem, 1.2vw, 1.2rem);
-    font-variation-settings: 'opsz' 14;
-    line-height: 1.58;
-  }
-  .lp-deck::first-letter {
-    float: left;
-    margin: 6px 8px 0 0;
-    font-size: 3.6em;
-    font-weight: 700;
-    line-height: 0.8;
-  }
-  .lp-install {
-    display: inline-flex;
-    align-items: stretch;
-    margin-bottom: 18px;
-    border: 1px solid var(--rule);
-    font-family: var(--mono);
-    font-size: 14px;
-  }
-  .lp-install code {
-    padding: 10px 16px;
-    background: var(--card);
-  }
-  .lp-install code span {
-    color: var(--ink-dim);
-  }
-  .lp-install button {
-    padding: 0 16px;
-    font: inherit;
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--paper);
-    background: var(--ink);
-    border: 0;
-    border-left: 1px solid var(--rule);
-    cursor: pointer;
-  }
-  .lp-install button:hover {
-    background: var(--down);
-  }
-  .lp-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 22px;
-    margin: 0;
-    font-family: var(--mono);
-    font-size: 13px;
-  }
-  .lp-fig {
-    margin: 0;
-    align-self: center;
-  }
-  .lp-fig :global(.bo-grid) {
-    border: 1px solid var(--rule);
-    border-radius: 0;
-  }
-  .lp-fig figcaption {
-    margin-top: 10px;
-    padding-top: 8px;
-    border-top: 1px solid var(--rule-soft);
-    font-size: 0.9rem;
-    font-style: italic;
-    color: var(--ink-dim);
-  }
-  .lp-fig figcaption b {
-    font-style: normal;
-    color: var(--ink);
-  }
-  .lp-fig code {
-    font-family: var(--mono);
-    font-size: 0.85em;
-    font-style: normal;
-  }
-
-  /* ---- figures strip ---- */
+  /* ---- figures: one row of cells split by hairlines ---- */
   .lp-figures dl {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
     margin: 0;
-    border-bottom: 3px double var(--rule);
+    background: var(--line);
+    border-bottom: 1px solid var(--line);
   }
   .lp-figures div {
-    padding: 26px clamp(16px, 3vw, 36px);
-  }
-  .lp-figures div + div {
-    border-left: 1px solid var(--rule);
+    padding: 26px var(--gutter-in);
+    background: var(--surface);
   }
   .lp-figures dt {
-    font-family: var(--mono);
-    font-size: clamp(1.8rem, 3.4vw, 2.8rem);
+    font-family: var(--font-mono);
+    font-size: clamp(1.8rem, 3vw, 2.5rem);
     font-weight: 500;
     letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
   }
   .lp-figures dd {
     margin: 6px 0 0;
-    font-style: italic;
-    color: var(--ink-dim);
+    max-width: 26ch;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--text-3);
   }
 
   /* ---- listings ---- */
   .lp-listing {
     display: grid;
     grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
-    gap: clamp(24px, 4vw, 64px);
-    padding: clamp(36px, 6vw, 72px) clamp(16px, 4vw, 48px);
-    border-bottom: 1px solid var(--rule);
+    gap: clamp(28px, 4vw, 64px);
+    padding: clamp(44px, 6vw, 80px) var(--gutter);
+    border-bottom: 1px solid var(--line);
   }
-  .lp-listing h2 {
-    margin: 0;
-    font-size: clamp(1.9rem, 3.6vw, 3rem);
-    font-weight: 600;
-    font-variation-settings: 'opsz' 144;
-    line-height: 1.02;
-    letter-spacing: -0.02em;
+  .lp-listing h2,
+  .lp-sec-head h2 {
+    margin: 0 0 14px;
+    font-family: var(--font-cond);
+    font-size: clamp(2rem, 3.6vw, 3rem);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
   }
   .lp-list {
     margin: 0;
     padding: 0;
     list-style: none;
-    font-family: var(--mono);
-    font-size: 13px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
   }
   .lp-list li {
     display: grid;
-    grid-template-columns: auto minmax(24px, 1fr) 96px 64px;
-    align-items: baseline;
-    gap: 10px;
-    padding: 9px 0;
-    border-bottom: 1px solid var(--rule-soft);
+    grid-template-columns: minmax(0, 1fr) 104px 72px;
+    align-items: center;
+    gap: 12px;
+    min-height: 36px;
+    padding: 0 14px;
+    font-size: 14px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .lp-list li:hover {
+    background: var(--panel-2);
   }
   .lp-list .lp-list-head {
-    padding-top: 0;
+    min-height: 30px;
+    font-family: var(--font-cond);
     font-size: 11px;
-    letter-spacing: 0.12em;
+    font-weight: 600;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--ink-dim);
-    border-bottom: 1px solid var(--rule);
-  }
-  .lp-leader {
-    border-bottom: 1px dotted var(--ink-dim);
-    transform: translateY(-4px);
+    color: var(--text-3);
+    background: var(--panel-2);
+    border-top: 0;
   }
   .lp-paid {
-    color: var(--down);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-3);
     text-decoration: line-through;
-    text-decoration-thickness: 1px;
   }
   .lp-free {
-    font-weight: 700;
+    justify-self: start;
+    padding: 1px 7px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
     color: var(--up);
+    background: var(--up-dim);
+    border-radius: var(--radius-sm);
   }
 
   /* ---- examples ---- */
   .lp-examples {
-    padding: clamp(36px, 6vw, 72px) clamp(16px, 4vw, 48px) 80px;
+    padding: clamp(44px, 6vw, 80px) var(--gutter) 88px;
   }
   .lp-sec-head {
-    max-width: 52rem;
     margin-bottom: 36px;
-  }
-  .lp-sec-head h2 {
-    margin: 0 0 10px;
-    font-size: clamp(2.2rem, 4.6vw, 3.6rem);
-    font-weight: 700;
-    font-variation-settings: 'opsz' 144;
-    letter-spacing: -0.025em;
-    line-height: 1;
-  }
-  .lp-sec-head > p:last-child {
-    margin: 0;
-    font-size: 1.05rem;
-    font-style: italic;
-    color: var(--ink-dim);
   }
   .lp-gallery {
     display: grid;
-    grid-template-columns: 200px minmax(0, 1fr);
+    grid-template-columns: 208px minmax(0, 1fr);
     gap: clamp(24px, 3vw, 48px);
     align-items: start;
   }
   .lp-toc {
     position: sticky;
-    top: 52px;
-    max-height: calc(100vh - 72px);
+    top: 64px;
+    max-height: calc(100vh - 80px);
     overflow-y: auto;
-    border-top: 3px double var(--rule);
   }
-  .lp-toc-h {
-    margin: 10px 0 8px;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--ink-dim);
+  .lp-toc .lp-label {
+    margin-bottom: 10px;
   }
   .lp-toc ol {
     margin: 0;
     padding: 0;
     list-style: none;
+    border-left: 1px solid var(--line);
   }
   .lp-toc a {
     display: flex;
     gap: 10px;
-    padding: 5px 6px;
-    font-size: 0.95rem;
-    text-decoration: none;
-    border-bottom: 1px solid var(--rule-soft);
+    margin-left: -1px;
+    padding: 5px 10px;
+    font-size: 13px;
+    color: var(--text-2);
+    border-left: 2px solid transparent;
+    transition:
+      color 120ms ease,
+      border-color 120ms ease;
   }
   .lp-toc a span {
-    font-family: var(--mono);
+    font-family: var(--font-mono);
     font-size: 11px;
-    color: var(--ink-dim);
-    padding-top: 3px;
+    color: var(--text-3);
+    padding-top: 2px;
   }
   .lp-toc a:hover {
-    background: var(--paper-2);
+    color: var(--text);
+    border-left-color: var(--line-strong);
   }
   .lp-toc a.on {
-    background: var(--mark-bg);
-    font-weight: 600;
+    color: var(--text);
+    font-weight: 500;
+    border-left-color: var(--accent);
+  }
+  .lp-toc a.on span {
+    color: var(--accent);
   }
   .lp-ex-list {
     display: flex;
     flex-direction: column;
-    gap: 64px;
+    gap: 56px;
     min-width: 0;
   }
 
   /* ---- footer ---- */
   .lp-foot {
     margin-top: auto;
-    padding: 36px clamp(16px, 4vw, 48px) 28px;
-    border-top: 3px double var(--rule);
+    border-top: 1px solid var(--line);
   }
   .lp-foot-cols {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
     gap: 32px;
+    padding: 40px var(--gutter) 32px;
   }
-  .lp-foot-cols p {
-    margin: 0 0 6px;
-    color: var(--ink-dim);
+  .lp-foot-brand p {
+    margin: 0 0 8px;
+    max-width: 34ch;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text-3);
   }
-  .lp-foot-brand {
-    font-size: 2rem;
-    font-weight: 800;
-    font-style: italic;
-    color: var(--ink) !important;
-    letter-spacing: -0.03em;
+  .lp-foot-brand .lp-brand-name {
+    color: var(--text);
   }
   .lp-foot nav {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    font-family: var(--mono);
+    gap: 7px;
     font-size: 13px;
   }
-  .lp-colophon {
-    margin: 28px 0 0;
-    padding-top: 12px;
-    border-top: 1px solid var(--rule-soft);
-    font-size: 0.85rem;
-    font-style: italic;
-    color: var(--ink-dim);
+  .lp-foot nav .lp-label {
+    margin-bottom: 4px;
+  }
+  .lp-foot nav a {
+    width: fit-content;
+    color: var(--text-2);
+  }
+  .lp-foot nav a:hover {
+    color: var(--text);
+  }
+  .lp-foot-base {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0;
+    padding: 14px var(--gutter) 24px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-3);
+    border-top: 1px solid var(--line-soft);
   }
 
   /* ---- responsive ---- */
-  @media (max-width: 960px) {
-    .lp-lead,
-    .lp-listing {
-      grid-template-columns: minmax(0, 1fr);
+  @media (max-width: 1080px) {
+    .lp-session {
+      display: none;
     }
+  }
+  @media (max-width: 960px) {
+    .lp-hero,
+    .lp-listing,
     .lp-gallery {
       grid-template-columns: minmax(0, 1fr);
     }
@@ -696,33 +821,35 @@
     }
   }
   @media (max-width: 720px) {
-    .lp-bar-date,
-    .lp-bar-links a:not(:last-of-type) {
+    .lp-nav {
       display: none;
     }
     .lp-figures dl {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    .lp-figures div:nth-child(3) {
-      border-left: 0;
-    }
-    .lp-figures div:nth-child(n + 3) {
-      border-top: 1px solid var(--rule);
-    }
     .lp-foot-cols {
       grid-template-columns: minmax(0, 1fr);
     }
-    .lp-mast-row span:first-child {
-      display: none;
+    .lp-install,
+    .lp-install-cmd {
+      width: 100%;
+      min-width: 0;
     }
-    .lp-mast-row {
-      justify-content: center;
+    .lp-list li {
+      grid-template-columns: minmax(0, 1fr) 84px 52px;
+      gap: 8px;
+      padding: 0 10px;
+      font-size: 13px;
     }
   }
   @media (prefers-reduced-motion: reduce) {
     .lp-tape-track,
-    .lp-session i {
+    .lp-session i,
+    .lp-live i {
       animation: none;
+    }
+    .lp-btn {
+      transition: none;
     }
   }
 </style>

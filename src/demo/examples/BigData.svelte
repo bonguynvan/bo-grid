@@ -75,7 +75,7 @@
 </div>
 
 <div class="gridwrap">
-  <Grid rows={[]} {columns} {source} theme={ui.theme} height={620} {cell} />
+  <Grid rows={[]} {columns} {source} theme={ui.grid} height={620} {cell} />
 </div>
 
 <style>
@@ -106,11 +106,11 @@
     background: var(--row-hover);
   }
   .side.buy {
-    color: #052e1a;
+    color: var(--on-up);
     background: var(--up);
   }
   .side.sell {
-    color: #2e0505;
+    color: var(--on-down);
     background: var(--down);
   }
   .gridwrap {

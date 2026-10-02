@@ -5,19 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>bo-grid · API reference</title>
     <meta name="description" content="API reference for bo-grid — a tiny, fast Svelte 5 fintech data grid." />
+    <meta name="theme-color" content="#0c1016" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap"
+    />
     <style>
+      /* The TradeCanvas / TradingDek dark tokens, as on the landing page. */
       :root {
-        --bg: #1a1a1a;
-        --panel: #0f0f0f;
-        --row: #131313;
-        --text: #e5e5e5;
-        --dim: #8a8a8a;
-        --border: rgba(255, 255, 255, 0.08);
-        --up: #34d399;
-        --down: #f87171;
-        --accent: #818cf8;
-        --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-        --sans: Inter, "Segoe UI", system-ui, sans-serif;
+        --bg: #0c1016;
+        --panel: #11161e;
+        --row: #161c25;
+        --text: #d9dde4;
+        --dim: #8b93a3;
+        --border: #1f2630;
+        --up: #3ccf91;
+        --down: #f0616d;
+        --accent: #f2a93b;
+        --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', monospace;
+        --sans: 'IBM Plex Sans', system-ui, sans-serif;
+        --cond: 'IBM Plex Sans Condensed', 'Arial Narrow', sans-serif;
         color-scheme: dark;
       }
       * { box-sizing: border-box; }
@@ -42,7 +51,7 @@
         justify-content: space-between;
         gap: 16px;
         padding: 12px 22px;
-        background: rgba(15, 15, 15, 0.9);
+        background: rgba(12, 16, 22, 0.9);
         backdrop-filter: blur(8px);
         border-bottom: 0.5px solid var(--border);
       }
@@ -52,7 +61,7 @@
       nav.top a:hover { color: var(--text); }
 
       .wrap { max-width: 940px; margin: 0 auto; padding: 0 22px 120px; }
-      h1 { font-size: clamp(2rem, 1.2rem + 3vw, 3rem); margin: 48px 0 8px; letter-spacing: -0.02em; }
+      h1 { font-family: var(--cond); font-size: clamp(2.2rem, 1.2rem + 3vw, 3.2rem); margin: 48px 0 8px; letter-spacing: -0.01em; }
       .lede { color: var(--dim); font-size: 18px; max-width: 60ch; margin: 0 0 8px; }
       h2 {
         margin: 56px 0 14px;
@@ -585,7 +594,7 @@ rows = tape.toArray();</code></pre>
       <!-- ============ THEMING ============ -->
       <h2 id="theming">Theming</h2>
       <p>Dark-first and self-contained — no CSS import required. Override any token by setting the matching <code>--bo-grid-*</code> custom property on an ancestor, or pass the <code>theme</code> prop a custom token map.</p>
-      <p>Six built-in presets are exported: <code>darkTheme</code>, <code>lightTheme</code>, <code>highContrastDark</code>, <code>highContrastLight</code>, <code>midnightTheme</code>, <code>terminalTheme</code> — plus a <code>themePresets</code> name→preset map and a <code>ThemePreset</code> type for a theme picker. Pass any to <code>theme</code>.</p>
+      <p>Eight built-in presets are exported: <code>darkTheme</code>, <code>lightTheme</code>, <code>highContrastDark</code>, <code>highContrastLight</code>, <code>midnightTheme</code>, <code>terminalTheme</code>, and <code>tradecanvasTheme</code> / <code>tradecanvasLightTheme</code> (the palette TradeCanvas charts and TradingDek share) — plus a <code>themePresets</code> name→preset map and a <code>ThemePreset</code> type for a theme picker. Pass any to <code>theme</code>.</p>
       <table>
         <thead><tr><th>Token</th><th>Default</th><th>Token</th><th>Default</th></tr></thead>
         <tbody>

@@ -48,7 +48,7 @@
 </div>
 
 <div class="gridwrap">
-  <Grid rows={gridRows} {columns} theme={ui.theme} height={300} footer ariaLabel="Sales" />
+  <Grid rows={gridRows} {columns} theme={ui.grid} height={300} footer ariaLabel="Sales" />
 </div>
 
 {#if showPreview}
@@ -82,9 +82,9 @@
     color: var(--text);
   }
   .btn.primary {
-    color: #0a0a0a;
-    background: var(--up);
-    border-color: var(--up);
+    color: var(--on-accent);
+    background: var(--accent);
+    border-color: var(--accent);
   }
   .btn:focus-visible {
     outline: 2px solid var(--up);

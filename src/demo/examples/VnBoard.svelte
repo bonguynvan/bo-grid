@@ -157,7 +157,7 @@
 </div>
 
 <div class="gridwrap">
-  <Grid rows={gridRows} {columns} theme={ui.theme} height={480} {cell} />
+  <Grid rows={gridRows} {columns} theme={ui.grid} height={480} {cell} />
 </div>
 
 <style>
@@ -205,8 +205,8 @@
   }
   .session-ato .dot,
   .session-atc .dot {
-    background: #eab308;
-    box-shadow: 0 0 6px #eab308;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
   }
   .legend {
     display: flex;

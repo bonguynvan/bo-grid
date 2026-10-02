@@ -367,7 +367,7 @@
   {#if result}<span class="pb-stat">{result}</span>{/if}
 </div>
 <div class="gridwrap" bind:this={host}>
-  <Grid rows={rows as unknown as GridRow[]} {columns} height={gridHeight} theme={ui.theme} ariaLabel="Price board" {sort} onSortChange={(s) => (sort = s)} onReady={(a) => (api = a)} />
+  <Grid rows={rows as unknown as GridRow[]} {columns} height={gridHeight} theme={ui.grid} ariaLabel="Price board" {sort} onSortChange={(s) => (sort = s)} onReady={(a) => (api = a)} />
 </div>
 
 <style>
@@ -394,14 +394,14 @@
     cursor: pointer;
   }
   .pb-btn.on {
-    color: var(--up, #34d399);
+    color: var(--accent);
   }
   .pb-stat {
     font-variant-numeric: tabular-nums;
   }
-  .gridwrap :global(.pb-up) { color: #34d399; }
-  .gridwrap :global(.pb-down) { color: #f87171; }
-  .gridwrap :global(.pb-ref) { color: #facc15; }
-  .gridwrap :global(.pb-ceil) { color: #c084fc; }
-  .gridwrap :global(.pb-floor) { color: #22d3ee; }
+  .gridwrap :global(.pb-up) { color: var(--up); }
+  .gridwrap :global(.pb-down) { color: var(--down); }
+  .gridwrap :global(.pb-ref) { color: var(--accent); }
+  .gridwrap :global(.pb-ceil) { color: var(--ceil); }
+  .gridwrap :global(.pb-floor) { color: var(--floor); }
 </style>

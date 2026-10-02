@@ -59,7 +59,7 @@
     {columns}
     {loadChildren}
     {hasChildren}
-    theme={ui.theme}
+    theme={ui.grid}
     height={520}
     ariaLabel="Lazy file tree"
   />
