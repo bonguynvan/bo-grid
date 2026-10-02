@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { ColumnDef, GridRow } from './column';
+  import type { GridLabels } from './labels';
   import {
     formatCell,
     tooltipText,
@@ -15,6 +16,7 @@
     safeHref,
   } from './column';
   import { heatColor } from './heatmap';
+  import { toDateInput } from './date';
   import { FlashTracker, resolveFlashMode, isFresh, FLASH_MS } from './flash';
   import Sparkline from '../sparkline/Sparkline.svelte';
 
@@ -36,6 +38,8 @@
     fillpreview = false,
     cfRange = null,
     rowKey = null,
+    version = 0,
+    fieldVersion = 0,
     flashTracker = null,
     colIndex,
     cellId,
@@ -47,8 +51,13 @@
     onCellClick,
     onCellDblClick,
     onEditCommit,
+    onEditCommitValue,
     onEditCancel,
     onFillStart,
+    labels,
+    span,
+    flexStyle,
+    colspan,
   }: {
     col: ColumnDef;
     row: GridRow;
@@ -77,6 +86,11 @@
         by visual index as you scroll, so flash state cannot live in the
         component — it is keyed on (rowKey, column) in the grid's tracker. */
     rowKey?: string | number | null;
+    /** Bumped when `api.patchRows` changes this row, so plain (non-$state) row
+        objects still repaint. */
+    version?: number;
+    /** Bumped when `api.patchRows` changes this cell's own field. */
+    fieldVersion?: number;
     /** The grid's flash tracker; null when no column uses derived flash. */
     flashTracker?: FlashTracker | null;
     colIndex?: number;
@@ -91,8 +105,19 @@
     onCellClick?: (r: number, c: number, e: MouseEvent) => void;
     onCellDblClick?: (r: number, c: number) => void;
     onEditCommit?: (raw: string) => void;
+    /** A custom editor's committed value (typed, not a string to parse). */
+    onEditCommitValue?: (value: unknown) => void;
     onEditCancel?: () => void;
     onFillStart?: () => void;
+    labels: GridLabels;
+    /** Row-span geometry when this cell draws a merged run: `up` px above this
+        row to the run's top, total `height`, the first row's height (content
+        aligns to it), the run length, and the run's first-row stripe. */
+    span?: { up: number; height: number; first: number; rows: number; alt: boolean };
+    /** Flex sizing override for a colSpan cell in fit-to-width mode. */
+    flexStyle?: string;
+    /** Number of columns this cell covers (colSpan), for aria-colspan. */
+    colspan?: number;
   } = $props();
 
   // Avatar initials: first letters of the first two words.
@@ -126,6 +151,25 @@
       (e.currentTarget as HTMLInputElement).blur();
     }
   }
+  // Custom editors: keys stay inside the editor (no grid navigation), Escape
+  // cancels, and focus leaving the editor altogether cancels — an editor saves
+  // by calling commit() itself.
+  function onCustomEditKey(e: KeyboardEvent) {
+    e.stopPropagation();
+    if (e.key === 'Escape') onEditCancel?.();
+  }
+  function onCustomEditFocusOut(e: FocusEvent) {
+    const host = e.currentTarget as HTMLElement;
+    setTimeout(() => {
+      if (!host.isConnected || !host.contains(document.activeElement)) onEditCancel?.();
+    }, 0);
+  }
+  function focusFirst(node: HTMLElement) {
+    const target = node.querySelector<HTMLElement>(
+      '[autofocus], input, select, textarea, button, [tabindex]:not([tabindex="-1"])',
+    );
+    (target ?? node).focus();
+  }
   function onEditBlur(e: FocusEvent) {
     const v = (e.currentTarget as HTMLInputElement).value;
     if (cancelled) {
@@ -140,25 +184,65 @@
   // goes through the $state getter — fine-grained reactivity is preserved even
   // though the key is only known at runtime. Computed columns derive from the
   // whole row via cellValue (their value() reads the row's $state getters too).
-  const value = $derived(cellValue(col, row));
+  // Under api.patchRows a cell repaints on its own field's version; anything
+  // that may read OTHER fields of the row tracks the row's version instead. A
+  // function counts as reading the row when it declares a second parameter
+  // (`(value, row) => …`), so `(v) => …` formatters skip unrelated ticks.
+  const readsRow = (fn: unknown): boolean => typeof fn === 'function' && fn.length >= 2;
+  const value = $derived.by(() => {
+    if (col.value) version;
+    else fieldVersion;
+    return cellValue(col, row);
+  });
   // Typed inline editor: date columns edit with a date picker, numeric columns
   // with a numeric input; everything else stays a text input.
   const editorType = $derived(col.type === 'date' ? 'date' : isNumeric(col) ? 'number' : 'text');
   const editorValue = $derived(
     col.type === 'date' && Number.isFinite(Number(value))
-      ? new Date(Number(value)).toISOString().slice(0, 10)
+      ? toDateInput(Number(value))
       : String(value ?? ''),
   );
   // Alignment kind: numbers right-align (tabular); sparkline + text-like rich
   // types (tags/badge/boolean/avatar) left-align.
   const kind = $derived(col.type === 'sparkline' ? 'spark' : isNumeric(col) ? 'num' : 'text');
   // Optional per-column cell class (static string or value/row function).
-  const extraClass = $derived(
-    typeof col.cellClass === 'function' ? (col.cellClass(value, row) ?? '') : (col.cellClass ?? ''),
-  );
+  // Everything below that may read OTHER fields of the row (cellClass/format/
+  // tooltip functions, renderers) also reads `version`: with plain row objects
+  // fed through api.patchRows, that bump is the only signal that the row moved.
+  const extraClass = $derived.by(() => {
+    if (typeof col.cellClass !== 'function') return col.cellClass ?? '';
+    if (readsRow(col.cellClass)) version;
+    return col.cellClass(value, row) ?? '';
+  });
+  // The display string, shared by every text branch below.
+  const text = $derived.by(() => {
+    if (readsRow(col.format)) version;
+    return formatCell(col, value, row);
+  });
+  // Row-wide reads that are not this cell's value: a `sub` field, a link's
+  // href(row), a sparkline's own series field, the legacy row-driven flash.
+  const subField = $derived('sub' in col && typeof col.sub === 'string' ? col.sub : undefined);
+  const rowTick = $derived(subField || col.type === 'link' || col.type === 'sparkline' || col.flash === true ? version : 0);
+  const subText = $derived.by(() => {
+    rowTick;
+    return subField ? row[subField] : undefined;
+  });
+  const candles = $derived.by(() => {
+    rowTick;
+    return col.type === 'sparkline' ? candlesOf(row, col.sparkKey) : [];
+  });
+  const linkHref = $derived.by(() => {
+    rowTick;
+    if (col.type !== 'link') return undefined;
+    return safeHref(col.href ? col.href(row) : String(value ?? ''));
+  });
   // Styled floating tooltip text (opt-in via column `tooltip`); the grid root
   // renders the actual tooltip from this cell's `data-bo-tip` attribute.
-  const tip = $derived(tooltipText(col, value, row));
+  const tip = $derived.by(() => {
+    if (!col.tooltip) return undefined;
+    if (readsRow(col.tooltip)) version;
+    return tooltipText(col, value, row);
+  });
 
   // ---- Flash ----
   // `'row'` keeps the legacy behaviour (the row owns flashSeq/flashDir). The
@@ -169,22 +253,29 @@
   const flash = $derived.by(() => {
     if (flashMode === null) return null;
     if (flashMode === 'row') {
-      return { key: row.flashSeq ?? 0, dir: row.flashDir ?? 'up', on: true };
+      rowTick;
+      return { seq: Number(row.flashSeq ?? 0), dir: row.flashDir ?? 'up', on: true };
     }
     if (!flashTracker || rowKey == null) return null;
-    const state = flashTracker.observe(rowKey, col.key, value, flashMode, Date.now());
-    // Re-key on row identity too: a recycled cell must build a fresh element
-    // rather than inherit the previous row's animation state.
-    return {
-      key: `${rowKey}:${state.seq}`,
-      dir: state.dir,
-      on: isFresh(state, Date.now(), col.flashMs ?? FLASH_MS),
-    };
+    const now = Date.now();
+    const state = flashTracker.observe(rowKey, col.key, value, flashMode, now);
+    return { seq: state.seq, dir: state.dir, on: isFresh(state, now, col.flashMs ?? FLASH_MS) };
   });
+  // The flash as one class string — a single DOM write per tick instead of a
+  // toggle per modifier. `alt` alternates keyframes to replay the animation.
+  const flashClass = $derived(
+    flash?.on
+      ? `flash${flash.seq % 2 === 1 ? ' alt' : ''}${flash.dir === 'up' ? ' up' : flash.dir === 'down' ? ' down' : ''}${col.flashColor === false ? ' keep' : ''}`
+      : '',
+  );
 
   // JS cell renderer (framework-agnostic alt to the `cell` snippet). Returns an
   // HTML string ({@html}) or a DOM Node (mounted via the action below).
-  const rendered = $derived(col.render ? col.render({ value, row, column: col }) : undefined);
+  const rendered = $derived.by(() => {
+    if (!col.render) return undefined;
+    version;
+    return col.render({ value, row, column: col });
+  });
   // Mount/replace a Node return value; updates when the derived node changes.
   function renderNode(host: HTMLElement, node: Node | string | null | undefined) {
     const set = (n: Node | string | null | undefined) => {
@@ -219,18 +310,28 @@
     return c.flashMs && c.flashMs !== FLASH_MS ? `--bo-flash-ms:${c.flashMs}ms` : undefined;
   }
 
+  // Stacking: pinned cells (2) cover scrolled content; a merged run (1, or 3
+  // when pinned) paints over the rows below it, which are later in the DOM.
   function cellStyle(): string {
-    let s = width != null ? `flex:0 0 ${width}px;width:${width}px;` : colStyle(col);
+    let s = width != null ? `flex:0 0 ${width}px;width:${width}px;` : (flexStyle ?? colStyle(col));
     // Conditional background: heatmap type, else a colour-scale tint (both translucent).
     const bg = col.type === 'heatmap' ? heatColor(Number(value), col.min, col.max) : scaleBg;
+    // Opaque cells (pinned, or a run drawn over other rows) layer any translucent
+    // tint over the row colour.
+    const stripe = span ? span.alt : alt;
+    const rowBg = `var(${stripe ? '--bo-row-a' : '--bo-row-b'})`;
+    const opaque = bg ? `background:linear-gradient(${bg},${bg}),${rowBg};` : `background:${rowBg};`;
     if (pinned) {
-      s += `position:sticky;${pinSide}:${pinOffset}px;z-index:1;`;
-      // Pinned cells must be opaque to cover scrolled content — layer any
-      // translucent tint over the (alternating) row colour.
-      const rowBg = `var(${alt ? '--bo-row-a' : '--bo-row-b'})`;
-      s += bg ? `background:linear-gradient(${bg},${bg}),${rowBg};` : `background:${rowBg};`;
+      s += `position:sticky;${pinSide}:${pinOffset}px;z-index:${span ? 3 : 2};${opaque}`;
+    } else if (span) {
+      s += `z-index:1;${opaque}`;
     } else if (bg) {
       s += `background:${bg};`;
+    }
+    if (span) {
+      s += `height:${span.height}px;align-self:flex-start;align-items:flex-start;`;
+      s += `padding-top:calc((${span.first}px - 1.4em) / 2);border-bottom:0.5px solid var(--bo-border);`;
+      if (span.up) s += `transform:translateY(-${span.up}px);`;
     }
     return s;
   }
@@ -253,6 +354,8 @@
   id={cellId}
   data-bo-tip={tip}
   aria-colindex={colIndex}
+  aria-rowspan={span && !span.up ? span.rows : undefined}
+  aria-colspan={colspan}
   aria-selected={selected}
   onpointerdown={(e) => onCellDown?.(r, c, e)}
   onpointerenter={(e) => onCellEnter?.(r, c, e)}
@@ -264,7 +367,7 @@
       class="drag-handle"
       role="button"
       tabindex="-1"
-      aria-label="Drag to reorder row"
+      aria-label={labels.dragToReorder}
       draggable="true"
       onpointerdown={(e) => e.stopPropagation()}
       ondragstart={() => dragHandle.onStart()}
@@ -278,7 +381,7 @@
           class="tree-toggle"
           type="button"
           aria-expanded={tree.expanded}
-          aria-label="Toggle children"
+          aria-label={labels.toggleChildren}
           onpointerdown={(e) => e.stopPropagation()}
           onclick={(e) => {
             e.stopPropagation();
@@ -292,7 +395,28 @@
       {/if}
     </span>
   {/if}
-  {#if editing && col.options && col.options.length > 0}
+  {#if editing && col.editor}
+    {@const Editor = col.editor}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <span
+      class="bo-edit-custom"
+      use:focusFirst
+      onkeydown={onCustomEditKey}
+      onfocusout={onCustomEditFocusOut}
+      onpointerdown={(e) => e.stopPropagation()}
+      onclick={(e) => e.stopPropagation()}
+      ondblclick={(e) => e.stopPropagation()}
+    >
+      <Editor
+        {value}
+        {row}
+        column={col}
+        {seed}
+        commit={(v: unknown) => onEditCommitValue?.(v)}
+        cancel={() => onEditCancel?.()}
+      />
+    </span>
+  {:else if editing && col.options && col.options.length > 0}
     <select
       class="bo-edit"
       value={String(value ?? '')}
@@ -318,6 +442,9 @@
       onclick={(e) => e.stopPropagation()}
       ondblclick={(e) => e.stopPropagation()}
     />
+  {:else if col.component}
+    {@const Renderer = col.component}
+    {#key version}<Renderer {value} {row} column={col} {text} />{/key}
   {:else if col.render}
     {#if typeof rendered === 'string'}
       <span class="bo-render">{@html rendered}</span>
@@ -325,9 +452,9 @@
       <span class="bo-render" use:renderNode={rendered}></span>
     {/if}
   {:else if col.type === 'custom'}
-    {#if cellSnippet}{@render cellSnippet({ row, column: col, value })}{:else}{value ?? ''}{/if}
+    {#if cellSnippet}{#key version}{@render cellSnippet({ row, column: col, value })}{/key}{:else}{value ?? ''}{/if}
   {:else if col.type === 'sparkline'}
-    <Sparkline candles={candlesOf(row, col.sparkKey)} />
+    <Sparkline {candles} />
   {:else if col.type === 'progress'}
     {@const lo = col.min ?? 0}
     {@const pct = Math.max(0, Math.min(100, (((Number(value) || 0) - lo) / (((col.max ?? 100) - lo) || 1)) * 100))}
@@ -337,7 +464,7 @@
   {:else if col.type === 'rating'}
     {@const rmax = col.max ?? 5}
     {@const r = Math.max(0, Math.min(rmax, Math.round(Number(value) || 0)))}
-    <span class="bo-rating" aria-label="{r} out of {rmax}">
+    <span class="bo-rating" aria-label={labels.rating(r, rmax)}>
       <span class="bo-stars-on">{'★'.repeat(r)}</span><span class="bo-stars-off">{'★'.repeat(rmax - r)}</span>
     </span>
   {:else if col.type === 'tags'}
@@ -353,9 +480,9 @@
     {/if}
   {:else if col.type === 'avatar'}
     <span class="bo-avatar" aria-hidden="true">{initials(String(value ?? ''))}</span>
-    <span class="bo-avatar-name">{value ?? ''}{#if col.sub}<em>{row[col.sub]}</em>{/if}</span>
+    <span class="bo-avatar-name">{value ?? ''}{#if subField}<em>{subText}</em>{/if}</span>
   {:else if col.type === 'link'}
-    {@const href = safeHref(col.href ? col.href(row) : String(value ?? ''))}
+    {@const href = linkHref}
     {#if href}<a
         class="bo-link"
         {href}
@@ -364,39 +491,23 @@
         onpointerdown={(e) => e.stopPropagation()}
         onclick={(e) => e.stopPropagation()}>{value ?? ''}</a>{:else}{value ?? ''}{/if}
   {:else if col.type === 'text'}
-    <strong>{formatCell(col, value, row)}</strong>{#if col.sub}<em>{row[col.sub]}</em>{/if}
+    <strong>{text}</strong>{#if subField}<em>{subText}</em>{/if}
   {:else if hasCf}
     {#if bar}<span class="bo-databar" style="left:{bar.left};width:{bar.width};background:{bar.color}"></span>{/if}
-    {#key flash ? flash.key : 0}
-      <span
-        class="bo-cf-val"
-        class:flash={flash?.on}
-        class:up={flash?.on && flash.dir === 'up'}
-        class:down={flash?.on && flash.dir === 'down'}
-        style={flash?.on ? flashDuration(col) : undefined}
-      >
-        {#if icon}<span class="bo-cf-icon" style="color:{icon.color}">{icon.icon}</span>{/if}{formatCell(col, value, row)}
-      </span>
-    {/key}
+    <span class="bo-cf-val {flashClass}" style={flash?.on ? flashDuration(col) : undefined}>
+      {#if icon}<span class="bo-cf-icon" style="color:{icon.color}">{icon.icon}</span>{/if}{text}
+    </span>
   {:else if flash}
-    {#key flash.key}
-      <span
-        class="bo-cell-text"
-        class:flash={flash.on}
-        class:up={flash.on && flash.dir === 'up'}
-        class:down={flash.on && flash.dir === 'down'}
-        style={flash.on ? flashDuration(col) : undefined}
-      >{formatCell(col, value, row)}</span>
-    {/key}
+    <span class="bo-cell-text {flashClass}" style={flash.on ? flashDuration(col) : undefined}>{text}</span>
   {:else}
-    <span class="bo-cell-text">{formatCell(col, value, row)}</span>
+    <span class="bo-cell-text">{text}</span>
   {/if}
   {#if fillCorner}
     <span
       class="fill-handle"
       role="button"
       tabindex="-1"
-      aria-label="Fill"
+      aria-label={labels.fill}
       onpointerdown={(e) => {
         e.stopPropagation();
         onFillStart?.();
@@ -406,6 +517,13 @@
 </span>
 
 <style>
+  .bo-edit-custom {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+  }
   .c {
     position: relative;
     display: flex;
@@ -703,11 +821,17 @@
   }
 
   /* One keyframe, tinted per direction: amber for a neutral change, up/down
-     colours for a derived tick — the convention on every trading screen. */
+     colours for a derived tick — the convention on every trading screen.
+     Consecutive changes alternate between two identical keyframes: switching
+     animation-name restarts the animation on the SAME element, so a tick never
+     rebuilds DOM just to replay the flash. */
   .flash {
     --bo-flash-ms: 300ms;
     --bo-flash-tint: var(--bo-amber);
     animation: flash var(--bo-flash-ms) linear;
+  }
+  .flash.alt {
+    animation-name: flash-alt;
   }
   .flash.up {
     --bo-flash-tint: var(--bo-up);
@@ -717,6 +841,10 @@
     --bo-flash-tint: var(--bo-down);
     color: var(--bo-down);
   }
+  /* flashColor: false — the column owns its text colour; only the background flashes. */
+  .flash.keep {
+    color: inherit;
+  }
   @keyframes flash {
     0% {
       background: color-mix(in srgb, var(--bo-flash-tint) 38%, transparent);
@@ -725,8 +853,17 @@
       background: transparent;
     }
   }
+  @keyframes flash-alt {
+    0% {
+      background: color-mix(in srgb, var(--bo-flash-tint) 38%, transparent);
+    }
+    100% {
+      background: transparent;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
-    .flash {
+    .flash,
+    .flash.alt {
       animation: none;
     }
   }

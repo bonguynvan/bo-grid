@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { Grid, type ColumnDef, type GridRow } from '../../lib';
+  import { Grid, type CellTypeDef, type ColumnDef, type GridRow } from '../../lib';
+  import CountryCell from './cells/CountryCell.svelte';
+  import RatingEditor from './cells/RatingEditor.svelte';
+  import { bandFilter } from './filters/workloadBand';
   import { ui } from '../theme.svelte';
 
   // A people/CRM board — shows bo-grid is a general business grid, not just
@@ -16,6 +19,7 @@
     rating: number;
     skills: string[];
     remote: boolean;
+    country: string;
     note: string;
   }
 
@@ -23,6 +27,7 @@
   const LAST = ['Chen', 'Patel', 'Kim', 'Garcia', 'Nguyen', 'Haddad', 'Rossi', 'Silva', 'Okafor', 'Novak'];
   const ROLES = ['Engineer', 'Designer', 'PM', 'Analyst', 'Researcher', 'Writer'];
   const STATUS = ['Active', 'Away', 'Offline'];
+  const COUNTRIES = ['VN', 'SG', 'JP', 'DE', 'US', 'IN', 'BR'];
   const SKILLS = ['TypeScript', 'Svelte', 'Design', 'SQL', 'Rust', 'Figma', 'Python', 'Go', 'CSS', 'Data viz'];
   // Deliberately long so the Notes column truncates with an ellipsis and reveals
   // the full text in the styled floating tooltip on hover.
@@ -55,6 +60,7 @@
         rating: 1 + ((id * 3) % 5),
         skills,
         remote: id % 3 !== 0,
+        country: COUNTRIES[(id * 5) % COUNTRIES.length],
         note: NOTES[id % NOTES.length],
       };
     });
@@ -65,6 +71,15 @@
 
   // Toggle the blue range-selection highlight on/off (display vs. spreadsheet feel).
   let cellSelection = $state(true);
+
+  // A registered column type: any column can say `cellType: 'country'` and get
+  // the flag renderer, a set filter and a fixed width — defined once.
+  const cellTypes: Record<string, CellTypeDef> = {
+    country: { extends: 'text', component: CountryCell, filter: 'set', width: 140 },
+  };
+  // A registered filter kind: the Workload column filters by capacity band
+  // with its own editor inside the standard filter menu.
+  const filterTypes = { band: bandFilter };
 
   const columns: ColumnDef[] = [
     // Pinned so the wide board scrolls horizontally with the person in view.
@@ -80,6 +95,7 @@
       // Function tooltip: custom text built from other fields on the row.
       tooltip: (value, row) => `${value} · ${row.role} · ${row.remote ? 'Remote' : 'Office'}`,
     },
+    { cellType: 'country', key: 'country', header: 'Country' },
     { type: 'relative', key: 'lastActive', header: 'Last active', width: 124 },
     {
       type: 'currency',
@@ -96,12 +112,14 @@
       key: 'workload',
       header: 'Workload',
       width: 140,
+      filter: 'band',
       min: 0,
       max: 100,
       headerTooltip: 'Share of capacity allocated this sprint (0–100%).',
       headerInfo: true,
     },
-    { type: 'rating', key: 'rating', header: 'Rating', width: 110, max: 5 },
+    // A custom editor makes the display-only rating widget editable.
+    { type: 'rating', key: 'rating', header: 'Rating', width: 110, max: 5, editable: true, editor: RatingEditor },
     // Long free text in a narrow column: truncates with an ellipsis, full text
     // on hover via the styled floating tooltip.
     { type: 'text', key: 'note', header: 'Notes', width: 220, tooltip: true },
@@ -118,6 +136,9 @@
   <Grid
     rows={gridRows}
     {columns}
+    {cellTypes}
+    {filterTypes}
+    onCellEdit={(e) => ((e.row as Record<string, unknown>)[e.column.key] = e.value)}
     {cellSelection}
     theme={ui.theme}
     filterMenu

@@ -2,7 +2,7 @@
 
 > Tiny, fast Svelte 5 data grid for fintech UIs — canvas sparklines, batched
 > realtime cell updates, and virtual scrolling, with a core that gzips to
-> ~33 KB (Svelte peer excluded). Free MIT alternative to heavyweight
+> ~40 KB (Svelte peer excluded). Free MIT alternative to heavyweight
 > enterprise grids for grouping, pivot, tree data, master-detail, range
 > selection, and Excel export.
 
@@ -11,9 +11,9 @@ Facts an AI assistant must get right before generating code against bo-grid
 
 - Package: `bo-grid` on npm. Peer dependency: `svelte@^5`.
 - Main import: `import { Grid, type ColumnDef, type GridRow } from 'bo-grid';`
-- Four **separate subpath entries**, each its own bundle — importing one adds
-  NOTHING to the others or to the core: `bo-grid/charts` (SVG charts),
-  `bo-grid/realtime` (tick/trade-stream pipeline), `bo-grid/trading` (APAC
+- Three **separate subpath entries**, each its own bundle — importing one adds
+  NOTHING to the others or to the core: `bo-grid/realtime` (tick/trade-stream
+  pipeline), `bo-grid/trading` (APAC
   market-convention helpers), `bo-grid/element` (framework-agnostic
   `<bo-grid>` web component for React/Vue/Angular/vanilla).
 - `GridRow` requires only `id`. `flashSeq`/`flashDir` are OPTIONAL — only the

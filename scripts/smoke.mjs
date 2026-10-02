@@ -4,7 +4,7 @@
 import { JSDOM } from 'jsdom';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 
 const dom = new JSDOM('<!doctype html><html><body><div id="app"></div></body></html>', {
   pretendToBeVisual: true,
@@ -96,7 +96,10 @@ function fail(msg) {
 
 process.on('unhandledRejection', (e) => fail(`unhandled rejection: ${e?.message || e}`));
 
-const bundle = readdirSync('demo-dist/assets').find((f) => f.endsWith('.js'));
+// The entry is whatever index.html loads — not the first .js on disk: shared
+// lazy chunks (e.g. a helper split out between two examples) sort before it.
+const entrySrc = /src="\.\/assets\/([^"]+\.js)"/.exec(readFileSync('demo-dist/index.html', 'utf8'))?.[1];
+const bundle = entrySrc ?? readdirSync('demo-dist/assets').find((f) => f.startsWith('index-') && f.endsWith('.js'));
 if (!bundle) fail('no built bundle in demo-dist/assets — run the demo build first');
 const url = pathToFileURL(resolve('demo-dist/assets', bundle)).href;
 
@@ -106,6 +109,18 @@ try {
   fail(`mount threw: ${e?.stack || e}`);
 }
 await new Promise((r) => setTimeout(r, 600));
+
+// Landing hero: Fig. 1 is a live mini board. Check it rendered, then take it out
+// of the page so every assertion below still finds the Trading desk grid first.
+{
+  const heroGrid = document.querySelector('.lp-fig .bo-grid');
+  if (!heroGrid) fail('landing: hero board (Fig. 1) did not render');
+  if (heroGrid.querySelectorAll('.row').length === 0) fail('landing: hero board rendered no rows');
+  if (!/VNM|FPT|HPG/.test(heroGrid.textContent || '')) fail('landing: hero board is missing its symbols');
+  if (!document.querySelector('.lp-wordmark')) fail('landing: masthead wordmark missing');
+  if (document.querySelectorAll('.lp-list li').length < 10) fail('landing: listings table missing');
+  document.querySelector('.lp-fig')?.remove();
+}
 
 const rowCount = document.querySelectorAll('.row').length;
 const hasHeader = !!document.querySelector('.bo-grid .head');
@@ -265,6 +280,11 @@ if (document.querySelector('.bo-grid.grid')?.getAttribute('aria-label') !== 'Mar
 // and every grid to the light preset, then restores dark.
 const themeBtn = document.querySelector('.lp-theme');
 if (!themeBtn) fail('global theme toggle not found in the nav');
+// Start from the dark (terminal) theme whatever the page default is.
+if (document.documentElement.classList.contains('light')) {
+  click(themeBtn);
+  await wait(40);
+}
 click(themeBtn);
 await wait(40);
 if (!document.documentElement.classList.contains('light')) {
@@ -672,6 +692,27 @@ await wait(30);
 if (document.querySelectorAll('.bo-grid .row').length !== sheetRows)
   fail('quick filter: clearing the query did not restore the rows');
 
+// Grid handle (`onReady`): a layout snapshot round-trips, and scrollToRow moves
+// the viewport. Compact hides two columns and sorts; Restore brings them back.
+{
+  const demoBtn = (name) => document.querySelector(`[data-demo="${name}"]`);
+  const headCount = () => document.querySelectorAll('.bo-grid .head .h').length;
+  const before = headCount();
+  demoBtn('save-layout').click();
+  await wait(20);
+  demoBtn('compact').click();
+  await wait(40);
+  if (headCount() !== before - 2) fail(`handle: applyState hid ${before - headCount()} columns, expected 2`);
+  demoBtn('restore-layout').click();
+  await wait(40);
+  if (headCount() !== before) fail('handle: Restore layout did not bring the columns back');
+  const vp = document.querySelector('.bo-grid .viewport');
+  const topBefore = vp.scrollTop;
+  demoBtn('jump').click();
+  await wait(40);
+  if (!(vp.scrollTop > topBefore)) fail('handle: scrollToRow did not scroll the viewport');
+}
+
 // Fill handle (v0.5): select an editable cell, drag its corner down two rows, and
 // assert the source value copied into the rows below.
 const FILL_COL = 4; // Bonus — editable number, no custom format
@@ -975,6 +1016,57 @@ if (heatCells === 0) fail('Correlation matrix rendered no heatmap-coloured cells
 if (corrPinned === 0) fail('Correlation matrix label column did not pin');
 
 // Leaderboard: custom rank/progress cells + podium row highlighting.
+// Blotter: merged cells. spanRows draws one tall cell per run (aria-rowspan)
+// with transparent covers below it; colSpan note rows cover Qty/Price.
+// Price board: plain rows fed through api.patchRows. A patch to an on-screen
+// symbol repaints its cell (and flashes it); the board renders all 24 columns.
+await solo('priceboard', '.bo-grid .row', 'Price board example rendered no rows');
+{
+  const pb = globalThis.__priceBoard ?? window.__priceBoard;
+  if (!pb?.api?.()) fail('Price board: grid handle (onReady) not exposed');
+  const head = [...document.querySelectorAll('.bo-grid .head [role=columnheader]')].find((h) => h.textContent.trim() === 'Giá');
+  const ci = head?.getAttribute('aria-colindex');
+  const row0 = document.querySelector('.bo-grid .viewport .row');
+  const sym = row0?.querySelector('[aria-colindex="1"]')?.textContent.trim();
+  const q = pb.rows().find((r) => r.symbol === sym);
+  if (!q) fail('Price board: first rendered row not found in its data');
+  const before = row0.querySelector(`[aria-colindex="${ci}"]`).textContent.trim();
+  const changed = pb.api().patchRows([[q.id, { mp: q.mp + 500 }]]);
+  await wait(30);
+  const after = document.querySelector('.bo-grid .viewport .row').querySelector(`[aria-colindex="${ci}"]`);
+  if (changed !== 1) fail(`Price board: patchRows reported ${changed} changed rows, expected 1`);
+  if (after.textContent.trim() === before) fail('Price board: patchRows did not repaint the on-screen cell');
+  if (!after.querySelector('.flash')) fail('Price board: patched cell did not flash');
+  if (document.querySelectorAll('.bo-grid .head [role=columnheader]').length !== 24)
+    fail('Price board: expected 24 columns');
+  // Top movers: sorted by change, values move in place, api.refresh() re-sorts.
+  pb.setMovers(true);
+  await wait(30);
+  const last = pb.rows()[pb.rows().length - 1];
+  pb.api().patchRows([[last.id, { chg: 999_999 }]]);
+  pb.api().refresh();
+  await wait(30);
+  const topSym = document.querySelector('.bo-grid .viewport .row [aria-colindex="1"]')?.textContent.trim();
+  if (topSym !== last.symbol) fail(`Price board: refresh() did not re-sort (top is ${topSym}, expected ${last.symbol})`);
+  pb.setMovers(false);
+}
+
+await solo('blotter', '.bo-grid .row', 'Blotter example rendered no rows');
+const blotRuns = [...document.querySelectorAll('.bo-grid [aria-rowspan]')];
+const blotCovers = document.querySelectorAll('.bo-grid .spancover').length;
+const blotColSpans = document.querySelectorAll('.bo-grid [aria-colspan="3"]').length;
+if (blotRuns.length === 0) fail('Blotter: spanRows drew no merged cells');
+if (blotCovers === 0) fail('Blotter: covered cells under a run did not render as covers');
+if (blotColSpans === 0) fail('Blotter: colSpan note rows did not span 3 columns');
+if (!blotRuns.every((c) => Number(c.getAttribute('aria-rowspan')) > 1 && parseFloat(c.style.height) > 0))
+  fail('Blotter: a merged cell is missing its run height');
+// The account column runs hierarchically above the order column: the first
+// account run must be at least as tall as the first order run inside it.
+const blotAcct = blotRuns.find((c) => c.getAttribute('aria-colindex') === '1');
+const blotOrder = blotRuns.find((c) => c.getAttribute('aria-colindex') === '2');
+if (!blotAcct || !blotOrder || parseFloat(blotAcct.style.height) < parseFloat(blotOrder.style.height))
+  fail('Blotter: account run is not hierarchical over the order run');
+
 await solo('leaderboard', '.bo-grid .row', 'Leaderboard example rendered no rows');
 const lbBars = document.querySelectorAll('.bo-grid .row .bar .fill').length;
 const lbPodium = document.querySelectorAll('.bo-grid .row.podium-row').length;
@@ -996,6 +1088,53 @@ for (const [sel, label] of [
 ]) {
   if (document.querySelectorAll(sel).length === 0) fail(`Team: ${label} cell type did not render`);
 }
+// Registered cell type: `cellType: 'country'` resolves through <Grid cellTypes>
+// and draws with its Svelte component (region dot + country name).
+const teamCountry = document.querySelectorAll('.bo-grid .country-cell');
+if (teamCountry.length === 0) fail('Team: registered cellType component did not render');
+if (!teamCountry[0].querySelector('.dot') || !/[A-Za-z]{3,}/.test(teamCountry[0].textContent))
+  fail(`Team: country cell content looks wrong ("${teamCountry[0].textContent.trim()}")`);
+// Registered filter type: the Workload column's `filter: 'band'` opens the
+// standard menu frame around the demo's own editor; picking "Over 80%" and
+// applying keeps only rows whose progress fill is above 80%, Clear restores.
+const teamRowsBefore = document.querySelectorAll('.bo-grid .row').length;
+const workloadFunnel = () =>
+  [...document.querySelectorAll('.bo-grid .head .h')]
+    .find((h) => h.querySelector('.label')?.textContent?.trim() === 'Workload')
+    ?.querySelector('.funnel');
+if (!workloadFunnel()) fail('Team: funnel did not render on the Workload header');
+workloadFunnel().dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await waitFor('.bo-filtermenu .band-filter', 'Team: registered filter editor did not render in the menu');
+[...document.querySelectorAll('.bo-filtermenu .band')]
+  .find((b) => b.textContent.trim() === 'Over 80%')
+  .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(20);
+document.querySelector('.bo-filtermenu .bo-fm-apply').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(40);
+const bandFills = [...document.querySelectorAll('.bo-grid .row .bo-progress-fill')].map((f) => parseFloat(f.style.width));
+if (bandFills.length === 0 || bandFills.length >= teamRowsBefore)
+  fail(`Team: band filter did not narrow the rows (${bandFills.length} of ${teamRowsBefore})`);
+if (!bandFills.every((w) => w > 80)) fail(`Team: band filter kept a row outside the band (${bandFills.join(', ')})`);
+workloadFunnel().dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await waitFor('.bo-filtermenu .band.on', 'Team: reopened band filter lost its selection');
+[...document.querySelectorAll('.bo-filtermenu .bo-fm-btn')]
+  .find((b) => b.textContent.trim() === 'Clear')
+  .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+await wait(40);
+if (document.querySelectorAll('.bo-grid .row').length !== teamRowsBefore) fail('Team: clearing the band filter did not restore the rows');
+// Custom cell editor: double-clicking a rating cell opens the demo's star
+// editor (a display-only type made editable); clicking a star commits it.
+const ratingCell = () =>
+  [...document.querySelectorAll('.bo-grid .row')][0]?.querySelector('.bo-rating')?.closest('.c');
+ratingCell().dispatchEvent(new window.MouseEvent('dblclick', { bubbles: true }));
+await waitFor('.bo-grid .rating-editor', 'Team: custom rating editor did not open');
+[...document.querySelectorAll('.bo-grid .rating-editor .star')][4].dispatchEvent(
+  new window.MouseEvent('click', { bubbles: true }),
+);
+await wait(40);
+if (document.querySelector('.bo-grid .rating-editor')) fail('Team: rating editor did not close after commit');
+if (ratingCell()?.querySelector('.bo-rating')?.getAttribute('aria-label') !== '5 out of 5')
+  fail('Team: rating editor commit did not update the cell');
 // link safety: the email column produces mailto: anchors (safeHref passed it).
 const teamLink = document.querySelector('.bo-grid .bo-link');
 if (!/^mailto:/.test(teamLink?.getAttribute('href') || '')) fail('Team: link href not applied (safeHref)');
@@ -1008,39 +1147,6 @@ if (!/\$\d/.test(teamText)) fail('Team: currency column did not render');
 const teamHeadTip = document.querySelector('.bo-grid .head .h[data-bo-tip]');
 if (!teamHeadTip) fail('Team: header tooltip did not set data-bo-tip on a columnheader');
 if (!document.querySelector('.bo-grid .head .h .hinfo')) fail('Team: headerInfo icon not rendered');
-
-// Dashboard: the bo-grid/charts companion — KPI cards (standalone charts) plus
-// in-cell charts (a LineChart in each grid row's custom Trend cell).
-await solo('dashboard', '.boc-line', 'Dashboard charts did not render (lazy chunk)');
-const dashLines = document.querySelectorAll('.boc-line').length;
-const dashBars = document.querySelectorAll('.boc-bar rect').length;
-const dashArcs = document.querySelectorAll('.boc-donut path').length;
-const dashStacked = document.querySelectorAll('.boc-stacked rect').length;
-const dashLegend = document.querySelectorAll('.boc-legend li').length;
-if (dashBars === 0) fail('Dashboard: bar chart did not render');
-if (dashArcs === 0) fail('Dashboard: donut chart did not render');
-if (dashStacked === 0) fail('Dashboard: stacked bar chart did not render (v0.19)');
-if (dashLegend === 0) fail('Dashboard: legend did not render (v0.19)');
-// Hover tooltips: chart elements carry a <title> (the value).
-if (!document.querySelector('.boc-bar rect title')) fail('Dashboard: bar chart tooltips (<title>) missing');
-// >1 line = the KPI card line + one LineChart per grid row (charts inside cells).
-if (dashLines < 2) fail(`Dashboard: in-cell line charts did not render (${dashLines} line charts)`);
-// Candlestick (bodies + wicks) and depth chart (bid/ask bars either side of the spread).
-const dashCandleBodies = document.querySelectorAll('.boc-candle rect').length;
-const dashCandleWicks = document.querySelectorAll('.boc-candle line').length;
-if (dashCandleBodies === 0) fail('Dashboard: candlestick bodies did not render');
-if (dashCandleWicks === 0) fail('Dashboard: candlestick wicks did not render');
-if (dashCandleBodies !== dashCandleWicks) {
-  fail(`Dashboard: candlestick body/wick count mismatch (${dashCandleBodies} bodies vs ${dashCandleWicks} wicks)`);
-}
-const dashDepthBars = document.querySelectorAll('.boc-depth rect').length;
-if (dashDepthBars === 0) fail('Dashboard: depth chart bars did not render');
-const dashDepthSides = new Set(
-  [...document.querySelectorAll('.boc-depth rect title')].map((t) => t.textContent?.split(' ')[0]),
-);
-if (!dashDepthSides.has('bid') || !dashDepthSides.has('ask')) {
-  fail(`Dashboard: depth chart did not render both bid and ask sides (got: ${[...dashDepthSides].join(', ')})`);
-}
 
 // Wide grid (v0.16): 60+ columns in fixed-width horizontal-scroll mode with a
 // pinned label column. (Column windowing needs real layout + ResizeObserver,
@@ -1223,7 +1329,7 @@ console.log(
     `paste + resize committed (+onColumnResize); collapse ${heightBefore}→${heightAfter}px; server loaded ${dataRows} rows; ` +
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale + computed-col, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
-    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars + ${obDirected} derived flashes, vnboard ${vnRows} rows + ${vnSession.textContent?.trim()} session (bo-grid/trading), ladder ${ladderRowsInitial}/120 visible + lock/page/recenter ok, timesales ${tsRows} trades (capped, newest-first), correlation ${heatCells} heat cells/${corrPinned} pinned, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, dashboard ${dashLines} line/${dashBars} bar/${dashArcs} donut/${dashStacked} stacked/${dashLegend} legend/${dashCandleBodies} candles/${dashDepthBars} depth bars (charts companion), wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), csv ${csvRows}→${csvAfter} rows + json ${csvJson} + auto ${csvAuto} (csv/tsv/json/auto import), print ${printGridRows} virt/${printPreviewRows} all-rows, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
+    `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars + ${obDirected} derived flashes, vnboard ${vnRows} rows + ${vnSession.textContent?.trim()} session (bo-grid/trading), ladder ${ladderRowsInitial}/120 visible + lock/page/recenter ok, timesales ${tsRows} trades (capped, newest-first), correlation ${heatCells} heat cells/${corrPinned} pinned, blotter ${blotRuns.length} runs/${blotCovers} covers/${blotColSpans} col-spans, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 6 presets (midnight→terminal), csv ${csvRows}→${csvAfter} rows + json ${csvJson} + auto ${csvAuto} (csv/tsv/json/auto import), print ${printGridRows} virt/${printPreviewRows} all-rows, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
     `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
 );
 process.exit(0);

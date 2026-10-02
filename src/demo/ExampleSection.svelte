@@ -2,7 +2,7 @@
   import { untrack } from 'svelte';
   import type { Example } from './examples/registry';
 
-  let { ex, eager = false }: { ex: Example; eager?: boolean } = $props();
+  let { ex, n, eager = false }: { ex: Example; n?: number; eager?: boolean } = $props();
 
   // Eagerly-bundled examples (the first one) render immediately; the rest mount
   // their (code-split) grid only once scrolled near the viewport. This keeps a
@@ -39,6 +39,7 @@
 
 <section class="lp-ex" id={`ex-${ex.id}`} aria-labelledby={`ex-${ex.id}-h`}>
   <header class="lp-ex-head">
+    {#if n}<span class="lp-ex-n">Ex. {String(n).padStart(2, '0')}</span>{/if}
     <h3 id={`ex-${ex.id}-h`}>{ex.title}</h3>
     <p>{ex.blurb}</p>
   </header>
@@ -62,28 +63,47 @@
 
 <style>
   .lp-ex {
-    scroll-margin-top: 72px;
+    scroll-margin-top: 56px;
   }
   .lp-ex-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 14px;
+    align-items: baseline;
     margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule, var(--border));
+  }
+  .lp-ex-n {
+    grid-row: span 2;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--down);
   }
   .lp-ex-head h3 {
-    margin: 0 0 4px;
-    font-size: 1.15rem;
-    letter-spacing: -0.015em;
+    margin: 0 0 2px;
+    font-family: var(--serif);
+    font-size: 1.6rem;
+    font-weight: 700;
+    font-variation-settings: 'opsz' 72;
+    letter-spacing: -0.02em;
   }
   .lp-ex-head p {
     margin: 0;
-    font-size: 13px;
+    font-family: var(--serif);
+    font-size: 0.98rem;
+    font-style: italic;
     color: var(--text-dim);
   }
   .lp-ex-body {
-    border: 0.5px solid var(--border);
-    border-radius: 14px;
-    background: var(--bg);
+    border: 1px solid var(--rule, var(--border));
+    background: var(--card, var(--bg));
     padding: 16px;
-    box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.8);
     overflow: auto;
+    font-family: var(--mono);
+    font-size: 13px;
   }
   .lp-ex-ph {
     min-height: 220px;

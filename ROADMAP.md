@@ -276,6 +276,69 @@ tested geometry holds for these too.
 - [x] Charts budget recalibrated 3 → 4 KB for both (now ~4.2/8 KB). Dashboard
   demo gets two more cards.
 
+## 2.0 · Grid-only, built for busy markets — done
+
+bo-grid becomes a pure data grid, aiming at feature parity with heavyweight
+grids such as AG Grid. Standalone charting moves out: the
+[TradeCanvas](https://github.com/bonguynvan/tradecanvas) library covers it.
+
+- [x] **Removed `bo-grid/charts`** (breaking). In-cell sparklines stay — they
+  are a column type, part of the grid.
+- [x] **Localization** — `labels` (every built-in string, overridable per grid)
+  and `locale` (built-in number/date/relative formatting).
+- [x] **Grid handle** — `onReady(api)`: `scrollToRow`, `focusCell`,
+  `getSelectedRows`, `autosizeColumns`, `exportCSV`, `getState`/`applyState`
+  with saved-layout reconciliation.
+- [x] **Merged cells** — value-driven `spanRows` (hierarchical) and row-driven
+  `colSpan`, virtualization- and pin-aware.
+- [ ] **Explicit merge regions** — key-addressed rectangles for layout facts
+  no rule derives (block trades, report captions).
+- [x] **Cell-type registry** — `cellTypes` + `cellType: 'name'`, with
+  `extends` for built-in behaviour and a Svelte `component` renderer.
+- [x] **Custom filter types** — `filterTypes` + `filter: 'name'`, editor drawn
+  inside the standard menu frame.
+- [ ] **Layered source layout** — split the grid into pure `core/`, runes
+  `reactive/` and `ui/` tiers with an enforced import rule. *(moved to 2.1)*
+- [x] **Busy-market performance**, measured on a VN-style price board
+  (production build, same-session A/B): `api.patchRows` on plain rows with
+  per-field repaints, flashes that never rebuild DOM, row recycling and reused
+  render items for scrolling (3.5–9× cheaper), `api.refresh()` with sort keys
+  read once per row for live re-sorts, `flashColor: false` for price-limit tones.
+- [x] **Layout fixes** — header/body alignment to the subpixel, flex fill in
+  fixed-width mode, horizontal scroll instead of clipping.
+- [x] **New demo site** — a trading broadsheet with a live price board as its
+  lead figure.
+
+Remaining 2.0 ideas (explicit merge regions, layered source layout) and the
+parity backlog below move to **2.1+**.
+
+### Parity backlog (vs AG Grid), in priority order
+
+What a team moving off AG Grid most often reaches for and bo-grid lacks:
+
+1. [x] **Custom cell editors** (`editor` component), a value parser for typed
+   and pasted text (`parse`), and `defaultColumn` for shared column settings.
+2. [ ] **Two-condition column filters** — `A and/or B` inside the text, number
+   and date filters.
+3. [ ] **Row grouping from the UI** — "Group by this column" in the column
+   menu and a drag-to-group panel, with removable group chips.
+4. [ ] **Collapsible header groups** — a header group that folds to one column.
+5. [ ] **Bottom pinned rows** — `pinnedBottomRows` beside `pinnedRows`.
+6. [ ] **Status bar** — row counts (total / filtered / selected) next to the
+   selection aggregates.
+7. [ ] **Find in grid** — Ctrl/⌘+F highlight and step through matches.
+8. [ ] **Auto row height** — measure wrapped content per row.
+9. [ ] **Explicit merge regions** (above) and **multiple selection ranges**.
+10. [ ] **RTL layout.**
+
+Already at parity: virtual rows/columns, pinning, sort/filter (text, number,
+date, set, custom), quick filter, floating filter row, grouping with
+aggregation, tree data (incl. lazy), master-detail, pivot, server-side rows,
+inline editing with undo/redo, fill handle, clipboard, CSV/Excel export,
+column move/resize/autosize/hide, tool panel, merged cells, cell renderers and
+registered types, sparklines, cell flash, themes, localization, keyboard and
+ARIA, state save/restore.
+
 ## Candidate themes for later versions
 
 The roadmap's planned features are all shipped, plus cross-framework support and
@@ -286,14 +349,16 @@ CSV round-trip. Remaining ideas are polish or demand-driven:
 - Driven by real-world usage now that it's published — open an issue with what's
   missing.
 
-Note: the eager grid core is ~94% of its 35 KB budget; the next sizable *core*
-feature should recalibrate it (still ~15× smaller than heavyweight grids). The
-charts (8 KB), realtime (2 KB) and trading (2 KB) companions, each on its own
-budget, are the model for keeping the core tiny — a new capability belongs in a
+Note on size: the eager core is ~40 KB gzip. Feature growth is expected on the
+way to heavyweight-grid parity and is not capped; `pnpm size:lib` reports the
+number on every run so optimization has a target, and only fails on an
+accidental blow-up. The
+realtime (2 KB) and trading (2 KB) companions, each on its own budget, are the
+model for keeping the core tiny — a new capability belongs in a
 subpath unless it is genuinely part of the grid's identity.
 
-Out of scope by design (they fight the "tiny" positioning): a heavyweight
-integrated-charting engine in the core (the companion package is the answer),
+Out of scope by design (they fight the "tiny" positioning): any
+charting engine (use TradeCanvas alongside the grid),
 viewport row model, RTL — unless real demand appears.
 
 Ideas and feedback welcome — open an issue.

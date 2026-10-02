@@ -83,7 +83,5 @@ The loading overlay is an `aria-live="polite"` region with `aria-busy`.
   grids. Use `Alt`+`↓` for per-column actions to avoid tabbing.
 - A formal screen-reader pass (NVDA / VoiceOver) and an automated axe-core sweep
   are recommended for any specific deployment; this audit is code-level.
-- Charts (`bo-grid/charts`) expose `role="img"` with an `aria-label`; they are
-  summary visuals, not data tables.
 
 Found an issue? Please open one — accessibility regressions are treated as bugs.

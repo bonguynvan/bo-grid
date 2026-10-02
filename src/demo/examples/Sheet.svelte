@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Grid, type ColumnDef, type GridRow } from '../../lib';
+  import { Grid, type ColumnDef, type GridRow, type GridApi, type GridState } from '../../lib';
   import { ui } from '../theme.svelte';
 
   // A plain, non-financial dataset — a team roster — to show the grid is a
@@ -50,7 +50,9 @@
     { type: 'text', key: 'name', header: 'Name', width: 160, tooltip: true },
     { type: 'text', key: 'role', header: 'Role', width: 130, editable: true, options: ROLES, compare: (a, b) => ROLES.indexOf(String(a)) - ROLES.indexOf(String(b)) },
     { type: 'text', key: 'team', header: 'Team', width: 120, cellClass: 'team-cell', headerClass: 'team-head' },
-    { type: 'number', key: 'salary', header: 'Salary', width: 116, minWidth: 90, maxWidth: 200, decimals: 0, editable: true, format: (v) => `$${Number(v).toLocaleString()}` },
+    { type: 'number', key: 'salary', header: 'Salary', width: 116, minWidth: 90, maxWidth: 200, decimals: 0, editable: true, format: (v) => `$${Number(v).toLocaleString()}`,
+      // Typed or pasted "$90,000" parses to 90000; anything without digits is rejected.
+      parse: (raw) => (/\d/.test(raw) ? Number(raw.replace(/[^\d.-]/g, '')) : undefined) },
     { type: 'number', key: 'bonus', header: 'Bonus', width: 108, decimals: 0, editable: true },
     { type: 'number', key: 'rating', header: 'Rating', width: 92, decimals: 1, editable: true, cellClass: (v) => (Number(v) >= 4.5 ? 'rating-hot' : '') },
     { type: 'date', key: 'startDate', header: 'Start date', width: 120, dateStyle: 'short', editable: true },
@@ -61,6 +63,14 @@
   let lastCell = $state('');
   let pageMode = $state(false);
   let activeRow = $state<string | null>(null); // controlled active-row highlight
+
+  // The grid handle (`onReady`): layout snapshots and programmatic scrolling.
+  let api = $state<GridApi | null>(null);
+  let savedLayout = $state<GridState | null>(null);
+  const compactLayout = () => {
+    if (!api) return;
+    api.applyState({ ...api.getState(), hidden: ['bonus', 'rating'], sorts: [{ key: 'salary', dir: 'desc' }] });
+  };
 
   // Column show/hide: a controlled list of hidden keys + a little picker menu.
   let hidden = $state<string[]>([]);
@@ -122,6 +132,10 @@
   <button class="colbtn" class:on={pageMode} onclick={() => (pageMode = !pageMode)}>
     {pageMode ? 'Paged' : 'Scroll'}
   </button>
+  <button class="colbtn" data-demo="compact" onclick={compactLayout}>Compact</button>
+  <button class="colbtn" data-demo="save-layout" onclick={() => (savedLayout = api?.getState() ?? null)}>Save layout</button>
+  <button class="colbtn" data-demo="restore-layout" disabled={!savedLayout} onclick={() => api?.applyState(savedLayout)}>Restore layout</button>
+  <button class="colbtn" data-demo="jump" onclick={() => api?.scrollToRow('emp-45', 'center')}>Jump to #45</button>
   {#if selectedCount > 0}
     <span class="count">{selectedCount} selected</span>
   {/if}
@@ -165,6 +179,7 @@
     detailHeight={84}
     pageSize={pageMode ? 12 : 0}
     pageSizeOptions={[12, 24, 48]}
+    onReady={(a) => (api = a)}
   />
 </div>
 

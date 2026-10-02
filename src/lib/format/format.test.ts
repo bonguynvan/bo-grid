@@ -100,3 +100,23 @@ describe('relativeTime', () => {
     expect(relativeTime(NaN, now)).toBe('');
   });
 });
+
+describe('locale-aware formatting', () => {
+  it('formats prices with the given locale', () => {
+    expect(fmtPrice(1234.5, 'de-DE')).toBe('1.234,50');
+    expect(fmtPrice(1234.5)).toBe('1,234.50');
+  });
+
+  it('formats dates with the given locale', () => {
+    const ms = Date.UTC(2024, 0, 15, 12);
+    expect(fmtDate(ms, 'medium', 'en-US')).toBe('Jan 15, 2024');
+    expect(fmtDate(ms, 'medium', 'vi-VN')).not.toBe('Jan 15, 2024');
+  });
+
+  it('formats relative time through Intl when a locale is given', () => {
+    const now = Date.UTC(2024, 0, 15, 12);
+    expect(relativeTime(now - 3 * 3600_000, now)).toBe('3 hours ago');
+    expect(relativeTime(now - 3 * 3600_000, now, 'en-US')).toBe('3 hours ago');
+    expect(relativeTime(now - 3 * 3600_000, now, 'vi-VN')).not.toBe('3 hours ago');
+  });
+});

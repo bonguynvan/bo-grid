@@ -31,11 +31,29 @@ export type {
   DataBarConfig,
   IconRule,
   ColorScaleConfig,
+  CellTypeDef,
+  CellTypeProps,
+  CellEditorProps,
+  BuiltinCellType,
 } from './grid/column';
+export { resolveColumns } from './grid/celltype';
+export { sortRows } from './grid/column';
+export type { DefaultColumn } from './grid/celltype';
 export type { AggKind, AggResult } from './grid/aggregate';
 
 // Column filter model (for controlled filtering via `columnFilters`/`onFilterChange`)
-export type { ColumnFilter, FilterKind, TextOp, NumberOp, DateOp } from './grid/filtering';
+export type {
+  ColumnFilter,
+  FilterKind,
+  TextOp,
+  NumberOp,
+  DateOp,
+  AnyFilter,
+  CustomFilter,
+  FilterEditorProps,
+  FilterTypeDef,
+  FilterTypes,
+} from './grid/filtering';
 
 // Value formatters (handy when building custom cell content)
 export { fmtPrice, fmtPercent, fmtVolume, fmtDate, fmtCurrency, relativeTime } from './format/format';
@@ -59,6 +77,13 @@ export {
   themePresets,
 } from './grid/theme';
 export type { GridTheme, ThemePreset } from './grid/theme';
+export { DEFAULT_LABELS, resolveLabels } from './grid/labels';
+export { reconcileState, GRID_STATE_VERSION } from './grid/state';
+export { buildMergePlan, colSpanRow } from './grid/merge';
+export type { MergePlan, MergeInput, SpanRun } from './grid/merge';
+export type { GridState } from './grid/state';
+export type { GridApi, ScrollAlign } from './grid/api';
+export type { GridLabels } from './grid/labels';
 
 // Sparkline canvas primitives (draw candlesticks on your own canvas)
 export { drawCandles, setupHiDpiCanvas } from './sparkline/sparkline-render';

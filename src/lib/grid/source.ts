@@ -1,6 +1,6 @@
 import type { GridRow, SortState } from './column';
-import { compareBySorts } from './column';
-import { passesFilters, type ColumnFilter } from './filtering';
+import { sortRows } from './column';
+import { passesFilters, type AnyFilter, type FilterTypes } from './filtering';
 
 export interface RowRange {
   /** First row index (inclusive). */
@@ -18,7 +18,7 @@ export interface RowSourceParams {
   sorts?: SortState[];
   filter: string;
   /** Structured per-column filters (header filter menu), keyed by column key. */
-  columnFilters?: Record<string, ColumnFilter>;
+  columnFilters?: Record<string, AnyFilter>;
 }
 
 export interface RowSourceResult {
@@ -43,6 +43,8 @@ export interface ArraySourceOptions {
   latency?: number;
   /** Row keys to match when filtering. Omit to disable filtering. */
   filterKeys?: string[];
+  /** Registered filter kinds, so custom column filters apply here too. */
+  filterTypes?: FilterTypes;
 }
 
 /**
@@ -51,7 +53,7 @@ export interface ArraySourceOptions {
  * exercising the server-side code path in tests/demos (set `latency`).
  */
 export function createArraySource(all: readonly GridRow[], opts: ArraySourceOptions = {}): RowSource {
-  const { latency = 0, filterKeys } = opts;
+  const { latency = 0, filterKeys, filterTypes } = opts;
 
   function compute(params: RowSourceParams): RowSourceResult {
     let rows: readonly GridRow[] = all;
@@ -61,11 +63,11 @@ export function createArraySource(all: readonly GridRow[], opts: ArraySourceOpti
     }
     const cf = params.columnFilters;
     if (cf && Object.keys(cf).length > 0) {
-      rows = rows.filter((r) => passesFilters(r, cf));
+      rows = rows.filter((r) => passesFilters(r, cf, undefined, filterTypes));
     }
     const sorts = params.sorts?.length ? params.sorts : params.sort ? [params.sort] : [];
     if (sorts.length > 0) {
-      rows = [...rows].sort((a, b) => compareBySorts(a, b, sorts));
+      rows = sortRows(rows, sorts, []);
     }
     const total = rows.length;
     return { rows: rows.slice(params.range.start, params.range.end), total };

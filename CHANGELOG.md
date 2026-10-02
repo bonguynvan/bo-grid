@@ -5,6 +5,140 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+**bo-grid is now grid-only, and built for busy markets.** Standalone charting is
+out of scope — use [TradeCanvas](https://github.com/bonguynvan/tradecanvas) for
+charts. This release adds a realtime fast path and a round of measured
+performance work on price-board workloads, the first AG Grid parity features
+(merged cells, registered cell and filter types, custom editors, localization,
+layout save/restore), alignment and layout fixes, and a new demo site.
+
+### Breaking changes — upgrading from 1.x
+
+- **`bo-grid/charts` is gone.** Import charts from
+  [TradeCanvas](https://github.com/bonguynvan/tradecanvas) instead. The grid's
+  own `sparkline` column type, `Sparkline` and `drawCandles` are unchanged.
+- **`CellEditEvent.value` is `unknown`** (was `string | number`), and
+  `validate(value, row)` receives `unknown`: custom editors and `parse` can
+  commit any value. Built-in editors still produce numbers for numeric columns,
+  epoch ms for `date` and strings otherwise — narrow before use.
+- **`columnFilters` / `onFilterChange` carry `Record<string, AnyFilter>`** (was
+  `ColumnFilter`), so registered filter kinds fit. Retype any state you keep.
+- **Date filters and the date editor use the viewer's calendar day**, matching
+  what the cell displays (they used the UTC day). `before` / `after` now
+  exclude the chosen day.
+- **Grids whose columns don't fit now scroll horizontally** instead of clipping
+  the last columns, and fixed-width (pinned / virtualized) grids stretch `flex`
+  columns to fill the viewport.
+
+### Changed
+
+- **New demo landing page — a trading broadsheet.** Newsprint paper and ink by
+  default (a "terminal" palette behind the theme toggle), Fraunces + JetBrains
+  Mono, a masthead with the live HOSE session, a ticker tape, a lead story whose
+  figure is a live price board fed through `api.patchRows`, real benchmark
+  figures, a listings table of AG Grid Enterprise-only features that are free
+  here, and numbered example contents.
+
+### Removed
+
+- **BREAKING: the `bo-grid/charts` entry** (`LineChart`, `BarChart`,
+  `DonutChart`, `StackedBarChart`, `CandlestickChart`, `DepthChart`, `Legend`
+  and the SVG geometry helpers) and the Dashboard demo. The grid's own
+  `sparkline` column type, `Sparkline` and `drawCandles` are unchanged.
+
+### Fixed
+
+- **Flashing no longer rebuilds DOM.** Every tick used to destroy and recreate
+  the flashing element to replay its animation; consecutive flashes now
+  alternate between two identical keyframes on the same element (~20% less
+  render time per frame on a busy board, and far fewer short-lived nodes).
+- **Date filters and the date editor use the viewer's calendar day.** A `date`
+  cell displays its value as a local day, but the filter matched — and the
+  editor wrote — the UTC day, so east or west of UTC a cell showing the 15th
+  could fail "on the 15th". Filter, editor and display now agree; `before` and
+  `after` exclude the chosen day, `between` includes both ends.
+- **Header and body columns line up exactly.** The body's vertical scrollbar
+  no longer shifts the last column's header out of line: the body and every
+  header row (header, header groups, filter row) reserve the same scrollbar
+  gutter natively (`scrollbar-gutter: stable`). In horizontal-scroll mode the
+  header now follows the body all the way to the right edge.
+- **No gap on the right of fixed-width grids.** With pinned columns or column
+  virtualization, `flex` columns now grow to fill the viewport, and rows reach
+  the right edge even when every column has a fixed width.
+- **Columns that do not fit are no longer clipped.** When fixed widths (plus
+  a 64 px minimum per flex column) exceed the viewport, the grid switches to
+  horizontal scrolling instead of cutting off the last columns.
+
+### Added
+
+- **Realtime fast path for busy markets: `api.patchRows`** — rows can be plain
+  objects; `patchRows([[id, fields], …])` writes ticks in place and repaints only
+  the rendered rows it changed, skipping the reactive-proxy cost on every write
+  (~2.7× cheaper writes; on the Price board a 30,000 events/s frame is ~4.5 ms
+  vs ~5.3 ms through `$state` rows, production build). Repaints are per field:
+  only cells whose own field changed re-render, plus row-aware ones (renderers,
+  computed columns, and `format`/`cellClass`/`tooltip` functions that declare
+  the `row` parameter) — ~25% less render time and ~3× fewer over-budget frames
+  at 30,000 events/s than per-row repaints. Feed it straight from
+  `createTickStream({ apply: (b) => api.patchRows(b) })`.
+- **`api.refresh()`** — re-run filter and sort against current values. Live
+  values never re-sort the view on their own (that would sort on every tick);
+  a "top movers" board calls this once a second. Sorting now reads each row's
+  sort value once and sorts indices (`sortRows`, exported), with a cached
+  collator for strings; items of rows that keep their position are reused. A
+  re-sort frame on the Price board is ~35–40% cheaper.
+- **Row recycling** — with uniform row heights the grid renders a fixed-length
+  window and hands the row that scrolls out to the row that scrolls in, so its
+  cells update in place instead of remounting; render items are also reused
+  while their row is unchanged. Scrolling the Price board is 3.5–9× cheaper per
+  frame (1 row/frame: 8.9 → 1.0 ms; 10 rows/frame: 28 → 8 ms).
+- **`flashColor: false`** — flash only the background, keeping the column's own
+  text colour (price-limit tones on VN boards).
+- **Price board demo** — a full VN-style bảng giá (3 bid/ask levels, match,
+  high/low, foreign flow) with a live feed up to 30,000 events/s and a built-in
+  per-frame benchmark (`apply · render · layout`).
+- **Custom cell editors, `parse` and `defaultColumn`** — an `editor` component
+  replaces the built-in input (and makes display widgets like `rating`
+  editable); `parse(raw, row)` turns typed or pasted text into the stored value
+  for the built-in editor, paste and fill; `defaultColumn` applies settings
+  under every column. `CellEditEvent.value` and `validate` now carry
+  `unknown`. Exports `CellEditorProps`, `DefaultColumn`.
+- **Custom filter types** — `<Grid filterTypes>` registers a filter kind with
+  its own `test`, optional `isActive`, and an editor `component` drawn inside
+  the standard filter menu (which keeps its title, Clear/Apply and Enter);
+  columns opt in with `filter: 'name'`. Custom filters are plain objects with a
+  `kind`, so they flow through `columnFilters`, `onFilterChange`, `getState()`,
+  `RowSource` and `createArraySource({ filterTypes })`. An unregistered kind
+  filters nothing. The `columnFilters` / `onFilterChange` types widen to
+  `Record<string, AnyFilter>`. New demo: a workload-band filter on Team.
+- **Registered cell types** — `<Grid cellTypes>` maps a name to column
+  defaults (format, compare, align, filter, width, a Svelte `component`…) and an
+  `extends` built-in type for sorting, filtering and export; columns opt in
+  with `cellType: 'name'`. Any column can also take a Svelte `component`
+  renderer directly. Exports `resolveColumns`, `CellTypeDef`, `CellTypeProps`,
+  `BuiltinCellType`.
+- **Merged cells** — `spanRows` merges a column's cell down over adjacent rows
+  with equal values (or per a comparator), hierarchically left to right;
+  `colSpan(row)` makes a cell cover several columns. Display-only: sort,
+  filter, copy and export still see every row. Works with pinned columns,
+  variable row heights and virtual scrolling. New **Blotter** demo. Exports
+  `buildMergePlan`, `colSpanRow`, `MergePlan`.
+- **`onReady(api)` grid handle** — `scrollToRow(key, align?)`,
+  `focusCell(rowKey, columnKey)`, `getSelectedRows()`, `autosizeColumns(keys?)`,
+  `exportCSV(filename?)`, and `getState()` / `applyState()` for saving and
+  restoring the user's layout (order, widths, hidden columns, pins, sorts,
+  filters). Saved layouts are reconciled against the current columns, so
+  renamed, removed and added columns never apply a width to the wrong column.
+  Exports `GridApi`, `GridState`, `ScrollAlign`, `reconcileState`,
+  `GRID_STATE_VERSION`.
+- **`labels` and `locale` props** — every string the grid renders itself
+  (column menu, filter editor, pager, columns panel, aria labels) can be
+  overridden per grid; `locale` drives built-in `price` / `date` / `currency` /
+  `relative` formatting, the aggregation bar and the pager. `ColumnDef.locale`
+  is now available on every column type. The loading text and footer
+  "Total" label are localizable too. Exports `DEFAULT_LABELS`,
+  `resolveLabels` and the `GridLabels` type.
+
 ## [1.4.0] — 2026-09-24
 
 **The trading-desk wave.** Four roadmap phases (1.1–1.4), shipped together:

@@ -1,7 +1,7 @@
 // Built-in formatters (proposal Phase 1 §Ticker column + formatting).
 
-export function fmtPrice(v: number): string {
-  return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export function fmtPrice(v: number, locale = 'en-US'): string {
+  return v.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export function fmtPercent(v: number): string {
@@ -18,13 +18,13 @@ export function fmtVolume(v: number): string {
 
 export type DateStyle = 'short' | 'medium';
 
-export function fmtDate(ms: number, style: DateStyle = 'medium'): string {
+export function fmtDate(ms: number, style: DateStyle = 'medium', locale = 'en-US'): string {
   if (!Number.isFinite(ms)) return '';
   const opts: Intl.DateTimeFormatOptions =
     style === 'short'
       ? { month: 'numeric', day: 'numeric', year: '2-digit' }
       : { month: 'short', day: 'numeric', year: 'numeric' };
-  return new Date(ms).toLocaleDateString('en-US', opts);
+  return new Date(ms).toLocaleDateString(locale, opts);
 }
 
 /** Localized currency (e.g. `$1,234.50`). Falls back to a fixed-decimal number
@@ -49,11 +49,33 @@ const RT: [number, number, string][] = [
   [Infinity, 31_557_600, 'year'],
 ];
 
+const RT_UNITS: [number, number, Intl.RelativeTimeFormatUnit][] = [
+  [60, 1, 'second'],
+  [3600, 60, 'minute'],
+  [86_400, 3600, 'hour'],
+  [604_800, 86_400, 'day'],
+  [2_629_800, 604_800, 'week'],
+  [31_557_600, 2_629_800, 'month'],
+  [Infinity, 31_557_600, 'year'],
+];
+
+function intlRelative(secsAgo: number, locale: string): string {
+  const a = Math.abs(secsAgo);
+  const sign = secsAgo >= 0 ? -1 : 1;
+  const fmt = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  for (const [ceil, div, unit] of RT_UNITS) {
+    if (a < ceil) return fmt.format(sign * Math.floor(a / div), unit);
+  }
+  return '';
+}
+
 /** Human relative time vs `now` (default: real now) — e.g. `3 hours ago`,
-    `in 2 days`. `ms` is an epoch timestamp. Deterministic when `now` is passed. */
-export function relativeTime(ms: number, now = Date.now()): string {
+    `in 2 days`. `ms` is an epoch timestamp. Deterministic when `now` is passed. With a `locale`, output comes from
+    `Intl.RelativeTimeFormat`. */
+export function relativeTime(ms: number, now = Date.now(), locale?: string): string {
   if (!Number.isFinite(ms)) return '';
   const secs = Math.round((now - ms) / 1000); // >0 = past
+  if (locale) return intlRelative(secs, locale);
   const past = secs >= 0;
   const a = Math.abs(secs);
   if (a < 45) return past ? 'just now' : 'soon';

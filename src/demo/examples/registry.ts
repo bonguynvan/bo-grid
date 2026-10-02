@@ -42,6 +42,18 @@ export const EXAMPLES: Example[] = [
     load: () => import('./OrderBook.svelte'),
   },
   {
+    id: 'priceboard',
+    title: 'Price board',
+    blurb: 'A full VN-style bảng giá under a busy-market feed — 1,000+ symbols, every changed cell flashing. Benchmarks itself.',
+    load: () => import('./PriceBoard.svelte'),
+  },
+  {
+    id: 'blotter',
+    title: 'Blotter',
+    blurb: 'Execution blotter with merged cells — spanRows down repeated fills, colSpan for note rows.',
+    load: () => import('./Blotter.svelte'),
+  },
+  {
     id: 'ladder',
     title: 'Price ladder',
     blurb: '120 levels, 16 visible — centred on the spread with manual page + recenter (bo-grid/realtime centeredWindow).',
@@ -76,12 +88,6 @@ export const EXAMPLES: Example[] = [
     title: 'Team',
     blurb: 'A people/CRM board — rich cell types, plus styled hover tooltips, ellipsis truncation and a cell-selection toggle.',
     load: () => import('./Team.svelte'),
-  },
-  {
-    id: 'dashboard',
-    title: 'Dashboard',
-    blurb: 'KPI cards and in-cell charts via the bo-grid/charts companion (line, bar, donut).',
-    load: () => import('./Dashboard.svelte'),
   },
   {
     id: 'wide',

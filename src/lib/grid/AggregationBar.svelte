@@ -2,10 +2,10 @@
   import type { AggKind, AggResult } from './aggregate';
   import { AGG_LABELS } from './aggregate';
 
-  let { result, kinds }: { result: AggResult | null; kinds: AggKind[] } = $props();
+  let { result, kinds, locale }: { result: AggResult | null; kinds: AggKind[]; locale?: string } = $props();
 
   function fmt(v: number): string {
-    return v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    return v.toLocaleString(locale ?? 'en-US', { maximumFractionDigits: 2 });
   }
 </script>
 

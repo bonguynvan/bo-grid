@@ -63,22 +63,31 @@ describe('matchesFilter — number', () => {
   });
 });
 
-describe('matchesFilter — date', () => {
-  const jan15 = Date.UTC(2024, 0, 15, 9);
-  const jan15later = Date.UTC(2024, 0, 15, 22);
-  const jan20 = Date.UTC(2024, 0, 20);
-  it('before / after compare instants', () => {
-    expect(matchesFilter(jan15, { kind: 'date', op: 'before', a: jan20 })).toBe(true);
-    expect(matchesFilter(jan20, { kind: 'date', op: 'after', a: jan15 })).toBe(true);
+describe('matchesFilter — date (local calendar days)', () => {
+  // Local-time constructors: a date cell shows the viewer's local day, so the
+  // filter must match on that same day, in any time zone.
+  const at = (d: number, h = 0, m = 0) => new Date(2024, 0, d, h, m).getTime();
+  const day = (d: number) => new Date(2024, 0, d).getTime();
+  it('on matches any time on that local day', () => {
+    expect(matchesFilter(at(15, 0, 0), { kind: 'date', op: 'on', a: day(15) })).toBe(true);
+    expect(matchesFilter(at(15, 23, 59), { kind: 'date', op: 'on', a: day(15) })).toBe(true);
+    expect(matchesFilter(at(16, 0, 0), { kind: 'date', op: 'on', a: day(15) })).toBe(false);
   });
-  it('on matches any instant in the same day', () => {
-    expect(matchesFilter(jan15later, { kind: 'date', op: 'on', a: jan15 })).toBe(true);
-    expect(matchesFilter(jan20, { kind: 'date', op: 'on', a: jan15 })).toBe(false);
+  it('before excludes the day itself', () => {
+    expect(matchesFilter(at(14, 23, 59), { kind: 'date', op: 'before', a: day(15) })).toBe(true);
+    expect(matchesFilter(at(15, 0, 1), { kind: 'date', op: 'before', a: day(15) })).toBe(false);
   });
-  it('between is inclusive', () => {
-    expect(matchesFilter(jan15, { kind: 'date', op: 'between', a: jan15, b: jan20 })).toBe(true);
+  it('after excludes the day itself', () => {
+    expect(matchesFilter(at(15, 23, 0), { kind: 'date', op: 'after', a: day(15) })).toBe(false);
+    expect(matchesFilter(at(16, 0, 0), { kind: 'date', op: 'after', a: day(15) })).toBe(true);
+  });
+  it('between includes both end days', () => {
+    expect(matchesFilter(at(15, 0, 0), { kind: 'date', op: 'between', a: day(15), b: day(20) })).toBe(true);
+    expect(matchesFilter(at(20, 23, 59), { kind: 'date', op: 'between', a: day(15), b: day(20) })).toBe(true);
+    expect(matchesFilter(at(21, 0, 0), { kind: 'date', op: 'between', a: day(15), b: day(20) })).toBe(false);
   });
 });
+
 
 describe('matchesFilter — set (excluded values)', () => {
   const f: ColumnFilter = { kind: 'set', excluded: ['Closed', 'Void'] };
@@ -137,5 +146,66 @@ describe('defaultFilterKind / emptyFilter', () => {
     expect(isFilterActive(emptyFilter('text'))).toBe(false);
     expect(isFilterActive(emptyFilter('number'))).toBe(false);
     expect(isFilterActive(emptyFilter('set'))).toBe(false);
+  });
+});
+
+describe('custom filter types', () => {
+  interface BandFilter {
+    kind: 'band';
+    bands: string[];
+  }
+  const bandOf = (v: unknown) => (Number(v) < 40 ? 'low' : Number(v) > 80 ? 'high' : 'mid');
+  const Editor = (() => null) as never;
+  const types = {
+    band: {
+      test: (value: unknown, f: BandFilter) => f.bands.includes(bandOf(value)),
+      isActive: (f: BandFilter) => f.bands.length > 0,
+      component: Editor,
+    },
+    always: { test: (value: unknown) => value === 'x', component: Editor },
+  };
+
+  it('uses the registered isActive', () => {
+    expect(isFilterActive({ kind: 'band', bands: [] }, types)).toBe(false);
+    expect(isFilterActive({ kind: 'band', bands: ['low'] }, types)).toBe(true);
+  });
+
+  it('treats a registered type without isActive as active', () => {
+    expect(isFilterActive({ kind: 'always' }, types)).toBe(true);
+  });
+
+  it('treats an unregistered kind as inactive so it hides nothing', () => {
+    expect(isFilterActive({ kind: 'nope', anything: 1 }, types)).toBe(false);
+    expect(isFilterActive({ kind: 'band', bands: ['low'] })).toBe(false);
+    const rows: GridRow[] = [{ id: 1, w: 10 }, { id: 2, w: 90 }];
+    expect(rows.filter((r) => passesFilters(r, { w: { kind: 'nope' } }, undefined, types))).toHaveLength(2);
+  });
+
+  it('tests values through the registered type', () => {
+    const f = { kind: 'band', bands: ['high'] };
+    expect(matchesFilter(90, f, { id: 1 }, types)).toBe(true);
+    expect(matchesFilter(10, f, { id: 1 }, types)).toBe(false);
+  });
+
+  it('passes the row to test', () => {
+    const seen: GridRow[] = [];
+    const t = { rowAware: { test: (_v: unknown, _f: unknown, row: GridRow) => (seen.push(row), true), component: Editor } };
+    passesFilters({ id: 7, a: 1 }, { a: { kind: 'rowAware' } }, undefined, t);
+    expect(seen[0].id).toBe(7);
+  });
+
+  it('ANDs custom and built-in filters', () => {
+    const rows: GridRow[] = [
+      { id: 1, w: 90, name: 'alpha' },
+      { id: 2, w: 95, name: 'beta' },
+      { id: 3, w: 10, name: 'alpha' },
+    ];
+    const filters = { w: { kind: 'band', bands: ['high'] }, name: { kind: 'text', op: 'contains', q: 'alp' } } as const;
+    expect(rows.filter((r) => passesFilters(r, filters, undefined, types)).map((r) => r.id)).toEqual([1]);
+  });
+
+  it('leaves built-in behaviour unchanged when types are passed', () => {
+    expect(isFilterActive({ kind: 'text', op: 'contains', q: 'a' }, types)).toBe(true);
+    expect(matchesFilter('abc', { kind: 'text', op: 'contains', q: 'b' }, { id: 1 }, types)).toBe(true);
   });
 });

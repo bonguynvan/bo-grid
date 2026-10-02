@@ -10,9 +10,8 @@ excluded — you already ship the Svelte runtime):
 
 | Asset | gzip |
 | --- | --- |
-| `bo-grid` core JS | **~33 KB** |
+| `bo-grid` core JS | **~40 KB** |
 | `bo-grid` CSS | **~4 KB** |
-| `bo-grid/charts` (optional) | **~4 KB** |
 | `bo-grid/realtime` (optional) | **~1 KB** |
 | `bo-grid/trading` (optional) | **~1 KB** |
 
@@ -22,21 +21,62 @@ core bundles run into the hundreds of KB before features. A few notes:
 - The number is the **whole public API** measured eagerly. A consumer who imports
   only what they use (e.g. `import { Grid }`) tree-shakes the rest — the package is
   `sideEffects: false` — so the IO/print helpers don't ship unless imported.
-- The **charts companion** (`bo-grid/charts`), the **realtime tick pipeline**
-  (`bo-grid/realtime`) and the **trading conventions** helpers (`bo-grid/trading`)
-  are separate entries on their own budgets; none adds anything to the grid
+- The **realtime tick pipeline** (`bo-grid/realtime`) and the **trading
+  conventions** helpers (`bo-grid/trading`) are separate entries; none adds anything to the grid
   unless you import it.
 - **Excel export** is a **dynamic import** of the optional `xlsx` peer — it never
   lands in the core bundle unless you call `exportXLSX`.
 - The heavy menu UI (filter menu, columns panel) lazy-loads on first use and is
   excluded from the core number above.
 
-The size is a CI gate: `pnpm size:lib` fails the build if JS or CSS exceeds the
-budget, so it can't silently regress.
+`pnpm size:lib` reports these numbers in CI on every run, so a change that
+moves them is visible in review; it fails only on an accidental blow-up (a
+dependency bundled into an entry by mistake), not on feature growth.
 
 ```sh
-pnpm size:lib   # measures the published library bundle against its budget
+pnpm size:lib   # measures the published library bundle
 ```
+
+
+## Browser: a busy price board
+
+The **Price board** demo is a VN-style bảng giá — 1,000 symbols, 24 columns
+(three bid/ask levels, match, high/low, foreign flow), every changed cell
+flashing, prices coloured by ceiling/floor/reference, ~30 rows on screen. Its
+**Benchmark** button (or `window.__priceBoard.bench()` / `.benchScroll()`) runs
+deterministic frames, each rendered synchronously: apply the frame's ticks,
+`flushSync()`, then force style + layout. Paint and compositing are excluded.
+
+Production build, Chrome on a Windows desktop:
+
+| Workload | Frame p50 | p95 | Frames over 16.7 ms |
+| --- | --- | --- | --- |
+| 10,000 events/s, `patchRows` | ~1.9 ms | ~4.8 ms | 0 / 200 |
+| 30,000 events/s, `patchRows` | ~4.5 ms | ~11 ms | 1 / 200 |
+| 30,000 events/s, `$state` rows | ~5.3 ms | ~12 ms | 4 / 200 |
+| Scroll 1 row / frame | ~1.0 ms | ~1.9 ms | 0 / 120 |
+| Scroll 3 rows / frame | ~2.5 ms | ~5.7 ms | 0 / 120 |
+| Scroll 10 rows / frame | ~8 ms | ~17 ms | 6 / 120 |
+
+Board height scales the tick cost with the rows on screen (one session, so
+comparable with each other but not with the table above):
+
+| Rows on screen | 10,000 events/s p50 | 30,000 events/s p50 |
+| --- | --- | --- |
+| 31 (620 px) | ~3 ms | ~8 ms |
+| 52 (1,400 px) | ~5 ms | ~14 ms |
+| 80 (2,400 px) | ~7.6 ms | ~22 ms |
+
+A sorted "top movers" board re-sorted with `api.refresh()` once a second pays
+one heavier frame per refresh (in a slower session: ~42 ms at 1,000–1,600
+symbols, down from ~65–70 ms before sort keys were read once per row), with
+ordinary frames unchanged at a few ms.
+
+At 30,000 events/s a frame applies ~500 coalesced ticks. The split is roughly
+0.6 ms writing rows (`patchRows`; 1.6 ms through `$state` proxies), 2 ms for
+Svelte to update the cells, and 1.8 ms of browser style + layout. Rows off screen
+cost nothing beyond the write. Numbers move with the machine — compare runs on
+the same machine, in the same session.
 
 ## Hot paths
 
@@ -63,8 +103,6 @@ don't):
 | `FlashTracker.observe()` (derived flash) | 1,000,000 cell observations | ~52 ms |
 | `TradeTape.push()` (time & sales) | 1,000,000 trades → 500-cap ring buffer | ~9 ms |
 | `TradeTape.toArray()` (tape snapshot) | 10,000 snapshots of a full 500-trade tape | ~14 ms |
-| `candleGeometry()` (candlestick chart) | 10,000 calls over 500 candles | ~131 ms |
-| `depthBars()` (depth chart) | 10,000 calls over 500 levels | ~112 ms |
 
 The headline: **~79 ns to locate the first visible row at any scroll position in
 a million-row variable-height dataset.** A 60 fps frame budget is 16.7 ms, so that
@@ -80,10 +118,6 @@ frame keeps a burst well inside the 16.7 ms budget. Derived per-cell flash costs
 be, and is, negligible. `TradeTape` appends at **~88M trades/sec** (a true ring
 buffer — O(1) regardless of how long the session runs) and snapshots a full
 500-trade tape in ~1.4 µs, call it once per render rather than per trade.
-Chart geometry (`candleGeometry`/`depthBars`) costs **~13 µs per call** at a
-generous 500-candle/500-level scale — a chart recomputes this once per render
-via `$derived`, not per row like the grid, so the real series a dashboard
-shows (tens to low hundreds of candles) cost a small fraction of that.
 
 ```sh
 pnpm bench   # runs the hot-path benchmarks above
@@ -112,6 +146,6 @@ on your hardware.
 ```sh
 pnpm install
 pnpm bench       # hot-path timings
-pnpm size:lib    # bundle size vs budget
+pnpm size:lib    # bundle size report
 pnpm dev         # demo with the 1M-row Big data example + FPS meter
 ```

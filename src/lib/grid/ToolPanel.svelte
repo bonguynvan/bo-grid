@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { GridLabels } from './labels';
   // Floating columns panel: toggle column visibility (and restore hidden ones).
   // Lazy-loaded by Grid; presentation-only — the parent owns the visibility set.
   let {
@@ -9,6 +10,7 @@
     onToggle,
     onShowAll,
     onClose,
+    labels,
   }: {
     columns: Array<{ key: string; header: string }>;
     hidden: string[];
@@ -17,6 +19,7 @@
     onToggle: (key: string) => void;
     onShowAll: () => void;
     onClose: () => void;
+    labels: GridLabels;
   } = $props();
 
   let search = $state('');
@@ -29,16 +32,16 @@
   class="bo-toolpanel"
   role="dialog"
   tabindex="-1"
-  aria-label="Columns"
+  aria-label={labels.columns}
   style="left:{x}px;top:{y}px;"
   onpointerdown={(e) => e.stopPropagation()}
   onkeydown={(e) => e.key === 'Escape' && onClose()}
 >
   <div class="bo-tp-head">
-    <span>Columns</span>
-    <button type="button" class="bo-tp-link" onclick={onShowAll}>Show all</button>
+    <span>{labels.columns}</span>
+    <button type="button" class="bo-tp-link" onclick={onShowAll}>{labels.showAll}</button>
   </div>
-  <input class="bo-tp-search" type="search" bind:value={search} placeholder="search…" aria-label="Search columns" />
+  <input class="bo-tp-search" type="search" bind:value={search} placeholder={labels.searchPlaceholder} aria-label={labels.searchColumns} />
   <div class="bo-tp-list">
     {#each shown as col (col.key)}
       <label class="bo-tp-opt">

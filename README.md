@@ -1,9 +1,9 @@
 # bo-grid
 
-Tiny, fast **Svelte 5** data grid for fintech UIs — canvas sparklines, batched
-realtime cell updates, and virtual scrolling, with a core that gzips to ~33 KB
-(Svelte external; unused exports tree-shake). A free alternative to the heavyweight
-grids that paywall these features.
+Fast **Svelte 5** data grid for trading screens — built to keep a busy price
+board inside the frame budget (tens of thousands of ticks a second, row-recycled
+scrolling), with the features heavyweight grids paywall, in a ~40 KB gzip core
+(Svelte external; unused exports tree-shake).
 
 **[Live demo](https://bonguynvan.github.io/bo-grid/)** ·
 **[API reference](https://bonguynvan.github.io/bo-grid/api.html)** ·
@@ -11,11 +11,12 @@ grids that paywall these features.
 **[Benchmarks](./BENCHMARKS.md)** ·
 **[Roadmap](./ROADMAP.md)**
 
-The demo is a gallery of grid types — a realtime **Trading desk**, a grouped
-**Portfolio** with subtotals and pivot, an editable **Spreadsheet**, a live
-**Order book**, a **Correlation** heatmap, a **Dashboard** with in-cell charts, a
-**Wide** 60-column grid, a server-backed **Lazy tree**, and more — all on one
-page, each grid lazy-mounting as you scroll (jump between them from the side rail).
+The demo is a gallery of 21 grids — a realtime **Trading desk**, a full VN-style
+**Price board** under a busy-market feed (with its own benchmark), an execution
+**Blotter** with merged cells, a grouped **Portfolio** with subtotals and pivot, an
+editable **Spreadsheet**, a live **Order book**, a **Wide** 60-column grid, a
+server-backed **Lazy tree**, and more — all on one page, each grid mounting as you
+reach it (jump between them from the contents rail).
 
 > **Status: actively developed.** Working: config-driven columns, virtual scroll,
 > sort (single / multi / controlled), filtering (global, per-column row, header
@@ -25,10 +26,12 @@ page, each grid lazy-mounting as you scroll (jump between them from the side rai
 > datasets, CSV/Excel export, column management (reorder, resize, pin L/R, hide,
 > autosize, tool panel, column menu), spreadsheet editing (inline + typed editors,
 > validation, copy/paste, fill handle, undo/redo), row selection, pagination,
-> sparklines, realtime flash, heatmaps, theming, and full keyboard a11y.
+> sparklines, realtime flash, heatmaps, theming, and full keyboard a11y — plus
+> merged cells, registered cell types and filter types, custom editors,
+> localization, layout save/restore and a realtime fast path (`api.patchRows`).
 > **SSR/SvelteKit-safe.**
 > Unit tests (Vitest), type-check, a headless mount smoke-test, an SSR render
-> check, and library + demo bundle-size budgets all run in CI. A formal WCAG audit
+> check, and library + demo bundle-size reports all run in CI. A formal WCAG audit
 > is the main thing left — see the roadmap.
 
 ## Why
@@ -38,7 +41,7 @@ page, each grid lazy-mounting as you scroll (jump between them from the side rai
 | Price | $$$ / dev / year | Free (MIT) |
 | Sparklines | paid tier | built in |
 | Realtime cell updates | DIY / complex | built-in primitive |
-| Bundle | hundreds of KB | **~33 KB gzip core** ([benchmarks](./BENCHMARKS.md)) |
+| Bundle | hundreds of KB | **~40 KB gzip core** ([benchmarks](./BENCHMARKS.md)) |
 | Svelte | wrapper | native Svelte 5 |
 
 bo-grid ships most of the features other grids put behind a **paid (Enterprise)**
@@ -73,7 +76,7 @@ Works with **SvelteKit / SSR** out of the box — `<Grid>` server-renders to HTM
 without touching `window`/`document`/`localStorage` (a CI gate, `pnpm ssr`,
 proves it). The package is `sideEffects: false`, so unused exports tree-shake
 away. See the **[SvelteKit guide](./docs/sveltekit.md)** for `load`-function data,
-server-side / lazy loading, realtime feeds, import helpers, charts, printing, and
+server-side / lazy loading, realtime feeds, import helpers, printing, and
 layout persistence.
 
 ## Usage
@@ -166,12 +169,74 @@ feed neither re-renders nor flashes.
 Row identity for flash comes from the grid's `getRowId` (default `row.id`), not
 from the key you index the feed by — keep it stable across updates.
 
-It's a **separate entry** on its own size budget — importing it adds nothing to
+It's a **separate entry** with its own bundle — importing it adds nothing to
 the grid core, and it's framework-agnostic (the frame scheduler is injectable,
 which is also how it's unit-tested without a browser).
 
 Only on-screen rows render DOM, so off-screen updates cost nothing until they
 scroll into view.
+
+#### Busy markets — plain rows + `api.patchRows`
+
+`$state` rows are the simplest model, but every field write goes through a
+reactive proxy, paid for **every** row the feed touches, on screen or not. For a
+full price board (hundreds to thousands of symbols, several fields per tick)
+hand the grid **plain objects** and let it write the ticks:
+
+```svelte
+<script lang="ts">
+  import { Grid, type GridApi } from 'bo-grid';
+  import { createTickStream } from 'bo-grid/realtime';
+
+  let rows = $state.raw(initialQuotes); // plain objects — no deep proxy
+  let api: GridApi;
+  const stream = createTickStream<string, Partial<Quote>>({
+    apply: (batch) => api.patchRows(batch), // writes in place, repaints rendered rows only
+  });
+  stream.start();
+  socket.onmessage = (e) => { const q = JSON.parse(e.data); stream.push(q.symbol, q); };
+</script>
+
+<Grid {rows} {columns} getRowId={(r) => r.symbol} onReady={(a) => (api = a)} />
+```
+
+`patchRows` writes into the rows and repaints only the **rendered** cells whose
+field changed — a tick that moves the match price and volume repaints those two
+cells, not the row. Anything that may read *other* fields of the row repaints
+whenever the row changes: renderers (`render`, `component`, the `cell` snippet),
+computed columns, `sub` fields, and any `format` / `cellClass` / `tooltip`
+function that **declares the row parameter** — write `(value, row) => …` only
+when you read the row, and `(value) => …` otherwise, so a formatter skips ticks
+that don't concern it. Off-screen rows pay nothing reactive and read current
+values when they scroll in. Footer totals, group subtotals and
+selection aggregates stay live.
+
+Values that change in place never re-sort or re-filter the view by themselves —
+that would mean sorting on every tick. Call **`api.refresh()`** when the order
+should catch up, e.g. once a second on a "top movers" board:
+
+```ts
+setInterval(() => api.refresh(), 1000); // re-sort by the live change column
+```
+
+A refresh re-reads each row's sort value once (not once per comparison), and a
+row that keeps its position keeps its rendered cells; rows that moved repaint,
+so a re-sort costs one heavier frame — a few times an ordinary tick frame.
+
+On a wall-sized board the per-frame cost grows with the rows on screen
+(roughly linearly — 80 rows cost ~2.5× what 30 do). Keep frames inside budget
+with the stream's `cap` (rows applied per frame): ticks beyond it wait for the
+next frame instead of stretching this one.
+
+On the **Price board** demo (production build, 1,000 symbols, 24 columns, every
+changed cell flashing, ~30 rows on screen) a frame of a 30,000 events/s feed
+costs ~4.5 ms with `patchRows` against ~5.3 ms through `$state` rows — the
+writes themselves are ~2.7× cheaper (0.6 vs 1.6 ms), and the gap grows with the
+number of symbols and fields per tick. Numbers and method are in
+[BENCHMARKS.md](./BENCHMARKS.md#browser-a-busy-price-board); the demo's
+**Benchmark** button measures your machine. Set `flashColor: false` on columns
+that colour their own text (price-limit tones) so a flash lights only the
+background.
 
 #### Market conventions — `bo-grid/trading`
 
@@ -180,7 +245,7 @@ up/down: purple at the ceiling (limit up), cyan at the floor (limit down),
 yellow at the unchanged reference, green/red for an ordinary move — a signal a
 plain up/down grid can't give you. `bo-grid/trading` is the pure-function
 toolkit for that, plus tick-aware price formatting and session state. It's a
-**separate entry**, like charts and realtime — no `ColumnDef` changes, wired up
+**separate entry**, like realtime — no `ColumnDef` changes, wired up
 through the `cell`/`render` hook you already have:
 
 ```ts
@@ -324,6 +389,47 @@ value / `format`:
   } }
 ```
 
+**A Svelte component per column:** set `component` on any column. It receives
+`{ value, row, column, text }` (`text` is the value as copy/export see it):
+
+```ts
+import StatusPill from './StatusPill.svelte';
+{ type: 'text', key: 'status', header: 'Status', component: StatusPill }
+```
+
+### Registered cell types
+
+When the same kind of column appears across grids — a country, a money amount,
+an order status — define it once and name it. `cellTypes` maps a name to column
+defaults; a column says `cellType: 'name'` and gets them under its own fields:
+
+```svelte
+<script lang="ts">
+  import { Grid, type CellTypeDef, type ColumnDef } from 'bo-grid';
+  import CountryCell from './CountryCell.svelte';
+
+  const cellTypes: Record<string, CellTypeDef> = {
+    country: { extends: 'text', component: CountryCell, filter: 'set', width: 140 },
+    money: { extends: 'number', decimals: 0, format: (v) => `$${Number(v).toLocaleString()}` },
+  };
+  const columns: ColumnDef[] = [
+    { cellType: 'country', key: 'country', header: 'Country' },
+    { cellType: 'money', key: 'rate', header: 'Rate', width: 96 }, // own fields win
+  ];
+</script>
+
+<Grid {rows} {columns} {cellTypes} height={560} />
+```
+
+- **`extends`** names the built-in type the new one builds on — its formatting,
+  sorting, filtering, alignment, aggregation and export. Defaults to `custom`
+  when the entry draws itself (`component` or `render`), otherwise `text`.
+- An entry can set any column field: `format`, `compare`, `align`, `filter`,
+  `width`, `cellClass`, `tooltip`, `editable`, type options like `decimals`…
+- An unknown `cellType` renders as plain text rather than failing.
+- Outside the grid, `resolveColumns(columns, cellTypes)` gives the same
+  resolved columns to `toCSV`, `printTable` or `pivot`.
+
 ### Tooltips & truncation
 
 Long cell values truncate with an **ellipsis** by default. Set `tooltip` on a
@@ -414,54 +520,6 @@ const columns: ColumnDef[] = [
 In-memory mode (a server `source` owns its own derivations). Keep `value()` cheap
 and pure — it's called during sort and filter.
 
-## Charts (companion)
-
-For dashboards, `bo-grid/charts` ships tiny, dependency-free SVG charts —
-`LineChart`, `BarChart`, `DonutChart`, `StackedBarChart` (stacked or `grouped`
-multi-series), `CandlestickChart`, `DepthChart`, and a `Legend`. They're a
-**separate import**, so they add nothing to the grid core (~4 KB gzip on their
-own). Use them standalone, or inside a grid cell via a `custom` column.
-Bar/stacked/donut elements carry an SVG `<title>`, so hovering shows the value
-(accessible, zero-JS).
-
-```svelte
-<script>
-  import { LineChart, BarChart, DonutChart, StackedBarChart, Legend } from 'bo-grid/charts';
-</script>
-
-<LineChart data={[3, 5, 4, 8, 6, 9]} width={160} height={40} area />
-<BarChart data={[4, 8, 6, 9, 7]} color="var(--up)" />
-<DonutChart data={[{ value: 5, label: 'A' }, { value: 3, label: 'B' }]} />
-
-<!-- data[series][category]; stacked by default, `grouped` for side-by-side -->
-<StackedBarChart data={[[3, 5, 2], [4, 1, 6]]} seriesLabels={['Q1', 'Q2']} />
-<Legend items={[{ label: 'Q1' }, { label: 'Q2' }]} />
-```
-
-Theme them with `color` / `colors` props, or by setting `--boc-color` and
-`--boc-1`…`--boc-6` CSS vars on any ancestor. The geometry helpers (`linePoints`,
-`barRects`, `donutArcs`, …) are exported too, for rolling your own SVG charts. See
-the **Dashboard** example for charts inside grid cells.
-
-#### Candlestick & depth charts
-
-The two trading-specific chart shapes, built on the same `Candle` type as the
-grid's own `sparkline` column:
-
-```svelte
-<CandlestickChart data={candles} width={220} height={60} />
-<!-- bids/asks: sizes ordered NEAREST-TO-SPREAD FIRST; cumulative depth is
-     computed for you, don't pre-sum it -->
-<DepthChart bids={[40, 90, 60]} asks={[55, 70, 45]} width={220} height={60} />
-```
-
-`CandlestickChart` colours by `upColor`/`downColor` (defaulting to
-`--boc-up`/`--boc-down`, then a fixed green/red). `DepthChart` shares **one**
-vertical scale across both sides, so a lopsided book doesn't let the thin side
-visually fill the chart — the whole point of a depth chart is comparing the
-two. The geometry helpers (`candleGeometry`, `depthBars`) are exported too. See
-the **Dashboard** example.
-
 ## Row height
 
 Uniform 36px by default. Pass `rowHeight` as a number for a different density, or
@@ -515,7 +573,8 @@ the header (rows must match every non-empty column filter; in-memory mode).
 For richer filtering, set `filterMenu` to add a **funnel to each column header**.
 Clicking it opens a menu whose control matches the column type — text
 (contains / equals / starts / ends), number (`=, ≠, <, ≤, >, ≥, between`), or date
-(before / after / on / between). Set `col.filter: 'set'` for a **set filter** — a
+(before / after / on / between — whole calendar days in the viewer's time zone,
+the same day the cell shows). Set `col.filter: 'set'` for a **set filter** — a
 searchable checkbox list of the column's distinct values (All / None). The menu
 is lazy-loaded on first open, so it costs nothing until used; disable it per
 column with `col.filter: false`:
@@ -529,6 +588,39 @@ initial filters, sync to the URL), pass a controlled `columnFilters` map and
 handle `onFilterChange` — mirrors controlled `sort`. In **server (`source`) mode**
 the filter menu still works: text/number/date filters are delegated to your
 `RowSource` via `params.columnFilters` (set filters need in-memory data).
+
+### Custom filter types
+
+When the built-in controls don't fit — a capacity band, a lot-size rule, a
+"within N km" check — register your own kind with `filterTypes`, and point a
+column at it with `filter: 'name'`. The menu keeps its frame (title, **Clear** /
+**Apply**, Enter to apply); your editor draws the middle and edits a draft:
+
+```ts
+import type { CustomFilter, FilterTypeDef } from 'bo-grid';
+import BandEditor from './BandEditor.svelte';
+
+interface BandFilter extends CustomFilter { kind: 'band'; bands: string[] }
+const band: FilterTypeDef<BandFilter> = {
+  component: BandEditor,                       // receives { filter, onChange, column, values, labels }
+  isActive: (f) => f.bands.length > 0,         // optional; default: always active
+  test: (value, f) => f.bands.includes(bandOf(Number(value))),
+};
+```
+
+```svelte
+<Grid {rows} {columns} filterMenu filterTypes={{ band }} />
+<!-- column: { type: 'progress', key: 'workload', header: 'Workload', filter: 'band' } -->
+```
+
+The editor gets the draft as `filter` (the active filter when the menu opened,
+or `null`) and calls `onChange(next)` as the user edits; **Apply** commits the
+draft when it is active, **Clear** removes it. Set `needsValues: true` to receive
+the column's distinct values as `values`, as the set filter does. A custom filter
+is a plain object with a `kind`, so it round-trips through `columnFilters`,
+`onFilterChange`, `getState()` and a `RowSource` unchanged — pass the same
+`filterTypes` to `createArraySource` to apply it there. A filter whose kind is
+not registered filters nothing, rather than silently emptying the grid.
 
 Sorting is uncontrolled by default. To own it (persist it, set an initial sort,
 or sync to the URL), pass a controlled `sort` array and handle `onSortChange`:
@@ -664,6 +756,32 @@ load lazily with a loading row, then cache. See the **Server groups** example.
   height={520}
 />
 ```
+
+## Localization
+
+`labels` overrides any string the grid renders itself (menus, filter editor,
+pager, aria labels); `locale` sets the default locale for the built-in `price`,
+`date`, `currency` and `relative` formatting, the aggregation bar and the pager
+row count. A column's own `locale` wins over the grid's.
+
+```svelte
+<Grid
+  {rows}
+  {columns}
+  locale="vi-VN"
+  labels={{
+    autosize: 'Vừa nội dung',
+    noRows: 'Không có dòng nào khớp',
+    filterFor: (h) => `Lọc cột ${h}`,
+    pageOf: (p, n, total) => `Trang ${p} / ${n} · ${total} dòng`,
+  }}
+/>
+```
+
+Pass only what you are changing — it is merged over the English defaults.
+Interpolated entries are **functions**, not `{0}` placeholders, so a translation
+can reorder the parts. Resolved per grid, so two grids on a page can use two
+languages. `DEFAULT_LABELS` lists every key.
 
 ## Theming
 
@@ -940,6 +1058,37 @@ input (enum/status columns):
   options: ['New', 'Active', 'Closed'] }
 ```
 
+
+### Custom editors, parsing and shared defaults
+
+Give a column an **`editor`** component to replace the built-in input. It
+receives `{ value, row, column, seed, commit, cancel }`, calls `commit(value)`
+with any value (no parsing) or `cancel()`; Escape cancels and focus leaving the
+editor cancels. With an editor, display widgets such as `rating` or `tags`
+become editable:
+
+```ts
+import RatingEditor from './RatingEditor.svelte';
+{ type: 'rating', key: 'rating', header: 'Rating', editable: true, editor: RatingEditor }
+```
+
+**`parse(raw, row)`** turns typed or pasted text into the stored value — it runs
+for the built-in editor, paste and fill, ahead of the number/date coercion.
+Return `undefined` (or `NaN`) to reject the input:
+
+```ts
+{ type: 'number', key: 'salary', header: 'Salary', editable: true,
+  parse: (raw) => (/\d/.test(raw) ? Number(raw.replace(/[^\d.-]/g, '')) : undefined) }
+```
+
+`validate` then sees the parsed (or committed) value. **`defaultColumn`** applies
+settings under every column — a column's own fields, and its registered
+`cellType`, win:
+
+```svelte
+<Grid {rows} {columns} defaultColumn={{ resizable: false, tooltip: true }} />
+```
+
 ## Pinned columns
 
 Set `pinned: true` (or `'left'`) on a column to keep it visible while the rest
@@ -955,6 +1104,98 @@ const columns = [
   { type: 'number', key: 'pnl',   header: 'P&L',    width: 96,  pinned: 'right' },
 ];
 ```
+
+## Merged cells
+
+**Down — `spanRows`.** Merge a column's cell over adjacent rows that hold the
+same value — the blotter case, where account, order and symbol repeat down every
+fill and the repetition hides the boundaries you are looking for:
+
+```ts
+const columns: ColumnDef[] = [
+  { type: 'text',  key: 'account', header: 'Account', width: 110, spanRows: true },
+  { type: 'text',  key: 'order',   header: 'Order',   width: 104, spanRows: true },
+  { type: 'text',  key: 'symbol',  header: 'Symbol',  width: 84,  spanRows: true },
+  { type: 'text',  key: 'time',    header: 'Time',    width: 80 },
+  { type: 'price', key: 'price',   header: 'Price',   flex: 1 },
+];
+```
+
+`true` joins rows whose values are equal (blank values never merge). Pass a
+comparator to decide per adjacent pair instead — e.g. the same calendar day:
+
+```ts
+{ type: 'date', key: 'filledAt', header: 'Day', spanRows: (a, b) => sameDay(a.filledAt, b.filledAt) }
+```
+
+- **Hierarchical, in display order.** A run also breaks wherever a spanning
+  column to its left breaks, so a symbol never merges across two accounts.
+  Reordering columns reorders the hierarchy.
+- **Only adjacent rows merge**, so it follows the current sort: sort by the
+  merged column for the biggest merges. Group headers, tree placeholders and an
+  expanded detail row break every run.
+- **A drawing rule, not a data change.** Every row keeps its value: sort,
+  filter, copy, CSV/Excel export and `toHTMLTable` see one value per row.
+- Merged cells are not editable; selecting any row in a run highlights the cell.
+- In-memory mode only (a `source` sees one window at a time). Like sort and
+  filter, runs are recomputed when the view changes, not on every realtime tick.
+
+**Across — `colSpan`.** Return how many columns a cell covers for a given row;
+the covered columns are not drawn. A note row spanning the fill columns:
+
+```ts
+{ type: 'text', key: 'time', header: 'Time', width: 80,
+  colSpan: (row) => (row.note ? 3 : 1),
+  format: (v, row) => (row?.note ? row.note : String(v)) }
+```
+
+The leftmost claim wins; a span is clamped at the last column and at a
+pinned/scrolling boundary. A covered cell breaks the `spanRows` run of the
+column it covers, but not of a column to its left. Combined on one column, a
+run only continues while the rows below span the same width. `colSpan` is
+ignored under `virtualizeColumns`. See the **Blotter** example.
+
+The planning is a pure function, `buildMergePlan(...)` / `colSpanRow(...)`,
+exported for anything that renders its own view of the same rows.
+
+## The grid handle
+
+`onReady` hands you one object for the things that are *actions* rather than
+state — they have no resting value to express them as a prop. It is called once,
+when the grid mounts.
+
+```svelte
+<script lang="ts">
+  import { Grid, type GridApi } from 'bo-grid';
+  let api: GridApi | undefined;
+</script>
+
+<Grid {rows} {columns} onReady={(a) => (api = a)} />
+<button onclick={() => api?.scrollToRow('ORD-1042', 'center')}>Find order</button>
+```
+
+| Method | What it does |
+| --- | --- |
+| `scrollToRow(key, align?)` | Scroll a row (by `getRowId`) into view; `align` is `'nearest'` (default), `'start'`, `'center'` or `'end'`. `false` when the row is not in the current view — filtered out, on another page, or in a `source` grid |
+| `focusCell(rowKey, columnKey)` | Focus and select one cell. `false` when the row or column is not visible |
+| `getSelectedRows()` | Ticked rows (needs `rowSelection`), in view order |
+| `autosizeColumns(keys?)` | Fit columns to their content, as the column menu's **Autosize** does |
+| `exportCSV(filename?)` | Download the **current view** (after filter and sort); the writer loads on demand |
+| `getState()` · `applyState(s)` | The user's whole layout as one plain object — see below |
+
+**Saving a layout.** `getState()` returns the column order, widths, runtime
+hidden columns, pin overrides, sorts and filters. It is JSON-safe, so keep it
+wherever you keep user settings. `applyState(saved)` fits it onto the columns as
+they are *now*: entries for columns that no longer exist are dropped, a column
+that is new lands where it is declared (after the nearest column declared before
+it), and malformed fields are ignored rather than thrown on. A state from a
+different `version` is refused whole — `applyState` returns `false` — because half
+a layout is worse than none. The fitting rules are exported as
+`reconcileState(saved, columnKeys)` for a backend that wants to apply them
+itself.
+
+`persistKey` still works as before for the browser-local convenience case; the
+handle is for layouts you store yourself (per user, per workspace).
 
 ## Export & import
 
@@ -1071,7 +1312,7 @@ pnpm dev       # demo/playground at http://localhost:5180
 pnpm test      # unit tests (Vitest)
 pnpm check     # type-check
 pnpm smoke     # headless mount + interaction smoke test
-pnpm size      # bundle-size budget
+pnpm size      # bundle-size report
 pnpm package   # build the publishable library into dist/
 ```
 

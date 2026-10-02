@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { GridLabels } from './labels';
   // Pagination bar for the grid. Presentation-only: the parent owns the page
   // state and reorders via `onGoto`.
   let {
@@ -9,6 +10,8 @@
     pageSize,
     pageSizeOptions,
     onPageSize,
+    labels,
+    locale,
   }: {
     page: number;
     pageCount: number;
@@ -17,22 +20,24 @@
     pageSize?: number;
     pageSizeOptions?: number[];
     onPageSize?: (size: number) => void;
+    labels: GridLabels;
+    locale?: string;
   } = $props();
 
   const showSizes = $derived(!!pageSizeOptions && pageSizeOptions.length > 0);
 </script>
 
-<div class="pager" role="navigation" aria-label="Pagination">
-  <button type="button" class="pg" disabled={page === 0} aria-label="First page" onclick={() => onGoto(0)}>«</button>
-  <button type="button" class="pg" disabled={page === 0} onclick={() => onGoto(page - 1)}>‹ Prev</button>
-  <span class="pageinfo">Page {page + 1} of {pageCount} · {total.toLocaleString()} rows</span>
-  <button type="button" class="pg" disabled={page >= pageCount - 1} onclick={() => onGoto(page + 1)}>Next ›</button>
-  <button type="button" class="pg" disabled={page >= pageCount - 1} aria-label="Last page" onclick={() => onGoto(pageCount - 1)}>»</button>
+<div class="pager" role="navigation" aria-label={labels.pagination}>
+  <button type="button" class="pg" disabled={page === 0} aria-label={labels.firstPage} onclick={() => onGoto(0)}>«</button>
+  <button type="button" class="pg" disabled={page === 0} onclick={() => onGoto(page - 1)}>{labels.previous}</button>
+  <span class="pageinfo">{labels.pageOf(page + 1, pageCount, total, locale)}</span>
+  <button type="button" class="pg" disabled={page >= pageCount - 1} onclick={() => onGoto(page + 1)}>{labels.next}</button>
+  <button type="button" class="pg" disabled={page >= pageCount - 1} aria-label={labels.lastPage} onclick={() => onGoto(pageCount - 1)}>»</button>
   {#if showSizes}
     <label class="pgsize">
-      Rows
+      {labels.rows}
       <select
-        aria-label="Rows per page"
+        aria-label={labels.rowsPerPage}
         value={pageSize}
         onchange={(e) => onPageSize?.(Number((e.currentTarget as HTMLSelectElement).value))}
       >

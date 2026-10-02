@@ -6,8 +6,8 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import type { Snippet } from 'svelte';
-  import type { ColumnDef, GridRow, SortState, SortDir, CellEditEvent } from './column';
-  import { colStyle, isNumeric, isSortable, isEditable, compareBySorts, formatCell, cellValue } from './column';
+  import type { ColumnDef, GridRow, SortState, SortDir, CellEditEvent, CellTypeDef } from './column';
+  import { colStyle, colWidth, isNumeric, isSortable, isEditable, sortRows, formatCell, cellValue } from './column';
   import { arrangePinned } from './pin';
   import { columnWindow, columnOffsets } from './colvirt';
   import { uniformHeights, variableHeights } from './rowheight';
@@ -23,10 +23,11 @@
   import {
     passesFilters,
     isFilterActive,
+    isBuiltinFilter,
     defaultFilterKind,
     distinctValues,
-    type ColumnFilter,
-    type FilterKind,
+    type AnyFilter,
+    type FilterTypes,
   } from './filtering';
   import type { RowSource } from './source';
   import { RowSourceController } from './source.svelte';
@@ -35,10 +36,20 @@
   import AggregationBar from './AggregationBar.svelte';
   import Pager from './Pager.svelte';
   import RowMenu from './RowMenu.svelte';
+  import { resolveLabels, type GridLabels } from './labels';
+  import { resolveColumns, type DefaultColumn } from './celltype';
+  import { parseCellInput } from './edit';
+  import { patchRowsInPlace } from './patch';
+  import { scrollTopFor, type GridApi, type ScrollAlign } from './api';
+  import { buildMergePlan, combinedFlex, type MergePlan, type SpanRun } from './merge';
+  import { GRID_STATE_VERSION, reconcileState, type GridState } from './state';
 
   let {
     rows = [],
-    columns = [],
+    columns: columnsIn = [],
+    defaultColumn,
+    cellTypes,
+    filterTypes,
     height,
     filter = '',
     groupBy = [],
@@ -72,7 +83,10 @@
     filterMenu = false,
     quickFilter = false,
     fillHandle = false,
-    emptyMessage = 'No matching rows',
+    emptyMessage,
+    labels,
+    locale,
+    onReady,
     loading = false,
     rowMenu,
     detail,
@@ -159,9 +173,9 @@
     /** Controlled column filters (keyed by column key). When set, the grid
         reflects these and reports changes via `onFilterChange` instead of holding
         its own. Omit for uncontrolled filtering. */
-    columnFilters?: Record<string, ColumnFilter>;
+    columnFilters?: Record<string, AnyFilter>;
     /** Called with the full column-filter map whenever a header filter changes. */
-    onFilterChange?: (filters: Record<string, ColumnFilter>) => void;
+    onFilterChange?: (filters: Record<string, AnyFilter>) => void;
     /** Show a pinned totals row: each column with a `groupAgg` shows that
         aggregate over all (filtered) rows. In-memory mode only. Default false. */
     footer?: boolean;
@@ -195,8 +209,32 @@
         drag it to copy the selected value(s) across the extended range (editable
         columns only). In-memory mode only. Default false. */
     fillHandle?: boolean;
-    /** Message shown when there are no rows. Default 'No matching rows'. */
+    /** Message shown when there are no rows. Defaults to `labels.noRows`. */
     emptyMessage?: string;
+    /** Override any string the grid renders itself (menus, filter editor,
+        pager, aria labels). Merged over English defaults — pass only what
+        changes. Interpolated entries are functions so translations can reorder
+        the parts. Resolved per grid. */
+    labels?: Partial<GridLabels>;
+    /** Reusable column types, by name. A column with `cellType: 'name'` gets
+        that entry's defaults (format, compare, align, filter, width, a
+        `component` renderer…) under its own fields, and the built-in type
+        named by `extends` for sorting, filtering and export. */
+    /** Settings applied under every column — its own fields (and a registered
+        `cellType`) win. Like AG Grid's `defaultColDef`. */
+    defaultColumn?: DefaultColumn;
+    cellTypes?: Record<string, CellTypeDef>;
+    /** Custom filter kinds, by name. A column selects one with `filter: 'name'`;
+        the header filter menu draws its `component` and the view keeps rows
+        for which `test` passes. An unregistered kind filters nothing. */
+    filterTypes?: FilterTypes;
+    /** BCP 47 locale for the grid's own number formatting (aggregation bar,
+        pager row count). Default: the runtime's locale. */
+    locale?: string;
+    /** Called once, when the grid mounts, with a handle for imperative actions:
+        `scrollToRow`, `focusCell`, `getSelectedRows`, `autosizeColumns`, `exportCSV`,
+        `getState` / `applyState`. */
+    onReady?: (api: GridApi) => void;
     /** Show a loading overlay over the grid (for consumer-driven async work in
         in-memory mode; source mode shows skeleton rows automatically). */
     loading?: boolean;
@@ -263,9 +301,14 @@
     cell?: Snippet<[{ row: GridRow; column: ColumnDef; value: unknown }]>;
   } = $props();
 
+  // Registered cell types and the grid locale, resolved once — every read of
+  // `columns` below sees plain built-in column types.
+  const columns = $derived(resolveColumns(columnsIn, cellTypes, locale, defaultColumn));
+
   const ROW_H = 36;
   const OVERSCAN = 6;
   const gid = `bo-grid-${uid++}`;
+  const L = $derived(resolveLabels(labels));
 
   let scrollTop = $state(0);
   // Styled floating tooltip (opt-in via column `tooltip`): a single fixed-
@@ -299,7 +342,7 @@
   let editSeed = $state<string | null>(null);
 
   function startEdit(r: number, c: number, seed: string | null = null) {
-    if (!isEditable(cols[c]) || !dataAt(r)) return;
+    if (!isEditable(cols[c]) || !dataAt(r) || isMerged(r, c)) return;
     editSeed = seed;
     editing = { r, c };
   }
@@ -308,7 +351,7 @@
   // re-emits onCellEdit with the previous value. History is keyed by row object
   // reference + column, so it survives sort/filter/reorder. Multi-cell ops
   // (paste, fill) record as one grouped step.
-  type EditCell = { row: GridRow; col: ColumnDef; old: string | number; value: string | number };
+  type EditCell = { row: GridRow; col: ColumnDef; old: unknown; value: unknown };
   const UNDO_LIMIT = 100;
   let undoStack: EditCell[][] = [];
   let redoStack: EditCell[][] = [];
@@ -328,27 +371,23 @@
     if (group.length) pushUndo(group);
   }
 
-  // Coerce + validate a raw string for cell (r,c) and emit onCellEdit, recording
-  // it for undo. Returns true if written, false if rejected (not editable,
-  // missing row, or invalid number). Shared by inline edit, paste and fill.
+  // Parse a raw string for cell (r,c) and write it. Shared by the built-in
+  // inline editor, paste and fill. False when rejected (not editable, missing
+  // row, unparseable, or refused by `validate`).
   function writeCell(r: number, c: number, raw: string): boolean {
     const col = cols[c];
-    if (!col || !isEditable(col)) return false;
     const row = dataAt(r);
-    if (!row) return false;
-    let value: string | number = raw;
-    if (col.type === 'date') {
-      // The date editor emits a yyyy-mm-dd string; store the column's ms value.
-      const ms = Date.parse(`${raw}T00:00:00Z`);
-      if (!Number.isFinite(ms)) return false;
-      value = ms;
-    } else if (isNumeric(col)) {
-      const n = Number(raw);
-      if (!Number.isFinite(n)) return false; // reject invalid number, keep old value
-      value = n;
-    }
+    if (!col || !row || !isEditable(col)) return false;
+    const parsed = parseCellInput(col, raw, row);
+    return parsed.ok && writeValue(r, c, parsed.value);
+  }
+  // Validate an already-typed value, emit onCellEdit and record it for undo.
+  function writeValue(r: number, c: number, value: unknown): boolean {
+    const col = cols[c];
+    const row = dataAt(r);
+    if (!col || !row || !isEditable(col)) return false;
     if (col.validate && !col.validate(value, row)) return false; // consumer rejected it
-    const old = (row[col.key] ?? '') as string | number;
+    const old = row[col.key] ?? '';
     onCellEdit?.({ row, column: col, value });
     if (onCellEdit) {
       const entry: EditCell = { row, col, old, value };
@@ -377,6 +416,12 @@
     editSeed = null;
     writeCell(r, c, raw);
   }
+  // A custom editor's typed value: no parsing, still validated.
+  function commitValue(r: number, c: number, value: unknown) {
+    editing = null;
+    editSeed = null;
+    writeValue(r, c, value);
+  }
 
   const collapsed = new Set<string>();
   let collapsedVersion = $state(0);
@@ -395,9 +440,9 @@
   // Structured per-column filters from the header filter menu (v0.3), keyed by
   // column key. Menu filters take precedence over the filterRow text inputs.
   // Controlled by the `columnFilters` prop when provided, else internal state.
-  let internalColumnFilters = $state<Record<string, ColumnFilter>>({});
+  let internalColumnFilters = $state<Record<string, AnyFilter>>({});
   const activeColumnFilters = $derived(columnFilters ?? internalColumnFilters);
-  function setColumnFilters(next: Record<string, ColumnFilter>): void {
+  function setColumnFilters(next: Record<string, AnyFilter>): void {
     if (columnFilters === undefined) internalColumnFilters = next; // uncontrolled: own it
     onFilterChange?.(next); // always notify
   }
@@ -543,20 +588,37 @@
 
   // Pin-arrangement: pinned columns move to the edges and get sticky offsets.
   // When nothing is pinned this is a no-op and the grid stays fit-to-width.
-  const layout = $derived(arrangePinned(pinnedSized));
+  let viewW = $state(0);
+  // In fixed-width mode (pinned columns or column virtualization) flex columns
+  // grow to fill the viewport, so the grid never stops short of its right edge.
+  // Columns that cannot fit the viewport switch the grid to horizontal scroll
+  // instead of being clipped: fixed widths, plus a readable minimum for flex
+  // columns (which would otherwise squeeze to nothing).
+  const MIN_FLEX_W = 64;
+  const overflowing = $derived(
+    viewW > 0 &&
+      pinnedSized.reduce((a, c) => a + (c.flex ? (c.minWidth ?? MIN_FLEX_W) : colWidth(c)), leadPx) > viewW,
+  );
+  const fixedWidths = $derived(virtualizeColumns || overflowing || pinnedSized.some((c) => !!c.pinned));
+  const layout = $derived(arrangePinned(pinnedSized, fixedWidths && viewW ? viewW - leadPx : 0));
   const cols = $derived(layout.columns);
   const pinned = $derived(layout.anyPinned);
   // Fixed-width horizontal-scroll mode: when columns are pinned OR column
   // virtualization is on. Drives the same layout (explicit widths, overflow-x,
   // scroll-synced header) that pinning already uses.
-  const hScroll = $derived(pinned || virtualizeColumns);
+  const hScroll = $derived(pinned || virtualizeColumns || overflowing);
+  // Header rows scroll with the body in fixed-width mode, driven by the body's
+  // scrollLeft. They need slack past their content to always reach it: Chrome
+  // caps an overflow:hidden element's scroll range without subtracting its
+  // reserved scrollbar gutter, and the body's offset can round up at the far
+  // right (device-pixel snapping). The slack itself is never scrolled into view.
+  const headRowStyle = $derived(hScroll ? 'padding-right:32px;' : '');
 
   // Column virtualization: render only the columns whose x-range intersects the
   // horizontal viewport (+ overscan); pinned columns always render. Off-window
   // runs of columns collapse into a single spacer so widths/positions are exact.
   const COL_OVERSCAN = 320; // px
   let scrollLeft = $state(0);
-  let viewW = $state(0);
   // Viewport height in px for row virtualization. A numeric `height` is that
   // value directly; a CSS-string `height` (auto-fit) is the measured viewport
   // height (clientHeight), with a sane fallback before the first measure.
@@ -624,7 +686,7 @@
     if (!hScroll) return colStyle(cols[ci]);
     const inf = layout.info[ci];
     let s = `flex:0 0 ${inf.width}px;width:${inf.width}px;`;
-    if (inf.pinned) s += `${pinStick(ci)}z-index:1;background:var(--bo-bg);`;
+    if (inf.pinned) s += `${pinStick(ci)}z-index:2;background:var(--bo-bg);`;
     return s;
   }
   // The leading checkbox column: a fixed-width flex item, sticky-left (past the
@@ -676,15 +738,17 @@
     order = next;
     sel.clear();
     editing = null;
-    const key = orderStorageKey();
-    if (key && typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem(key, JSON.stringify(next));
-      } catch {
-        /* storage unavailable — order still applies this session */
-      }
-    }
+    persistOrder(next);
     onColumnReorder?.(next.map((i) => columns[i].key));
+  }
+  function persistOrder(next: number[]): void {
+    const key = orderStorageKey();
+    if (!key || typeof localStorage === 'undefined') return;
+    try {
+      localStorage.setItem(key, JSON.stringify(next));
+    } catch {
+      /* storage unavailable — order still applies this session */
+    }
   }
 
   // ---- Column resizing -------------------------------------------------------
@@ -799,13 +863,15 @@
   });
   function setPinOverride(key: string, side: 'left' | 'right' | false): void {
     pinOverrides = { ...pinOverrides, [key]: side };
+    persistPins();
+  }
+  function persistPins(): void {
     const sk = pinStorageKey();
-    if (sk && typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem(sk, JSON.stringify(pinOverrides));
-      } catch {
-        /* storage unavailable — still applies this session */
-      }
+    if (!sk || typeof localStorage === 'undefined') return;
+    try {
+      localStorage.setItem(sk, JSON.stringify(pinOverrides));
+    } catch {
+      /* storage unavailable — still applies this session */
     }
   }
   // Effective pin side for a column key: runtime override, else static config.
@@ -898,8 +964,12 @@
     return c ? cellValue(c, row) : row[key];
   };
 
+  // Bumped by api.refresh(): the one way to make filter and sort catch up with
+  // values that changed in place (a live feed) without re-sorting every tick.
+  let viewTick = $state(0);
   const view = $derived.by(() => {
     if (source) return [] as GridRow[];
+    viewTick;
     const base = rows;
     const allCols = columns;
     const f = filter.trim().toLowerCase();
@@ -908,7 +978,7 @@
     // Active per-column filters: menu-driven structured filters (columnFilters)
     // take precedence; filterRow text inputs (colFilters) fill in the rest as
     // case-insensitive "contains".
-    const active: Record<string, ColumnFilter> = { ...activeColumnFilters };
+    const active: Record<string, AnyFilter> = { ...activeColumnFilters };
     for (const [k, v] of Object.entries(colFilters)) {
       if (!active[k] && v.trim()) active[k] = { kind: 'text', op: 'contains', q: v };
     }
@@ -918,12 +988,9 @@
       if (f) r = r.filter((row) => allCols.some((c) => String(cellValue(c, row) ?? '').toLowerCase().includes(f)));
       if (q) r = r.filter((row) => allCols.some((c) => String(cellValue(c, row) ?? '').toLowerCase().includes(q)));
       if (hasColFilters) {
-        r = r.filter((row) => passesFilters(row, active, valueOf));
+        r = r.filter((row) => passesFilters(row, active, valueOf, filterTypes));
       }
-      if (s.length > 0) {
-        const colOf = (k: string) => allCols.find((c) => c.key === k);
-        r = [...r].sort((a, b) => compareBySorts(a, b, s, colOf));
-      }
+      if (s.length > 0) r = sortRows(r, s, allCols);
       return r;
     });
   });
@@ -932,6 +999,7 @@
   // view) for each column with a data bar or colour scale. Per-column `min`/`max`
   // config overrides are applied later, in the cell. Keyed by column key.
   const cfRanges = $derived.by<Record<string, { min: number; max: number }>>(() => {
+    dataVersion;
     const out: Record<string, { min: number; max: number }> = {};
     for (const col of columns) {
       if (!col.dataBar && !col.colorScale) continue;
@@ -1067,6 +1135,7 @@
   // Pinned totals row: per-column `groupAgg` over all (filtered) rows. Reads row
   // values reactively so it stays live with the feed. In-memory mode only.
   const footerCells = $derived.by<string[] | null>(() => {
+    dataVersion;
     if (!footer || source) return null;
     const v = view;
     return cols.map((col) => {
@@ -1117,15 +1186,28 @@
 
   const total = $derived(hm.total);
   const rowWidthStyle = $derived(
-    hScroll ? `width:${layout.totalWidth + leadPx}px;right:auto;` : '',
+    hScroll ? `width:${layout.totalWidth + leadPx}px;min-width:100%;right:auto;` : '',
   );
   const visibleCount = $derived(Math.ceil(viewPx / baseH) + OVERSCAN * 2);
+  // Row recycling (uniform heights): render a window of exactly `recycleSlots`
+  // rows from `start` and key rows by `vr % recycleSlots`. A constant-length
+  // window makes the row that scrolls out free exactly the key the row that
+  // scrolls in needs, so its cells update in place instead of being destroyed
+  // and remounted — mounting ~25 cells per row was most of a fast scroll's cost.
+  // visibleCount + 1 rows always cover the viewport plus overscan on both sides.
+  const recycleSlots = $derived(useHeights ? 0 : visibleCount + 1);
   const start = $derived(Math.max(0, hm.indexAt(scrollTop) - OVERSCAN));
   const renderEnd = $derived(
     source
       ? (controller && controller.total > 0 ? Math.min(start + visibleCount, controller.total) : start + visibleCount)
-      : Math.min(flat.length, hm.indexAt(scrollTop + viewPx) + OVERSCAN + 1),
+      : recycleSlots
+        ? Math.min(flat.length, start + recycleSlots)
+        : Math.min(flat.length, hm.indexAt(scrollTop + viewPx) + OVERSCAN + 1),
   );
+
+  // Source mode renders a constant visibleCount-row window, so it recycles on
+  // that length; in-memory mode on recycleSlots (0 = variable heights, no recycling).
+  const rowSlots = $derived(source ? visibleCount : recycleSlots);
 
   type RenderItem =
     | { vr: number; kind: 'group'; group: GroupNode }
@@ -1133,25 +1215,162 @@
     | { vr: number; kind: 'treeloading'; depth: number }
     | { vr: number; kind: 'skeleton' };
 
+  // Render items are reused while the row behind a visual index is the same:
+  // the keyed {#each} then sees an identical item and skips the row entirely.
+  // Rebuilding every item on each scroll step made every on-screen cell
+  // re-evaluate its props just to mount the one row that scrolled in.
+  type ItemEntry = { src: unknown; depth?: number; kids?: boolean; item: RenderItem };
+  let itemCache = new Map<number, ItemEntry>();
   const renderItems = $derived.by<RenderItem[]>(() => {
     const out: RenderItem[] = [];
+    const prev = itemCache;
+    const next = new Map<number, ItemEntry>();
+    // Data items are keyed by their row object (plus tree shape), not by the
+    // VisualRow wrapper that every sort/filter rebuilds: after a re-sort, a row
+    // that kept its position keeps its item and skips repainting.
+    const reuse = (vr: number, src: unknown, make: () => RenderItem, depth?: number, kids?: boolean): RenderItem => {
+      const hit = prev.get(vr);
+      const entry =
+        hit && hit.src === src && hit.depth === depth && hit.kids === kids ? hit : { src, depth, kids, item: make() };
+      next.set(vr, entry);
+      return entry.item;
+    };
     if (source && controller) {
       controller.version; // track cache updates
       for (let vr = start; vr < renderEnd; vr++) {
         const row = controller.rowAt(vr);
-        out.push(row ? { vr, kind: 'data', row } : { vr, kind: 'skeleton' });
+        out.push(reuse(vr, row ?? null, () => (row ? { vr, kind: 'data', row } : { vr, kind: 'skeleton' })));
       }
     } else {
       for (let vr = start; vr < renderEnd; vr++) {
         const item = flat[vr];
         if (!item) continue;
-        if (item.kind === 'group') out.push({ vr, kind: 'group', group: item.group });
-        else if (item.kind === 'treeloading') out.push({ vr, kind: 'treeloading', depth: item.depth });
-        else out.push({ vr, kind: 'data', row: item.row, depth: item.depth, hasChildren: item.hasChildren });
+        if (item.kind === 'data') {
+          out.push(
+            reuse(
+              vr,
+              item.row,
+              () => ({ vr, kind: 'data', row: item.row, depth: item.depth, hasChildren: item.hasChildren }),
+              item.depth,
+              item.hasChildren,
+            ),
+          );
+        } else {
+          out.push(
+            reuse(vr, item, () =>
+              item.kind === 'group' ? { vr, kind: 'group', group: item.group } : { vr, kind: 'treeloading', depth: item.depth },
+            ),
+          );
+        }
       }
     }
+    itemCache = next;
     return out;
   });
+
+  // Merged cells (spanRows / colSpan). Built from the view like grouping:
+  // value reads are untracked, so a ticking feed never rebuilds the plan.
+  const mergePlan = $derived.by<MergePlan | null>(() => {
+    if (source) return null;
+    const visCols = cols;
+    if (!visCols.some((c) => c.spanRows || c.colSpan)) return null;
+    const items = flat;
+    const info = layout.info;
+    const colSpanOn = !virtualizeColumns;
+    if (expandable) expVersion;
+    return untrack(() =>
+      buildMergePlan({
+        columns: visCols,
+        count: items.length,
+        rowAt: (vr) => {
+          const it = items[vr];
+          return it && it.kind === 'data' ? it.row : null;
+        },
+        sectionOf: (ci) => (info[ci]?.side === 'left' ? 0 : info[ci]?.side === 'right' ? 2 : 1),
+        breakAfter: expandable
+          ? (vr) => {
+              const it = items[vr];
+              return !!it && it.kind === 'data' && isExpanded(getRowId(it.row));
+            }
+          : undefined,
+        colSpan: colSpanOn,
+      }),
+    );
+  });
+
+  /** A cell inside a merged run or covered by a column span — not editable. */
+  function isMerged(r: number, c: number): boolean {
+    if (!mergePlan) return false;
+    const w = mergePlan.colSpansOf(r)?.[c] ?? 1;
+    return w !== 1 || !!mergePlan.runOf(c, r);
+  }
+  const rowBoxH = (vr: number): number => (expandable ? baseH : hm.heightOf(vr));
+  function spanWidthPx(ci: number, w: number): number {
+    let px = 0;
+    for (let k = 0; k < w; k++) px += layout.info[ci + k]?.width ?? 0;
+    return px;
+  }
+  function spanWidthStyle(ci: number, w: number): string {
+    if (hScroll) {
+      const px = spanWidthPx(ci, w);
+      return `flex:0 0 ${px}px;width:${px}px;`;
+    }
+    return w > 1 ? combinedFlex(cols.slice(ci, ci + w)) : colStyle(cols[ci]);
+  }
+  // How one cell renders under the merge plan: 0 = covered by a colSpan (draw
+  // nothing), 1 = under a run (transparent cover), 2 = draws a merged area.
+  // Null = an ordinary cell.
+  type CellMerge =
+    | { k: 0 }
+    | { k: 1; style: string }
+    | {
+        k: 2;
+        r0: number;
+        r1: number;
+        c1: number;
+        span?: { up: number; height: number; first: number; rows: number; alt: boolean };
+        colspan?: number;
+        flex?: string;
+        px?: number;
+      };
+  const COVERED: CellMerge = { k: 0 };
+  function mergeAt(vr: number, ci: number): CellMerge | null {
+    const plan = mergePlan as MergePlan;
+    const w = plan.colSpansOf(vr)?.[ci] ?? 1;
+    if (w === 0) return COVERED;
+    const run: SpanRun | null = plan.runOf(ci, vr);
+    if (!run && w === 1) return null;
+    if (run && vr !== run.start && vr !== start) return { k: 1, style: spanWidthStyle(ci, w) };
+    let span;
+    if (run) {
+      const top = hm.offsetOf(run.start);
+      span = {
+        up: hm.offsetOf(vr) - top,
+        height: hm.offsetOf(run.end) + rowBoxH(run.end) - top,
+        first: rowBoxH(run.start),
+        rows: run.end - run.start + 1,
+        alt: run.start % 2 === 1,
+      };
+    }
+    return {
+      k: 2,
+      r0: run ? run.start : vr,
+      r1: run ? run.end : vr,
+      c1: ci + w - 1,
+      span,
+      colspan: w > 1 ? w : undefined,
+      flex: !hScroll && w > 1 ? combinedFlex(cols.slice(ci, ci + w)) : undefined,
+      px: hScroll ? spanWidthPx(ci, w) : undefined,
+    };
+  }
+  function rectSelected(r0: number, r1: number, c0: number, c1: number): boolean {
+    const b = sel.bounds;
+    return !!b && b.r0 <= r1 && b.r1 >= r0 && b.c0 <= c1 && b.c1 >= c0;
+  }
+  function rectFocused(r0: number, r1: number, c0: number, c1: number): boolean {
+    const f = sel.focus;
+    return !!f && f.r >= r0 && f.r <= r1 && f.c >= c0 && f.c <= c1;
+  }
 
   const stickyGroups = $derived(
     !source && groupBy.length > 0 ? activeGroupsAt(flat, hm.indexAt(scrollTop)) : [],
@@ -1175,6 +1394,7 @@
   }
 
   const agg = $derived.by<AggResult | null>(() => {
+    dataVersion;
     const b = sel.bounds;
     if (!b || sel.count <= 1) return null;
     const vals: number[] = [];
@@ -1322,13 +1542,13 @@
   let FilterMenuComp = $state<typeof import('./FilterMenu.svelte').default | null>(null);
   let filterUi = $state<{
     key: string;
-    kind: FilterKind;
-    header: string;
+    kind: string;
+    column: ColumnDef;
     values: string[];
     x: number;
     y: number;
   } | null>(null);
-  function filterKindFor(col: ColumnDef): FilterKind {
+  function filterKindFor(col: ColumnDef): string {
     return typeof col.filter === 'string' ? col.filter : defaultFilterKind(col);
   }
   async function openFilterMenu(col: ColumnDef, anchor: { left: number; bottom: number }) {
@@ -1336,11 +1556,12 @@
     // A set filter needs distinct values; in source mode they can't be
     // enumerated, so fall back to the column's typed filter.
     if (source && kind === 'set') kind = defaultFilterKind(col);
-    const values = !source && kind === 'set' ? distinctValues(rows, col.key, valueOf) : [];
+    const wantsValues = kind === 'set' || !!filterTypes?.[kind]?.needsValues;
+    const values = !source && wantsValues ? distinctValues(rows, col.key, valueOf) : [];
     if (!FilterMenuComp) FilterMenuComp = (await import('./FilterMenu.svelte')).default;
-    filterUi = { key: col.key, kind, header: col.header, values, x: anchor.left, y: anchor.bottom + 2 };
+    filterUi = { key: col.key, kind, column: col, values, x: anchor.left, y: anchor.bottom + 2 };
   }
-  function applyColumnFilter(key: string, f: ColumnFilter | null): void {
+  function applyColumnFilter(key: string, f: AnyFilter | null): void {
     const next = { ...activeColumnFilters };
     if (f) next[key] = f;
     else delete next[key];
@@ -1380,6 +1601,123 @@
     onColumnResize?.(col.key, w);
   }
 
+  // ---- Realtime fast path (`api.patchRows`) ----------------------------------
+  // Rows can be plain objects: patchRows writes into them directly (a fraction of
+  // the cost of writing through $state proxies) and repaints only the rendered
+  // rows it touched, by bumping a per-row version their cells read. Rows off
+  // screen pay nothing reactive; they read current values when they mount.
+  // `dataVersion` keeps the whole-view readers (footer totals, group subtotals,
+  // selection aggregates, conditional-format ranges) live, once per call.
+  // $state records, not SvelteMaps: reading a missing key of a proxied object
+  // subscribes to that key alone, so bumping one row (or one field) never wakes
+  // the others. Row versions drive row-aware work (cellClass/format/tooltip that
+  // read the row, renderers); field versions drive a cell's own value, so a tick
+  // that moves two fields repaints two cells, not the whole row.
+  const rowVersions: Record<string, number> = $state({});
+  const fieldVersions: Record<string, number> = $state({});
+  const fieldKey = (row: string | number, field: string): string => `${row}\u0001${field}`;
+  let dataVersion = $state(0);
+  const rowIndex = $derived(new Map(rows.map((r) => [getRowId(r), r] as const)));
+
+  function refresh(): void {
+    viewTick++;
+  }
+
+  function patchRows(patches: Iterable<readonly [string | number, Record<string, unknown>]>): number {
+    const changed = patchRowsInPlace(rowIndex, patches);
+    if (changed.size === 0) return 0;
+    for (const item of renderItems) {
+      if (item.kind !== 'data') continue;
+      const key = getRowId(item.row);
+      const fields = changed.get(key);
+      if (!fields) continue;
+      rowVersions[key] = (rowVersions[key] ?? 0) + 1;
+      for (const f of fields) {
+        const fk = fieldKey(key, f);
+        fieldVersions[fk] = (fieldVersions[fk] ?? 0) + 1;
+      }
+    }
+    dataVersion++;
+    return changed.size;
+  }
+
+  // ---- Imperative handle (`onReady`) ----------------------------------------
+  function dataRowIndex(key: string | number): number {
+    return flat.findIndex((v) => v.kind === 'data' && getRowId(v.row) === key);
+  }
+
+  function scrollToRow(key: string | number, align: ScrollAlign = 'nearest'): boolean {
+    if (source || !viewportEl) return false;
+    const vr = dataRowIndex(key);
+    if (vr < 0) return false;
+    viewportEl.scrollTop = scrollTopFor(align, hm.offsetOf(vr), hm.heightOf(vr), viewportEl.scrollTop, viewPx);
+    return true;
+  }
+
+  function focusCell(rowKey: string | number, columnKey: string): boolean {
+    if (source) return false;
+    const vr = dataRowIndex(rowKey);
+    const ci = cols.findIndex((c) => c.key === columnKey);
+    if (vr < 0 || ci < 0) return false;
+    focusTo(vr, ci, false);
+    return true;
+  }
+
+  function getSelectedRows(): GridRow[] {
+    selRowsVersion;
+    return view.filter((r) => selectedRows.has(getRowId(r)));
+  }
+
+  function autosizeColumns(keys?: string[]): void {
+    const wanted = keys ? new Set(keys) : null;
+    for (const col of cols) {
+      if (wanted && !wanted.has(col.key)) continue;
+      if (isResizable(col, resizable)) autosizeColumn(col);
+    }
+  }
+
+  async function exportViewCSV(filename = 'export.csv'): Promise<void> {
+    const { exportCSV } = await import('./export');
+    exportCSV(filename, view, cols);
+  }
+
+  function getState(): GridState {
+    return {
+      version: GRID_STATE_VERSION,
+      order: ordered.map((c) => c.key),
+      widths: { ...widths },
+      hidden: [...runtimeHidden],
+      pinned: { ...pinOverrides },
+      sorts: sorts.map((s) => ({ ...s })),
+      filters: { ...activeColumnFilters },
+    };
+  }
+
+  function applyState(state: unknown): boolean {
+    const st = reconcileState(state, columns.map((c) => c.key));
+    if (!st) return false;
+    const indexOf = new Map(columns.map((c, i) => [c.key, i] as const));
+    const nextOrder = st.order.map((k) => indexOf.get(k) as number);
+    order = nextOrder;
+    persistOrder(nextOrder);
+    widths = st.widths;
+    persistWidths();
+    setRuntimeHidden(st.hidden);
+    pinOverrides = st.pinned;
+    persistPins();
+    setSorts(st.sorts);
+    setColumnFilters(st.filters);
+    sel.clear();
+    editing = null;
+    return true;
+  }
+
+  $effect(() => {
+    untrack(() =>
+      onReady?.({ scrollToRow, focusCell, getSelectedRows, autosizeColumns, exportCSV: exportViewCSV, getState, applyState, patchRows, refresh }),
+    );
+  });
+
   // Column header menu (⋮): sort / pin / autosize / hide. Reuses the floating
   // RowMenu (a light action list — no lazy chunk, unlike the filter menu).
   // `anchor` positions the (keyboard-reachable) Filter submenu at the column.
@@ -1389,22 +1727,22 @@
   ): Array<{ label: string; onSelect: () => void }> {
     const items: Array<{ label: string; onSelect: () => void }> = [];
     if (isSortable(col)) {
-      items.push({ label: 'Sort ascending', onSelect: () => setSorts([{ key: col.key, dir: 'asc' }]) });
-      items.push({ label: 'Sort descending', onSelect: () => setSorts([{ key: col.key, dir: 'desc' }]) });
+      items.push({ label: L.sortAscending, onSelect: () => setSorts([{ key: col.key, dir: 'asc' }]) });
+      items.push({ label: L.sortDescending, onSelect: () => setSorts([{ key: col.key, dir: 'desc' }]) });
       if (sortInfo(col.key)) {
-        items.push({ label: 'Clear sort', onSelect: () => setSorts(sorts.filter((s) => s.key !== col.key)) });
+        items.push({ label: L.clearSort, onSelect: () => setSorts(sorts.filter((s) => s.key !== col.key)) });
       }
     }
     // Keyboard path to filtering (the header funnel is pointer-only by design).
     if (filterMenu && col.type !== 'sparkline' && col.filter !== false) {
-      items.push({ label: 'Filter…', onSelect: () => void openFilterMenu(col, anchor) });
+      items.push({ label: L.filterEllipsis, onSelect: () => void openFilterMenu(col, anchor) });
     }
     const side = pinSideOf(col);
-    if (side !== 'left') items.push({ label: 'Pin left', onSelect: () => setPinOverride(col.key, 'left') });
-    if (side !== 'right') items.push({ label: 'Pin right', onSelect: () => setPinOverride(col.key, 'right') });
-    if (side) items.push({ label: 'Unpin', onSelect: () => setPinOverride(col.key, false) });
-    if (isResizable(col, resizable)) items.push({ label: 'Autosize', onSelect: () => autosizeColumn(col) });
-    items.push({ label: 'Hide column', onSelect: () => hideColumn(col.key) });
+    if (side !== 'left') items.push({ label: L.pinLeft, onSelect: () => setPinOverride(col.key, 'left') });
+    if (side !== 'right') items.push({ label: L.pinRight, onSelect: () => setPinOverride(col.key, 'right') });
+    if (side) items.push({ label: L.unpin, onSelect: () => setPinOverride(col.key, false) });
+    if (isResizable(col, resizable)) items.push({ label: L.autosize, onSelect: () => autosizeColumn(col) });
+    items.push({ label: L.hideColumn, onSelect: () => hideColumn(col.key) });
     return items;
   }
   function openColumnMenu(col: ColumnDef, e: Event) {
@@ -1688,17 +2026,17 @@
           class="bo-quickfilter"
           type="search"
           placeholder="Search…"
-          aria-label="Quick filter"
+          aria-label={L.quickFilter}
           bind:value={quickText}
         />
       {/if}
       {#if columnsPanel}
-        <button class="bo-cols-toggle" type="button" onclick={openToolPanel}>⊟ Columns</button>
+        <button class="bo-cols-toggle" type="button" onclick={openToolPanel}>⊟ {L.columns}</button>
       {/if}
     </div>
   {/if}
   {#if headerGroups}
-    <div class="head-groups" aria-hidden="true" bind:this={groupHeadEl} style={hScroll ? 'overflow:hidden;' : ''}>
+    <div class="head-groups" aria-hidden="true" bind:this={groupHeadEl} style={headRowStyle}>
       {#if expandable}<span class="expandcell" style={expandCellStyle(true)}></span>{/if}
       {#if rowSelection}<span class="selcell" style={selCellStyle(true)}></span>{/if}
       {#each headerGroups as g, gi (gi)}
@@ -1713,7 +2051,7 @@
     role="row"
     aria-rowindex={1}
     bind:this={headEl}
-    style={hScroll ? 'overflow:hidden;' : ''}
+    style={headRowStyle}
     onpointerover={hasTooltips ? onTipOver : undefined}
     onpointerout={hasTooltips ? onTipOut : undefined}
   >
@@ -1728,7 +2066,7 @@
           checked={selectAll.checked}
           indeterminate={selectAll.indeterminate}
           disabled={!!source}
-          aria-label="Select all rows"
+          aria-label={L.selectAllRows}
           onclick={(e) => e.stopPropagation()}
           onchange={toggleAll}
         />
@@ -1791,11 +2129,11 @@
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <span
             class="funnel"
-            class:on={isFilterActive(activeColumnFilters[col.key])}
+            class:on={isFilterActive(activeColumnFilters[col.key], filterTypes)}
             role="button"
             tabindex="-1"
-            aria-label="Filter {col.header}"
-            title="Filter {col.header}"
+            aria-label={L.filterFor(col.header)}
+            title={L.filterFor(col.header)}
             onclick={(e) => {
               e.stopPropagation();
               openFilterMenu(col, (e.currentTarget as HTMLElement).getBoundingClientRect());
@@ -1813,8 +2151,8 @@
             class="hmenu"
             role="button"
             tabindex="-1"
-            aria-label="{col.header} menu"
-            title="{col.header} menu"
+            aria-label={L.columnMenu(col.header)}
+            title={L.columnMenu(col.header)}
             onclick={(e) => openColumnMenu(col, e)}
             onkeydown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') openColumnMenu(col, e);
@@ -1827,7 +2165,7 @@
             class="grip"
             role="separator"
             aria-orientation="vertical"
-            aria-label="Resize {col.header}"
+            aria-label={L.resizeColumn(col.header)}
             onpointerdown={(e) => startResize(ci, e)}
             ondblclick={(e) => resetWidth(ci, e)}
             ondragstart={(e) => e.preventDefault()}
@@ -1839,7 +2177,7 @@
   </div>
 
   {#if filterRow && !source}
-    <div class="filter-row" role="row" bind:this={filterRowEl} style={hScroll ? 'overflow:hidden;' : ''}>
+    <div class="filter-row" role="row" bind:this={filterRowEl} style={headRowStyle}>
       {#if expandable}<span class="expandcell" style={expandCellStyle(false)}></span>{/if}
       {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
       {#each cols as col, ci (ci)}
@@ -1849,7 +2187,7 @@
               class="fr-input"
               type="search"
               placeholder="filter…"
-              aria-label="Filter {col.header}"
+              aria-label={L.filterFor(col.header)}
               value={colFilters[col.key] ?? ''}
               oninput={(e) => (colFilters = { ...colFilters, [col.key]: e.currentTarget.value })}
             />
@@ -1880,6 +2218,7 @@
             {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
             {#each cols as col, ci (ci)}
               <Cell
+                labels={L}
                 {col}
                 row={prow}
                 r={-1 - pi}
@@ -1900,30 +2239,30 @@
       </div>
     {/if}
     {#if rowCount === 0 && !controller?.loading}
-      <div class="empty">{emptyMessage}</div>
+      <div class="empty">{emptyMessage ?? L.noRows}</div>
     {/if}
     {#if loading}
       <div class="loading-overlay" aria-busy="true" aria-live="polite">
         <span class="spinner" aria-hidden="true"></span>
-        <span class="loading-label">Loading…</span>
+        <span class="loading-label">{L.loading}</span>
       </div>
     {/if}
     {#if stickyGroups.length > 0}
       <div class="sticky">
         {#each stickyGroups as g (g.depth)}
           <div class="sticky-row" aria-hidden="true" style="height:{baseH}px">
-            <GroupRow group={g} columns={cols} onToggle={toggleGroup} />
+            <GroupRow version={dataVersion} group={g} columns={cols} onToggle={toggleGroup} />
           </div>
         {/each}
       </div>
     {/if}
     <div class="spacer" style="height:{total}px;{hScroll ? `width:${layout.totalWidth + leadPx}px;` : ''}">
-      {#each renderItems as item (item.vr)}
+      {#each renderItems as item (rowSlots ? item.vr % rowSlots : item.vr)}
         {#if item.kind === 'group'}
           <div class="grouprow" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
             {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
             {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
-            <GroupRow group={item.group} columns={cols} onToggle={lazyGrouped ? toggleLazyGroup : toggleGroup} rowIndex={item.vr + 2} />
+            <GroupRow version={dataVersion} group={item.group} columns={cols} onToggle={lazyGrouped ? toggleLazyGroup : toggleGroup} rowIndex={item.vr + 2} />
           </div>
         {:else if item.kind === 'skeleton'}
           <div class="row skeleton" role="row" aria-rowindex={item.vr + 2} aria-hidden="true" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
@@ -1938,7 +2277,7 @@
             {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
             {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
             <span class="tree-loading-cell" style="padding-left:{(item.depth ?? 0) * 16 + 24}px">
-              <span class="spinner sm" aria-hidden="true"></span>Loading…
+              <span class="spinner sm" aria-hidden="true"></span>{L.loading}
             </span>
           </div>
         {:else}
@@ -1951,7 +2290,7 @@
                   class="expand-toggle"
                   type="button"
                   aria-expanded={isExpanded(getRowId(item.row))}
-                  aria-label="Toggle detail"
+                  aria-label={L.toggleDetail}
                   onpointerdown={(e) => e.stopPropagation()}
                   onclick={(e) => {
                     e.stopPropagation();
@@ -1968,7 +2307,7 @@
                   type="checkbox"
                   class="rowcheck"
                   checked={isRowSelected(getRowId(item.row))}
-                  aria-label="Select row"
+                  aria-label={L.selectRow}
                   onpointerdown={(e) => e.stopPropagation()}
                   onclick={(e) => e.stopPropagation()}
                   onchange={() => toggleRow(getRowId(item.row))}
@@ -1979,7 +2318,14 @@
               {#if it.kind === 'cell'}
                 {@const ci = it.ci}
                 {@const col = cols[ci]}
+                {@const m = mergePlan ? mergeAt(item.vr, ci) : null}
+                {#if m?.k === 0}
+                  <!-- covered by a column span to the left -->
+                {:else if m?.k === 1}
+                  <span class="c spancover" aria-hidden="true" style={m.style}></span>
+                {:else}
                 <Cell
+                  labels={L}
                   {col}
                   row={item.row}
                   r={item.vr}
@@ -1988,13 +2334,18 @@
                   cellId={`${gid}-r${item.vr}-c${ci}`}
                   cellSnippet={cell}
                   rowKey={getRowId(item.row)}
+                  version={rowVersions[getRowId(item.row)]}
+                  fieldVersion={fieldVersions[fieldKey(getRowId(item.row), col.key)]}
                   {flashTracker}
-                  selected={cellSelection && sel.contains(item.vr, ci)}
-                  focused={cellSelection && sel.isFocus(item.vr, ci)}
+                  selected={cellSelection && (m ? rectSelected(m.r0, m.r1, ci, m.c1) : sel.contains(item.vr, ci))}
+                  focused={cellSelection && (m ? rectFocused(m.r0, m.r1, ci, m.c1) : sel.isFocus(item.vr, ci))}
+                  span={m?.span}
+                  colspan={m?.colspan}
+                  flexStyle={m?.flex}
                   pinned={pinned && layout.info[ci].pinned}
                   pinSide={layout.info[ci].side ?? 'left'}
                   pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right : layout.info[ci].left + leadPx}
-                  width={hScroll ? layout.info[ci].width : undefined}
+                  width={hScroll ? (m?.px ?? layout.info[ci].width) : undefined}
                   alt={item.vr % 2 === 1}
                   editing={editing?.r === item.vr && editing?.c === ci}
                   seed={editing?.r === item.vr && editing?.c === ci ? editSeed : null}
@@ -2018,11 +2369,14 @@
                   onCellClick={onCellClick ? onCellClicked : undefined}
                   onCellDblClick={startEdit}
                   onEditCommit={(raw) => commitEdit(item.vr, ci, raw)}
+                  onEditCommitValue={(v) => commitValue(item.vr, ci, v)}
                   onEditCancel={() => {
+                    if (editing?.r !== item.vr || editing?.c !== ci) return;
                     editing = null;
                     editSeed = null;
                   }}
                 />
+                {/if}
               {:else}
                 <span class="colspacer" aria-hidden="true" style="flex:0 0 {it.w}px;width:{it.w}px;"></span>
               {/if}
@@ -2042,14 +2396,14 @@
         {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
         {#each cols as col, ci (ci)}
           <span class="fcell" class:right={isNumeric(col)} style={cellWidthStyle(ci)}>
-            {ci === 0 && !footerCells[ci] ? 'Total' : footerCells[ci]}
+            {ci === 0 && !footerCells[ci] ? L.total : footerCells[ci]}
           </span>
         {/each}
       </div>
     {/if}
   </div>
 
-  <AggregationBar result={agg} kinds={aggregations} />
+  <AggregationBar result={agg} kinds={aggregations} {locale} />
 
   {#if paged}
     <Pager
@@ -2060,6 +2414,8 @@
       pageSize={effPageSize}
       {pageSizeOptions}
       onPageSize={setPageSize}
+      labels={L}
+      {locale}
     />
   {/if}
 
@@ -2072,13 +2428,16 @@
     {@const key = filterUi.key}
     <Menu
       kind={filterUi.kind}
-      header={filterUi.header}
+      header={filterUi.column.header}
+      column={filterUi.column}
+      custom={isBuiltinFilter({ kind: filterUi.kind }) ? undefined : filterTypes?.[filterUi.kind]}
       filter={activeColumnFilters[key] ?? null}
       values={filterUi.values}
       x={filterUi.x}
       y={filterUi.y}
       onApply={(f) => applyColumnFilter(key, f)}
       onClose={() => (filterUi = null)}
+      labels={L}
     />
   {/if}
 
@@ -2092,6 +2451,7 @@
       onToggle={toggleColumnVisible}
       onShowAll={showAllColumns}
       onClose={() => (panelXY = null)}
+      labels={L}
     />
   {/if}
 
@@ -2458,6 +2818,10 @@
     position: relative;
     overflow-y: auto;
     overflow-x: hidden;
+    /* Reserve the scrollbar's space whether or not the rows overflow, and the
+       header rows below reserve the same: every column edge lines up with its
+       body column, to the subpixel. */
+    scrollbar-gutter: stable;
     user-select: none;
     /* Thin, themed scrollbars (Firefox) — Chromium/Safari below. */
     scrollbar-width: thin;
@@ -2466,6 +2830,19 @@
   .viewport::-webkit-scrollbar {
     width: 10px;
     height: 10px;
+  }
+  .head,
+  .head-groups,
+  .filter-row {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+  }
+  .head::-webkit-scrollbar,
+  .head-groups::-webkit-scrollbar,
+  .filter-row::-webkit-scrollbar {
+    width: 10px;
+    height: 0;
   }
   .viewport::-webkit-scrollbar-thumb {
     background: color-mix(in srgb, var(--bo-text-dim) 45%, transparent);
@@ -2543,13 +2920,14 @@
   .spacer {
     position: relative;
     width: 100%;
+    min-width: 100%;
   }
 
   .sticky {
     position: sticky;
     top: 0;
     height: 0;
-    z-index: 3;
+    z-index: 4;
     overflow: visible;
   }
   .sticky-row {

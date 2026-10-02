@@ -1,3 +1,4 @@
+import type { Component } from 'svelte';
 import type { Candle } from '../types';
 import { fmtPrice, fmtPercent, fmtVolume, fmtDate, fmtCurrency, relativeTime, type DateStyle } from '../format/format';
 import type { AggKind } from './aggregate';
@@ -5,10 +6,13 @@ import type { FilterKind } from './filtering';
 
 export type Align = 'left' | 'right';
 
-interface ColBase {
+export interface ColBase {
   /** Field on the row to read for this column's value. */
   key: string;
   header: string;
+  /** BCP 47 locale for this column's built-in formatting (`price`, `date`,
+      `currency`, `relative`). Defaults to the grid's `locale`, then `en-US`. */
+  locale?: string;
   /** Computed value: derive this cell's value from the whole row instead of
       reading `row[key]` (KPIs, ratios, deltas). Flows through display, sort,
       filter, aggregation, export and conditional formatting. `key` still names
@@ -16,6 +20,16 @@ interface ColBase {
       Keep it cheap and pure — it's called during sort/filter. Computed columns
       aren't editable. In-memory mode (a server source owns its own derivations). */
   value?: (row: GridRow) => unknown;
+  /** Merge this column's cell down over adjacent rows. `true` joins rows with
+      equal (non-blank) values; a function decides for each adjacent pair.
+      Hierarchical: a run also breaks wherever a spanning column to its left
+      breaks, and at group headers. A drawing rule only — sort, filter, copy and
+      export still see every row's own value. In-memory mode only. */
+  spanRows?: boolean | ((a: GridRow, b: GridRow) => boolean);
+  /** How many columns this cell covers for a given row (default 1). Covered
+      cells are not drawn. Clamped at a pinned/scrolling boundary and the last
+      column; the leftmost claim wins. Ignored under `virtualizeColumns`. */
+  colSpan?: (row: GridRow) => number;
   /** Fixed width in px. Ignored when `flex` is set. */
   width?: number;
   /** Min/max width (px) enforced while drag-resizing this column. */
@@ -52,6 +66,11 @@ interface ColBase {
       CSS animation's fixed duration regardless. Default 300. Raise it for a
       slow feed, lower it for a fast one so flashes don't smear together. */
   flashMs?: number;
+  /** Tint the text in the tick's direction while flashing (default true). Set
+      false when the column colours its own text — e.g. price-limit tones on a
+      VN board (ceiling / floor / reference) — so the flash only lights the
+      background. */
+  flashColor?: boolean;
   /** Set false to disable header-click sorting on this column. */
   sortable?: boolean;
   /** Custom ascending comparator for this column's values (e.g. enum priority or
@@ -64,9 +83,19 @@ interface ColBase {
   pinned?: boolean | 'left' | 'right';
   /** Allow inline editing (double-click or Enter on the focused cell). */
   editable?: boolean;
-  /** Validate an edited value before it commits (inline edit or paste). Return
-      false to reject and keep the old value. Receives the coerced value. */
-  validate?: (value: string | number, row: GridRow) => boolean;
+  /** Validate an edited value before it commits (inline edit, custom editor,
+      paste, fill). Return false to reject and keep the old value. Receives the
+      parsed value. */
+  validate?(value: unknown, row: GridRow): boolean;
+  /** Turn typed or pasted text into the stored value (runs before the built-in
+      number/date coercion, which it replaces). Return `undefined` or a
+      non-finite number to reject the input. */
+  parse?: (raw: string, row: GridRow) => unknown;
+  /** Svelte component that edits this cell in place of the built-in input.
+      Makes any column type editable (with `editable: true`), including display
+      widgets like `rating` or `tags`. It calls `commit(value)` to save — any
+      value, no parsing — or `cancel()`; Escape cancels. */
+  editor?: Component<CellEditorProps>;
   /** Editable choices: when set, editing renders a `<select>` of these options
       instead of a text input (enum/status columns). */
   options?: string[];
@@ -90,6 +119,10 @@ interface ColBase {
       returning a Node for that). Overrides the cell's display only — sort,
       filter, tooltip, copy and export still use the value/`format`. */
   render?: (ctx: CellRenderContext) => string | Node | null | undefined;
+  /** Svelte component that draws this cell (receives `value`, `row`, `column`
+      and the formatted `text`). Display only, like `render`. Usually supplied by
+      a registered `cellTypes` entry, but any column can set it. */
+  component?: Component<CellTypeProps>;
   /** Set false to disable drag-to-resize on this column (default on). */
   resizable?: boolean;
   /** Parent header label. Consecutive columns sharing a `group` render under a
@@ -98,7 +131,7 @@ interface ColBase {
   /** Header filter-menu control for this column (requires `filterMenu` on
       <Grid>). Defaults to the column's type; `'set'` shows a value checklist;
       `false` disables filtering for this column. */
-  filter?: false | FilterKind;
+  filter?: false | FilterKind | (string & {});
   /** Conditional formatting — a horizontal bar painted behind the cell value,
       scaled across the column's value range. The range is auto-computed over the
       current view (in-memory) unless `min`/`max` are given; pass `min: 0` for
@@ -167,8 +200,24 @@ export interface CellRenderContext {
 export interface CellEditEvent {
   row: GridRow;
   column: ColumnDef;
-  /** Parsed value: a number for numeric columns, otherwise the raw string. */
-  value: string | number;
+  /** The new value: a number for numeric columns, epoch ms for `date`, the
+      result of the column's `parse` when set, whatever a custom `editor`
+      committed, otherwise the typed string. */
+  value: unknown;
+}
+
+/** Props a custom cell `editor` component receives. */
+export interface CellEditorProps {
+  /** The cell's current value. */
+  value: unknown;
+  row: GridRow;
+  column: ColumnDef;
+  /** The key that started type-to-edit, or null when opened by double-click/Enter. */
+  seed: string | null;
+  /** Save `value` (validated, then emitted through onCellEdit) and close. */
+  commit: (value: unknown) => void;
+  /** Close without saving. */
+  cancel: () => void;
 }
 
 /**
@@ -182,7 +231,7 @@ export type ColumnDef =
   | (ColBase & { type: 'volume' })
   | (ColBase & { type: 'number'; decimals?: number })
   | (ColBase & { type: 'date'; dateStyle?: DateStyle })
-  | (ColBase & { type: 'currency'; currency?: string; locale?: string; decimals?: number })
+  | (ColBase & { type: 'currency'; currency?: string; decimals?: number })
   | (ColBase & { type: 'relative' }) // value: epoch ms → "3 hours ago"
   | (ColBase & { type: 'heatmap'; min: number; max: number; decimals?: number })
   | (ColBase & { type: 'sparkline'; sparkKey: string })
@@ -195,7 +244,31 @@ export type ColumnDef =
   | (ColBase & { type: 'avatar'; sub?: string }) // value: display name
   | (ColBase & { type: 'link'; href?: (row: GridRow) => string; newTab?: boolean }) // value: text
   // Rendered by the consumer's `cell` snippet on <Grid>.
-  | (ColBase & { type: 'custom' });
+  | (ColBase & { type: 'custom' })
+  // A type registered through <Grid cellTypes>; resolved to a built-in type
+  // (its `extends`) before the grid reads it. Extra keys are type options.
+  | (ColBase & { type?: undefined; cellType: string; [option: string]: unknown });
+
+/** Props a `component` cell renderer receives. */
+export interface CellTypeProps {
+  value: unknown;
+  row: GridRow;
+  column: ColumnDef;
+  /** The value formatted the way copy, export and tooltips see it. */
+  text: string;
+}
+
+/** Built-in column types a registered cell type can build on. */
+export type BuiltinCellType = Exclude<ColumnDef['type'], undefined>;
+
+/** A reusable column type for <Grid cellTypes>: defaults merged under each
+    column that names it, plus an optional `component` to draw the cell.
+    `extends` picks the built-in type whose formatting, sorting, filtering and
+    alignment it inherits (default: `custom` when it draws itself, else `text`). */
+export type CellTypeDef = Omit<Partial<ColBase>, 'key' | 'header'> & {
+  extends?: BuiltinCellType;
+  [option: string]: unknown;
+};
 
 /** Semantic colour for a `badge` value (mapped via the column's `tones`). */
 export type BadgeTone = 'up' | 'down' | 'amber' | 'info' | 'neutral';
@@ -231,7 +304,7 @@ export function formatCell(col: ColumnDef, value: unknown, row?: GridRow): strin
   const n = typeof value === 'number' ? value : Number(value);
   switch (col.type) {
     case 'price':
-      return fmtPrice(n);
+      return fmtPrice(n, col.locale);
     case 'percent':
       return fmtPercent(n);
     case 'volume':
@@ -239,11 +312,11 @@ export function formatCell(col: ColumnDef, value: unknown, row?: GridRow): strin
     case 'number':
       return n.toFixed(col.decimals ?? 2);
     case 'date':
-      return fmtDate(n, col.dateStyle);
+      return fmtDate(n, col.dateStyle, col.locale);
     case 'currency':
       return fmtCurrency(n, col.currency, col.locale, col.decimals);
     case 'relative':
-      return relativeTime(n);
+      return relativeTime(n, undefined, col.locale);
     case 'heatmap':
       return n.toFixed(col.decimals ?? 2);
     case 'rating':
@@ -285,12 +358,48 @@ const DISPLAY_ONLY = ['sparkline', 'custom', 'tags', 'badge', 'boolean', 'avatar
 
 export function isEditable(col: ColumnDef): boolean {
   // Computed columns have no underlying field to write back to.
-  return !!col.editable && !col.value && !DISPLAY_ONLY.includes(col.type);
+  if (!col.editable || col.value) return false;
+  return !!col.editor || (!!col.type && !DISPLAY_ONLY.includes(col.type));
 }
+
+// One collator for every string comparison: `localeCompare` without a cached
+// collator rebuilds locale data per call, which dominates a large sort.
+const collate = new Intl.Collator().compare;
 
 function rawCompare(a: unknown, b: unknown): number {
   if (typeof a === 'number' && typeof b === 'number') return a - b;
-  return String(a ?? '').localeCompare(String(b ?? ''));
+  return collate(String(a ?? ''), String(b ?? ''));
+}
+
+/**
+ * Sort rows by `sorts`, reading each row's sort value(s) exactly once and
+ * sorting indices — n reads instead of ~2·n·log n. Matters when values come
+ * through reactive proxies or computed columns, and when a live board re-sorts
+ * every second. Stable; never mutates the input. Returns the input itself for
+ * an empty sort list.
+ */
+export function sortRows<T extends GridRow>(
+  rows: readonly T[],
+  sorts: readonly SortState[],
+  columns: readonly ColumnDef[],
+): T[] {
+  if (sorts.length === 0) return rows as T[];
+  const n = rows.length;
+  const specs = sorts.map((sort) => {
+    const col = columns.find((c) => c.key === sort.key);
+    const keys = new Array<unknown>(n);
+    for (let i = 0; i < n; i++) keys[i] = col?.value ? col.value(rows[i]) : rows[i][sort.key];
+    return { keys, dir: sort.dir === 'asc' ? 1 : -1, compare: col?.compare ?? rawCompare };
+  });
+  const order = Array.from({ length: n }, (_, i) => i);
+  order.sort((i, j) => {
+    for (const sp of specs) {
+      const d = sp.compare(sp.keys[i], sp.keys[j]);
+      if (d !== 0) return d * sp.dir;
+    }
+    return i - j;
+  });
+  return order.map((i) => rows[i]);
 }
 
 export function compareRows(a: GridRow, b: GridRow, sort: SortState, col?: ColumnDef): number {
@@ -331,6 +440,7 @@ export function colWidth(col: ColumnDef): number {
 
 export function isNumeric(col: ColumnDef): boolean {
   // Non-numeric (text-aligned / structured) types; everything else is a number.
+  if (!col.type) return false;
   return !['text', 'sparkline', 'custom', 'tags', 'badge', 'boolean', 'avatar', 'link'].includes(col.type);
 }
 
