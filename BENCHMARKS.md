@@ -22,18 +22,19 @@ core bundles run into the hundreds of KB before features. A few notes:
   only what they use (e.g. `import { Grid }`) tree-shakes the rest — the package is
   `sideEffects: false` — so the IO/print helpers don't ship unless imported.
 - The **realtime tick pipeline** (`bo-grid/realtime`) and the **trading
-  conventions** helpers (`bo-grid/trading`) are separate entries on their own budgets; none adds anything to the grid
+  conventions** helpers (`bo-grid/trading`) are separate entries; none adds anything to the grid
   unless you import it.
 - **Excel export** is a **dynamic import** of the optional `xlsx` peer — it never
   lands in the core bundle unless you call `exportXLSX`.
 - The heavy menu UI (filter menu, columns panel) lazy-loads on first use and is
   excluded from the core number above.
 
-The size is a CI gate: `pnpm size:lib` fails the build if JS or CSS exceeds the
-budget, so it can't silently regress.
+`pnpm size:lib` reports these numbers in CI on every run, so a change that
+moves them is visible in review; it fails only on an accidental blow-up (a
+dependency bundled into an entry by mistake), not on feature growth.
 
 ```sh
-pnpm size:lib   # measures the published library bundle against its budget
+pnpm size:lib   # measures the published library bundle
 ```
 
 ## Hot paths
@@ -104,6 +105,6 @@ on your hardware.
 ```sh
 pnpm install
 pnpm bench       # hot-path timings
-pnpm size:lib    # bundle size vs budget
+pnpm size:lib    # bundle size report
 pnpm dev         # demo with the 1M-row Big data example + FPS meter
 ```

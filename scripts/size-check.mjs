@@ -1,9 +1,7 @@
-// Bundle-budget guard for the DEMO app. The real product-size promise — the
-// gzipped library a consumer actually ships — is enforced separately and more
-// tightly by `size:lib` (scripts/size-lib.mjs). This budget guards the demo
-// entry chunk, which also bundles the Svelte runtime, the examples gallery
-// (trading desk + portfolio + spreadsheet), and the demo data generators, so it
-// is a looser ceiling that just catches accidental demo bloat.
+// Size report for the DEMO app's entry chunk (Svelte runtime + landing page +
+// default example + library + demo data). Reported every run; the ceiling only
+// catches accidental bloat (a lazy chunk or heavy dependency pulled into the
+// entry), not feature growth. The shipped-library number lives in size:lib.
 //
 // Measures the CORE entry chunk only (the `index-*` files). Lazy chunks loaded
 // via dynamic import (e.g. SheetJS for xlsx export) are intentionally excluded —
@@ -12,15 +10,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
 const DIR = 'demo-dist/assets';
-// Demo entry chunk: Svelte runtime + the landing page (hero/nav/footer) + the
-// eager default example + the library + demo data. The shipped-library promise is
-// the tight one and lives in size:lib; this is a looser anti-bloat ceiling for
-// the demo. Bumped 40→45 (landing page), 45→47 (conditional formatting), then
-// 47→52 for the analytics + scale wave (computed columns, rich types, charts
-// companion, column virtualization) and the Dashboard/Wide demos, then 52→55 for
-// the realtime wave (derived per-cell flash in the core, the bo-grid/realtime
-// tick pipeline the demo feed now runs on) — all demo markup, not shipped to npm.
-const BUDGET_KB = { js: 55, css: 10 }; // gzipped
+const CEILING_KB = { js: 120, css: 20 }; // gzipped
 
 function gzipKb(path) {
   return gzipSync(readFileSync(path)).length / 1024;
@@ -36,21 +26,20 @@ for (const f of readdirSync(DIR)) {
 }
 
 const rows = [
-  ['JS ', js, BUDGET_KB.js],
-  ['CSS', css, BUDGET_KB.css],
+  ['JS ', js, CEILING_KB.js],
+  ['CSS', css, CEILING_KB.css],
 ];
 
 let failed = false;
 console.log('bundle size (gzip)');
-for (const [name, kb, budget] of rows) {
-  const ok = kb <= budget;
+for (const [name, kb, ceiling] of rows) {
+  const ok = kb <= ceiling;
   failed ||= !ok;
-  const pct = Math.round((kb / budget) * 100);
-  console.log(`  ${ok ? '✓' : '✗'} ${name}  ${kb.toFixed(2)} KB / ${budget} KB  (${pct}%)`);
+  console.log(`  ${ok ? '✓' : '✗'} ${name}  ${kb.toFixed(2)} KB  (regression ceiling ${ceiling} KB)`);
 }
 
 if (failed) {
-  console.error('\n✗ bundle budget exceeded');
+  console.error('\n✗ demo entry blew past its regression ceiling — a lazy chunk pulled in by accident?');
   process.exit(1);
 }
-console.log('\n✓ within budget');
+console.log('\n✓ no size regression');

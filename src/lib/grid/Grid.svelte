@@ -1229,14 +1229,50 @@
     }
     return w > 1 ? combinedFlex(cols.slice(ci, ci + w)) : colStyle(cols[ci]);
   }
-  function spanGeometry(vr: number, run: SpanRun) {
-    const top = hm.offsetOf(run.start);
+  // How one cell renders under the merge plan: 0 = covered by a colSpan (draw
+  // nothing), 1 = under a run (transparent cover), 2 = draws a merged area.
+  // Null = an ordinary cell.
+  type CellMerge =
+    | { k: 0 }
+    | { k: 1; style: string }
+    | {
+        k: 2;
+        r0: number;
+        r1: number;
+        c1: number;
+        span?: { up: number; height: number; first: number; rows: number; alt: boolean };
+        colspan?: number;
+        flex?: string;
+        px?: number;
+      };
+  const COVERED: CellMerge = { k: 0 };
+  function mergeAt(vr: number, ci: number): CellMerge | null {
+    const plan = mergePlan as MergePlan;
+    const w = plan.colSpansOf(vr)?.[ci] ?? 1;
+    if (w === 0) return COVERED;
+    const run: SpanRun | null = plan.runOf(ci, vr);
+    if (!run && w === 1) return null;
+    if (run && vr !== run.start && vr !== start) return { k: 1, style: spanWidthStyle(ci, w) };
+    let span;
+    if (run) {
+      const top = hm.offsetOf(run.start);
+      span = {
+        up: hm.offsetOf(vr) - top,
+        height: hm.offsetOf(run.end) + rowBoxH(run.end) - top,
+        first: rowBoxH(run.start),
+        rows: run.end - run.start + 1,
+        alt: run.start % 2 === 1,
+      };
+    }
     return {
-      up: hm.offsetOf(vr) - top,
-      height: hm.offsetOf(run.end) + rowBoxH(run.end) - top,
-      first: rowBoxH(run.start),
-      rows: run.end - run.start + 1,
-      alt: run.start % 2 === 1,
+      k: 2,
+      r0: run ? run.start : vr,
+      r1: run ? run.end : vr,
+      c1: ci + w - 1,
+      span,
+      colspan: w > 1 ? w : undefined,
+      flex: !hScroll && w > 1 ? combinedFlex(cols.slice(ci, ci + w)) : undefined,
+      px: hScroll ? spanWidthPx(ci, w) : undefined,
     };
   }
   function rectSelected(r0: number, r1: number, c0: number, c1: number): boolean {
@@ -2115,7 +2151,6 @@
             </span>
           </div>
         {:else}
-          {@const rowSpans = mergePlan ? mergePlan.colSpansOf(item.vr) : null}
           <!-- Row activation is keyboard-accessible at the grid level: Enter on the focused cell fires onRowClick (focus is via aria-activedescendant). -->
           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
           <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:rowactive={selectedRowId != null && getRowId(item.row) === selectedRowId} class:clickable={!!onRowClick} class:droptarget={reorderable && dropRowVr === item.vr && dragRowVr !== item.vr} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : undefined} aria-level={treeData ? (item.depth ?? 0) + 1 : undefined} aria-expanded={treeData && item.hasChildren ? isExpanded(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{expandable ? baseH : hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)} oncontextmenu={(e) => openRowMenu(item.row, e)} ondragover={reorderable ? (e) => { if (dragRowVr < 0) return; e.preventDefault(); dropRowVr = item.vr; } : undefined} ondrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(); } : undefined}>
@@ -2153,14 +2188,12 @@
               {#if it.kind === 'cell'}
                 {@const ci = it.ci}
                 {@const col = cols[ci]}
-                {@const cw = rowSpans ? rowSpans[ci] : 1}
-                {@const run = mergePlan ? mergePlan.runOf(ci, item.vr) : null}
-                {#if cw === 0}
+                {@const m = mergePlan ? mergeAt(item.vr, ci) : null}
+                {#if m?.k === 0}
                   <!-- covered by a column span to the left -->
-                {:else if run && item.vr !== run.start && item.vr !== start}
-                  <span class="c spancover" aria-hidden="true" style={spanWidthStyle(ci, cw)}></span>
+                {:else if m?.k === 1}
+                  <span class="c spancover" aria-hidden="true" style={m.style}></span>
                 {:else}
-                {@const merged = !!run || cw > 1}
                 <Cell
                   labels={L}
                   {col}
@@ -2172,21 +2205,15 @@
                   cellSnippet={cell}
                   rowKey={getRowId(item.row)}
                   {flashTracker}
-                  selected={cellSelection &&
-                    (merged
-                      ? rectSelected(run ? run.start : item.vr, run ? run.end : item.vr, ci, ci + cw - 1)
-                      : sel.contains(item.vr, ci))}
-                  focused={cellSelection &&
-                    (merged
-                      ? rectFocused(run ? run.start : item.vr, run ? run.end : item.vr, ci, ci + cw - 1)
-                      : sel.isFocus(item.vr, ci))}
-                  span={run ? spanGeometry(item.vr, run) : undefined}
-                  colspan={cw > 1 ? cw : undefined}
-                  flexStyle={!hScroll && cw > 1 ? combinedFlex(cols.slice(ci, ci + cw)) : undefined}
+                  selected={cellSelection && (m ? rectSelected(m.r0, m.r1, ci, m.c1) : sel.contains(item.vr, ci))}
+                  focused={cellSelection && (m ? rectFocused(m.r0, m.r1, ci, m.c1) : sel.isFocus(item.vr, ci))}
+                  span={m?.span}
+                  colspan={m?.colspan}
+                  flexStyle={m?.flex}
                   pinned={pinned && layout.info[ci].pinned}
                   pinSide={layout.info[ci].side ?? 'left'}
                   pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right : layout.info[ci].left + leadPx}
-                  width={hScroll ? spanWidthPx(ci, cw) : undefined}
+                  width={hScroll ? (m?.px ?? layout.info[ci].width) : undefined}
                   alt={item.vr % 2 === 1}
                   editing={editing?.r === item.vr && editing?.c === ci}
                   seed={editing?.r === item.vr && editing?.c === ci ? editSeed : null}

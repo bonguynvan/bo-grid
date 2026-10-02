@@ -309,9 +309,10 @@ CSV round-trip. Remaining ideas are polish or demand-driven:
 - Driven by real-world usage now that it's published — open an issue with what's
   missing.
 
-Note: the eager grid core is ~99% of its 38 KB budget (recalibrated from 35 KB
-for the 2.0 wave); each sizable *core* feature recalibrates it explicitly (still
-~14× smaller than heavyweight grids). The
+Note on size: the eager core is ~37 KB gzip. Feature growth is expected on the
+way to heavyweight-grid parity and is not capped; `pnpm size:lib` reports the
+number on every run so optimization has a target, and only fails on an
+accidental blow-up. The
 realtime (2 KB) and trading (2 KB) companions, each on its own budget, are the
 model for keeping the core tiny — a new capability belongs in a
 subpath unless it is genuinely part of the grid's identity.

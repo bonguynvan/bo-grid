@@ -27,7 +27,7 @@ page, each grid lazy-mounting as you scroll (jump between them from the side rai
 > sparklines, realtime flash, heatmaps, theming, and full keyboard a11y.
 > **SSR/SvelteKit-safe.**
 > Unit tests (Vitest), type-check, a headless mount smoke-test, an SSR render
-> check, and library + demo bundle-size budgets all run in CI. A formal WCAG audit
+> check, and library + demo bundle-size reports all run in CI. A formal WCAG audit
 > is the main thing left — see the roadmap.
 
 ## Why
@@ -165,7 +165,7 @@ feed neither re-renders nor flashes.
 Row identity for flash comes from the grid's `getRowId` (default `row.id`), not
 from the key you index the feed by — keep it stable across updates.
 
-It's a **separate entry** on its own size budget — importing it adds nothing to
+It's a **separate entry** with its own bundle — importing it adds nothing to
 the grid core, and it's framework-agnostic (the frame scheduler is injectable,
 which is also how it's unit-tested without a browser).
 
@@ -1140,7 +1140,7 @@ pnpm dev       # demo/playground at http://localhost:5180
 pnpm test      # unit tests (Vitest)
 pnpm check     # type-check
 pnpm smoke     # headless mount + interaction smoke test
-pnpm size      # bundle-size budget
+pnpm size      # bundle-size report
 pnpm package   # build the publishable library into dist/
 ```
 
