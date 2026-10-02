@@ -277,8 +277,64 @@
     const stat = (xs: number[]) => ({ p50: +pct(xs, 50).toFixed(2), p95: +pct(xs, 95).toFixed(2), max: +Math.max(...xs).toFixed(2) });
     return { rowsPerFrame: opts.rowsPerFrame ?? 3, render: stat(render), layout: stat(layout), total: stat(total), over16ms: total.filter((t) => t > 16.7).length, frames };
   }
+  // Live benchmark: the real pipeline in real time — events at `eventsPerSec`,
+  // drained once per frame by the tick stream, flash animations running. Each
+  // frame is timed from its start to a task posted from it, which runs after
+  // the frame has rendered, so style, layout and paint are included (the
+  // synchronous benches above cannot see paint or running animations). Needs a
+  // visible tab: hidden tabs get no animation frames.
+  async function benchLive(opts: { seconds?: number; eventsPerSec?: number } = {}) {
+    const seconds = opts.seconds ?? 6;
+    const eps = opts.eventsPerSec ?? rate;
+    live = false;
+    flushSync();
+    rand = prng(13);
+    const work: number[] = [];
+    const gaps: number[] = [];
+    const probe = new MessageChannel();
+    let frameStart = 0;
+    probe.port1.onmessage = () => work.push(performance.now() - frameStart);
+    stream.start();
+    await new Promise<void>((resolve) => {
+      const t0 = performance.now();
+      let lastGen = t0;
+      let carry = 0;
+      let prev = 0;
+      const frame = (ts: number) => {
+        if (prev) gaps.push(ts - prev);
+        prev = frameStart = ts;
+        const now = performance.now();
+        carry += ((now - lastGen) / 1000) * eps;
+        lastGen = now;
+        for (; carry >= 1; carry--) {
+          const q = rows[rint(0, rows.length - 1)];
+          stream.push(q.id, event(q));
+        }
+        probe.port2.postMessage(0);
+        if (now - t0 < seconds * 1000) requestAnimationFrame(frame);
+        else resolve();
+      };
+      requestAnimationFrame(frame);
+    });
+    stream.stop({ discard: true });
+    probe.port1.close();
+    // Skip the first half second, or a quarter of the run if frames are slow.
+    const warmup = Math.min(30, Math.floor(gaps.length / 4));
+    const w = work.slice(warmup);
+    const g = gaps.slice(warmup);
+    const interval = pct(g, 50);
+    const stat = (xs: number[]) => ({ p50: +pct(xs, 50).toFixed(2), p95: +pct(xs, 95).toFixed(2), max: +Math.max(...xs).toFixed(2) });
+    return {
+      symbols: rows.length,
+      eventsPerSec: eps,
+      frames: g.length,
+      interval: +interval.toFixed(2),
+      work: stat(w),
+      dropped: g.filter((x) => x > interval * 1.5).length,
+    };
+  }
   $effect(() => {
-    (window as unknown as Record<string, unknown>).__priceBoard = { bench, benchScroll, benchSorted, setMovers, setSize, setHeight, load, last: () => lastResult, rows: () => rows, api: () => api };
+    (window as unknown as Record<string, unknown>).__priceBoard = { bench, benchScroll, benchSorted, benchLive, setMovers, setSize, setHeight, load, last: () => lastResult, rows: () => rows, api: () => api };
   });
 </script>
 
