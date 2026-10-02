@@ -5,6 +5,8 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-10-02
+
 **bo-grid is now grid-only, and built for busy markets.** Standalone charting is
 out of scope — use [TradeCanvas](https://github.com/bonguynvan/tradecanvas) for
 charts. This release adds a realtime fast path and a round of measured
