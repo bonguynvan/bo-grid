@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- The bo-grid mark (a grid with one flashing cell) on an ink tile, so it
+       reads on light and dark browser chrome alike. -->
+  <rect width="32" height="32" rx="7" fill="#11161e"/>
+  <g fill="none" stroke="#d9dde4" stroke-width="2.25">
+    <rect x="6.125" y="6.125" width="19.75" height="19.75"/>
+    <path d="M6 12.5h20M6 19h20M13 12.5V26"/>
+  </g>
+  <rect x="14.125" y="13.625" width="10.625" height="4.25" fill="#f2a93b"/>
+</svg>
