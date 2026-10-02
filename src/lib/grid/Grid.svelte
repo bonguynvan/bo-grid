@@ -7,7 +7,7 @@
   import { untrack } from 'svelte';
   import type { Snippet } from 'svelte';
   import type { ColumnDef, GridRow, SortState, SortDir, CellEditEvent, CellTypeDef } from './column';
-  import { colStyle, isNumeric, isSortable, isEditable, compareBySorts, formatCell, cellValue } from './column';
+  import { colStyle, colWidth, isNumeric, isSortable, isEditable, compareBySorts, formatCell, cellValue } from './column';
   import { arrangePinned } from './pin';
   import { columnWindow, columnOffsets } from './colvirt';
   import { uniformHeights, variableHeights } from './rowheight';
@@ -574,20 +574,37 @@
 
   // Pin-arrangement: pinned columns move to the edges and get sticky offsets.
   // When nothing is pinned this is a no-op and the grid stays fit-to-width.
-  const layout = $derived(arrangePinned(pinnedSized));
+  let viewW = $state(0);
+  // In fixed-width mode (pinned columns or column virtualization) flex columns
+  // grow to fill the viewport, so the grid never stops short of its right edge.
+  // Columns that cannot fit the viewport switch the grid to horizontal scroll
+  // instead of being clipped: fixed widths, plus a readable minimum for flex
+  // columns (which would otherwise squeeze to nothing).
+  const MIN_FLEX_W = 64;
+  const overflowing = $derived(
+    viewW > 0 &&
+      pinnedSized.reduce((a, c) => a + (c.flex ? (c.minWidth ?? MIN_FLEX_W) : colWidth(c)), leadPx) > viewW,
+  );
+  const fixedWidths = $derived(virtualizeColumns || overflowing || pinnedSized.some((c) => !!c.pinned));
+  const layout = $derived(arrangePinned(pinnedSized, fixedWidths && viewW ? viewW - leadPx : 0));
   const cols = $derived(layout.columns);
   const pinned = $derived(layout.anyPinned);
   // Fixed-width horizontal-scroll mode: when columns are pinned OR column
   // virtualization is on. Drives the same layout (explicit widths, overflow-x,
   // scroll-synced header) that pinning already uses.
-  const hScroll = $derived(pinned || virtualizeColumns);
+  const hScroll = $derived(pinned || virtualizeColumns || overflowing);
+  // Header rows scroll with the body in fixed-width mode, driven by the body's
+  // scrollLeft. They need slack past their content to always reach it: Chrome
+  // caps an overflow:hidden element's scroll range without subtracting its
+  // reserved scrollbar gutter, and the body's offset can round up at the far
+  // right (device-pixel snapping). The slack itself is never scrolled into view.
+  const headRowStyle = $derived(hScroll ? 'padding-right:32px;' : '');
 
   // Column virtualization: render only the columns whose x-range intersects the
   // horizontal viewport (+ overscan); pinned columns always render. Off-window
   // runs of columns collapse into a single spacer so widths/positions are exact.
   const COL_OVERSCAN = 320; // px
   let scrollLeft = $state(0);
-  let viewW = $state(0);
   // Viewport height in px for row virtualization. A numeric `height` is that
   // value directly; a CSS-string `height` (auto-fit) is the measured viewport
   // height (clientHeight), with a sane fallback before the first measure.
@@ -1152,7 +1169,7 @@
 
   const total = $derived(hm.total);
   const rowWidthStyle = $derived(
-    hScroll ? `width:${layout.totalWidth + leadPx}px;right:auto;` : '',
+    hScroll ? `width:${layout.totalWidth + leadPx}px;min-width:100%;right:auto;` : '',
   );
   const visibleCount = $derived(Math.ceil(viewPx / baseH) + OVERSCAN * 2);
   const start = $derived(Math.max(0, hm.indexAt(scrollTop) - OVERSCAN));
@@ -1914,7 +1931,7 @@
     </div>
   {/if}
   {#if headerGroups}
-    <div class="head-groups" aria-hidden="true" bind:this={groupHeadEl} style={hScroll ? 'overflow:hidden;' : ''}>
+    <div class="head-groups" aria-hidden="true" bind:this={groupHeadEl} style={headRowStyle}>
       {#if expandable}<span class="expandcell" style={expandCellStyle(true)}></span>{/if}
       {#if rowSelection}<span class="selcell" style={selCellStyle(true)}></span>{/if}
       {#each headerGroups as g, gi (gi)}
@@ -1929,7 +1946,7 @@
     role="row"
     aria-rowindex={1}
     bind:this={headEl}
-    style={hScroll ? 'overflow:hidden;' : ''}
+    style={headRowStyle}
     onpointerover={hasTooltips ? onTipOver : undefined}
     onpointerout={hasTooltips ? onTipOut : undefined}
   >
@@ -2055,7 +2072,7 @@
   </div>
 
   {#if filterRow && !source}
-    <div class="filter-row" role="row" bind:this={filterRowEl} style={hScroll ? 'overflow:hidden;' : ''}>
+    <div class="filter-row" role="row" bind:this={filterRowEl} style={headRowStyle}>
       {#if expandable}<span class="expandcell" style={expandCellStyle(false)}></span>{/if}
       {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
       {#each cols as col, ci (ci)}
@@ -2690,6 +2707,10 @@
     position: relative;
     overflow-y: auto;
     overflow-x: hidden;
+    /* Reserve the scrollbar's space whether or not the rows overflow, and the
+       header rows below reserve the same: every column edge lines up with its
+       body column, to the subpixel. */
+    scrollbar-gutter: stable;
     user-select: none;
     /* Thin, themed scrollbars (Firefox) — Chromium/Safari below. */
     scrollbar-width: thin;
@@ -2698,6 +2719,19 @@
   .viewport::-webkit-scrollbar {
     width: 10px;
     height: 10px;
+  }
+  .head,
+  .head-groups,
+  .filter-row {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+  }
+  .head::-webkit-scrollbar,
+  .head-groups::-webkit-scrollbar,
+  .filter-row::-webkit-scrollbar {
+    width: 10px;
+    height: 0;
   }
   .viewport::-webkit-scrollbar-thumb {
     background: color-mix(in srgb, var(--bo-text-dim) 45%, transparent);
@@ -2775,6 +2809,7 @@
   .spacer {
     position: relative;
     width: 100%;
+    min-width: 100%;
   }
 
   .sticky {

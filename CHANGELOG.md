@@ -16,6 +16,20 @@ from here is feature parity with heavyweight grids.
   and the SVG geometry helpers) and the Dashboard demo. The grid's own
   `sparkline` column type, `Sparkline` and `drawCandles` are unchanged.
 
+### Fixed
+
+- **Header and body columns line up exactly.** The body's vertical scrollbar
+  no longer shifts the last column's header out of line: the body and every
+  header row (header, header groups, filter row) reserve the same scrollbar
+  gutter natively (`scrollbar-gutter: stable`). In horizontal-scroll mode the
+  header now follows the body all the way to the right edge.
+- **No gap on the right of fixed-width grids.** With pinned columns or column
+  virtualization, `flex` columns now grow to fill the viewport, and rows reach
+  the right edge even when every column has a fixed width.
+- **Columns that do not fit are no longer clipped.** When fixed widths (plus
+  a 64 px minimum per flex column) exceed the viewport, the grid switches to
+  horizontal scrolling instead of cutting off the last columns.
+
 ### Added
 
 - **Registered cell types** — `<Grid cellTypes>` maps a name to column

@@ -61,3 +61,54 @@ describe('arrangePinned', () => {
     expect(r.info[2]).toMatchObject({ side: 'right', right: 0 });
   });
 });
+
+describe('arrangePinned — fill', () => {
+  const flexCols: ColumnDef[] = [
+    { type: 'text', key: 'a', header: 'A', width: 100, pinned: true },
+    { type: 'text', key: 'b', header: 'B', flex: 1, width: 100 },
+    { type: 'text', key: 'c', header: 'C', flex: 3, width: 100 },
+  ];
+
+  it('grows flex columns by weight to fill the available width', () => {
+    const r = arrangePinned(flexCols, 700);
+    expect(r.info.map((i) => i.width)).toEqual([100, 200, 400]);
+    expect(r.totalWidth).toBe(700);
+  });
+
+  it('keeps the total exactly equal to the available width (no stray overflow)', () => {
+    const r = arrangePinned(flexCols, 701);
+    expect(r.totalWidth).toBe(701);
+    expect(r.info.every((i) => Number.isInteger(i.width))).toBe(true);
+  });
+
+  it('never shrinks below the base widths', () => {
+    const r = arrangePinned(flexCols, 200);
+    expect(r.info.map((i) => i.width)).toEqual([100, 100, 100]);
+  });
+
+  it('leaves fixed-width columns alone when nothing flexes', () => {
+    const r = arrangePinned(cols, 2000);
+    expect(r.totalWidth).toBe(390);
+  });
+
+  it('respects a flex column maxWidth and hands the rest to the others', () => {
+    const capped: ColumnDef[] = [
+      { type: 'text', key: 'a', header: 'A', flex: 1, width: 100, maxWidth: 150 },
+      { type: 'text', key: 'b', header: 'B', flex: 1, width: 100 },
+    ];
+    const r = arrangePinned(capped, 600);
+    expect(r.info.map((i) => i.width)).toEqual([150, 450]);
+  });
+
+  it('recomputes right-pinned offsets from the filled widths', () => {
+    const withRight: ColumnDef[] = [
+      { type: 'text', key: 'a', header: 'A', flex: 1, width: 100 },
+      { type: 'text', key: 'r1', header: 'R1', width: 50, pinned: 'right' },
+      { type: 'text', key: 'r2', header: 'R2', width: 60, pinned: 'right' },
+    ];
+    const r = arrangePinned(withRight, 410);
+    expect(r.info[0].width).toBe(300);
+    expect(r.info[2].right).toBe(0);
+    expect(r.info[1].right).toBe(60);
+  });
+});
