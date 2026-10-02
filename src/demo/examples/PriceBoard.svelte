@@ -327,6 +327,7 @@
     return {
       symbols: rows.length,
       eventsPerSec: eps,
+      framesTotal: gaps.length + 1,
       frames: g.length,
       interval: +interval.toFixed(2),
       work: stat(w),

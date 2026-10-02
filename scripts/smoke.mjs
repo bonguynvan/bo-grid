@@ -122,6 +122,15 @@ await new Promise((r) => setTimeout(r, 600));
   document.querySelector('.lp-fig')?.remove();
 }
 
+// Value-only cells drop their own clip (the value span clips itself); cells with
+// structured content keep it.
+{
+  const plain = [...document.querySelectorAll('.c.plain')];
+  if (plain.length === 0) fail('no value-only (.c.plain) cells rendered');
+  const wrong = plain.find((c) => c.querySelector('canvas, strong, .bo-badge, .bo-render, .bo-cf-val') || !c.querySelector('.bo-cell-text'));
+  if (wrong) fail(`a structured cell was marked plain: ${wrong.className}`);
+}
+
 const rowCount = document.querySelectorAll('.row').length;
 const hasHeader = !!document.querySelector('.bo-grid .head');
 const canvases = document.querySelectorAll('canvas').length;

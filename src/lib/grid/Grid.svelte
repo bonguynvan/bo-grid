@@ -670,25 +670,68 @@
   // their sticky-left offsets shift by SEL_W when row selection is on.
   // Sticky position for a pinned column: left columns offset past the (also
   // sticky) checkbox column; right columns offset from the right edge.
-  function pinStick(ci: number): string {
+  // `header`: the cell sits in a header row (column headers, header groups,
+  // filter row) rather than in the body.
+  function pinStick(ci: number, header = false): string {
     const inf = layout.info[ci];
-    if (inf.side === 'right') return `position:sticky;right:${inf.right}px;`;
+    if (inf.side === 'right') return `position:sticky;right:${inf.right + (header ? headPinFix : bodyPinFix)}px;`;
     return `position:sticky;left:${inf.left + leadPx}px;`;
   }
   function headStyle(ci: number): string {
     if (!hScroll) return colStyle(cols[ci]);
     const inf = layout.info[ci];
     let s = `flex:0 0 ${inf.width}px;width:${inf.width}px;`;
-    if (inf.pinned) s += `${pinStick(ci)}z-index:5;background:var(--bo-header-bg);`;
+    if (inf.pinned) s += `${pinStick(ci, true)}z-index:5;background:var(--bo-header-bg);`;
     return s;
   }
-  function cellWidthStyle(ci: number): string {
+  function cellWidthStyle(ci: number, header = false): string {
     if (!hScroll) return colStyle(cols[ci]);
     const inf = layout.info[ci];
     let s = `flex:0 0 ${inf.width}px;width:${inf.width}px;`;
-    if (inf.pinned) s += `${pinStick(ci)}z-index:2;background:var(--bo-bg);`;
+    if (inf.pinned) s += `${pinStick(ci, header)}z-index:2;background:var(--bo-bg);`;
     return s;
   }
+
+  // Right-pinned cells stick to the right edge, but `position: sticky` resolves
+  // that edge differently per container and browser: the header rows carry
+  // scroll slack (padding-right), and Chrome counts a reserved but empty
+  // scrollbar gutter as part of the sticky area. So measure where the last
+  // right-pinned header and body cells actually end and correct their offsets
+  // until both meet the body's content edge (just left of its scrollbar).
+  // A sticky offset moves the cell linearly, so one measurement corrects it.
+  let headPinFix = $state(0);
+  let bodyPinFix = $state(0);
+  const lastRightPin = $derived.by(() => {
+    for (let ci = layout.info.length - 1; ci >= 0; ci--) {
+      if (layout.info[ci].pinned && layout.info[ci].side === 'right') return ci;
+    }
+    return -1;
+  });
+  $effect(() => {
+    const ci = lastRightPin;
+    const head = headEl;
+    const body = viewportEl;
+    if (!hScroll || ci < 0 || !head || !body) {
+      untrack(() => {
+        headPinFix = 0;
+        bodyPinFix = 0;
+      });
+      return;
+    }
+    // Re-measure whenever the geometry can move the edge or the cells.
+    void [viewW, layout, leadCols, rowCount > 0];
+    const colIndex = ci + 1 + leadCols;
+    const edge = body.getBoundingClientRect().left + body.clientWidth;
+    const correct = (fix: number, el: Element | null) => {
+      if (!el) return fix;
+      const next = fix - (edge - el.getBoundingClientRect().right);
+      return Math.abs(next - fix) > 0.25 ? Math.round(next * 100) / 100 : fix;
+    };
+    untrack(() => {
+      headPinFix = correct(headPinFix, head.querySelector(`[aria-colindex="${colIndex}"]`));
+      bodyPinFix = correct(bodyPinFix, body.querySelector(`.row .c[aria-colindex="${colIndex}"]`));
+    });
+  });
   // The leading checkbox column: a fixed-width flex item, sticky-left (past the
   // expand column, if any) when the grid scrolls horizontally (pinned mode).
   function selCellStyle(header: boolean): string {
@@ -2181,7 +2224,7 @@
       {#if expandable}<span class="expandcell" style={expandCellStyle(false)}></span>{/if}
       {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
       {#each cols as col, ci (ci)}
-        <span class="fr-cell" style={cellWidthStyle(ci)}>
+        <span class="fr-cell" style={cellWidthStyle(ci, true)}>
           {#if col.type !== 'sparkline' && col.type !== 'custom'}
             <input
               class="fr-input"
@@ -2230,7 +2273,7 @@
                 {flashTracker}
                 pinned={pinned && layout.info[ci].pinned}
                 pinSide={layout.info[ci].side ?? 'left'}
-                pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right : layout.info[ci].left + leadPx}
+                pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right + bodyPinFix : layout.info[ci].left + leadPx}
                 width={hScroll ? layout.info[ci].width : undefined}
               />
             {/each}
@@ -2344,7 +2387,7 @@
                   flexStyle={m?.flex}
                   pinned={pinned && layout.info[ci].pinned}
                   pinSide={layout.info[ci].side ?? 'left'}
-                  pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right : layout.info[ci].left + leadPx}
+                  pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right + bodyPinFix : layout.info[ci].left + leadPx}
                   width={hScroll ? (m?.px ?? layout.info[ci].width) : undefined}
                   alt={item.vr % 2 === 1}
                   editing={editing?.r === item.vr && editing?.c === ci}
