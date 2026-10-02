@@ -25,6 +25,15 @@ All notable changes to this project are documented here. Format follows
   ~15% lower at 10,000 events/s; output is identical. Cells with structured
   content keep their clip.
 
+### Fixed
+
+- **Right-pinned header cells line up with their column.** `position: sticky`
+  resolves the right edge differently in the header rows (which carry scroll
+  slack) and, in Chrome, counts a reserved but empty scrollbar gutter as sticky
+  area, so right-pinned headers sat 22 px (32 px with hidden scrollbars) left
+  of their body cells. The grid now measures where the last right-pinned header
+  and body cells end and corrects their offsets to the body's content edge.
+
 ### Changed
 
 - **The demo site uses the TradeCanvas / TradingDek design system**: IBM Plex

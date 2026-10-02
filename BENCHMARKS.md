@@ -119,12 +119,15 @@ What changed it, and what did not:
 - **An opacity overlay instead of the background fade: ~9× slower** (73–82 ms
   a frame, 36–39 ms of it in Layerize). Every animating cell becomes a
   compositor layer.
-- **Pinned columns cost a layer per row.** 31 of the board's 38 compositor
-  layers are its pinned cells: each sticky cell has its own scroll-dependent
-  position. Without sticky the frame is ~1 ms cheaper at 30,000 events/s;
-  keeping pinning at one layer needs a pinned-column container — a future
-  step. Removing `position: relative` from cells made paint slower (it lets
-  Chrome reuse an unchanged cell's paint), so that stays.
+- **Pinned columns cost a layer per row, and that is fine.** 31 of the board's
+  38 compositor layers are its pinned cells: each sticky cell has its own
+  scroll-dependent position. Moving every row's pinned cells into one sticky
+  rail per side was built and measured: layers fell to 8 and the compositor
+  thread got ~0.1 ms cheaper, but the main thread got ~5% slower at 30,000
+  events/s (each row paints a second element), and the row's cells would no
+  longer share one DOM row. Not adopted.
+- Removing `position: relative` from cells made paint slower (it lets Chrome
+  reuse an unchanged cell's paint), so that stays.
 
 ## Hot paths
 
