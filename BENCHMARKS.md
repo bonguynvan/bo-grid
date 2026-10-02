@@ -37,6 +37,33 @@ dependency bundled into an entry by mistake), not on feature growth.
 pnpm size:lib   # measures the published library bundle
 ```
 
+
+## Browser: a busy price board
+
+The **Price board** demo is a VN-style bảng giá — 1,000 symbols, 24 columns
+(three bid/ask levels, match, high/low, foreign flow), every changed cell
+flashing, prices coloured by ceiling/floor/reference, ~30 rows on screen. Its
+**Benchmark** button (or `window.__priceBoard.bench()` / `.benchScroll()`) runs
+deterministic frames, each rendered synchronously: apply the frame's ticks,
+`flushSync()`, then force style + layout. Paint and compositing are excluded.
+
+Production build, Chrome on a Windows desktop:
+
+| Workload | Frame p50 | p95 | Frames over 16.7 ms |
+| --- | --- | --- | --- |
+| 10,000 events/s, `patchRows` | ~1.9 ms | ~4.8 ms | 0 / 200 |
+| 30,000 events/s, `patchRows` | ~4.5 ms | ~11 ms | 1 / 200 |
+| 30,000 events/s, `$state` rows | ~5.3 ms | ~12 ms | 4 / 200 |
+| Scroll 1 row / frame | ~1.0 ms | ~1.9 ms | 0 / 120 |
+| Scroll 3 rows / frame | ~2.5 ms | ~5.7 ms | 0 / 120 |
+| Scroll 10 rows / frame | ~8 ms | ~17 ms | 6 / 120 |
+
+At 30,000 events/s a frame applies ~500 coalesced ticks. The split is roughly
+0.6 ms writing rows (`patchRows`; 1.6 ms through `$state` proxies), 2 ms for
+Svelte to update the cells, and 1.8 ms of browser style + layout. Rows off screen
+cost nothing beyond the write. Numbers move with the machine — compare runs on
+the same machine, in the same session.
+
 ## Hot paths
 
 The reason scrolling stays smooth whether you have 1,000 rows or 1,000,000 is

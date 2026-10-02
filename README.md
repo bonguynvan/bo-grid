@@ -175,10 +175,9 @@ scroll into view.
 #### Busy markets — plain rows + `api.patchRows`
 
 `$state` rows are the simplest model, but every field write goes through a
-reactive proxy — about ten times the cost of a plain write, paid for **every**
-row the feed touches, on screen or not. For a full price board (hundreds to
-thousands of symbols, several fields per tick) hand the grid **plain objects**
-and let it write the ticks:
+reactive proxy, paid for **every** row the feed touches, on screen or not. For a
+full price board (hundreds to thousands of symbols, several fields per tick)
+hand the grid **plain objects** and let it write the ticks:
 
 ```svelte
 <script lang="ts">
@@ -204,12 +203,15 @@ read current values when they scroll in. Footer totals, group subtotals and
 selection aggregates stay live. Sort and filter catch up on the next view change,
 as with any live data.
 
-On the **Price board** demo (1,000 symbols, 24 columns, every changed cell
-flashing, ~24 rows on screen), one frame of a 30,000 events/s feed costs
-~8.5 ms with `patchRows` against ~18 ms through `$state` rows — run the demo's
-**Benchmark** button to measure your own machine. Set `flashColor: false` on
-columns that colour their own text (price-limit tones) so a flash lights only
-the background.
+On the **Price board** demo (production build, 1,000 symbols, 24 columns, every
+changed cell flashing, ~30 rows on screen) a frame of a 30,000 events/s feed
+costs ~4.5 ms with `patchRows` against ~5.3 ms through `$state` rows — the
+writes themselves are ~2.7× cheaper (0.6 vs 1.6 ms), and the gap grows with the
+number of symbols and fields per tick. Numbers and method are in
+[BENCHMARKS.md](./BENCHMARKS.md#browser-a-busy-price-board); the demo's
+**Benchmark** button measures your machine. Set `flashColor: false` on columns
+that colour their own text (price-limit tones) so a flash lights only the
+background.
 
 #### Market conventions — `bo-grid/trading`
 

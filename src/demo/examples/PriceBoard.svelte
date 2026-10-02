@@ -116,9 +116,9 @@
 
   const columns: ColumnDef[] = [
     { type: 'text', key: 'symbol', header: 'Mã', width: 56, pinned: 'left', cellClass: (_v, r) => tone((r as Quote).mp, r) },
-    { type: 'price', key: 'ref', header: 'TC', width: 56, format: k, cellClass: 'pb-ref', sortable: false },
-    { type: 'price', key: 'ceil', header: 'Trần', width: 56, format: k, cellClass: 'pb-ceil', sortable: false },
-    { type: 'price', key: 'floor', header: 'Sàn', width: 56, format: k, cellClass: 'pb-floor', sortable: false },
+    { type: 'price', key: 'ref', header: 'TC', width: 62, format: k, cellClass: 'pb-ref', sortable: false },
+    { type: 'price', key: 'ceil', header: 'Trần', width: 62, format: k, cellClass: 'pb-ceil', sortable: false },
+    { type: 'price', key: 'floor', header: 'Sàn', width: 62, format: k, cellClass: 'pb-floor', sortable: false },
     price('bp3', 'G3'), qty('bv3', 'KL3'), price('bp2', 'G2'), qty('bv2', 'KL2'), price('bp1', 'G1'), qty('bv1', 'KL1'),
     { ...price('mp', 'Giá'), width: 62 }, qty('mv', 'KL'),
     { type: 'number', key: 'chg', header: '+/-', width: 56, format: (v) => (Number(v) ? (Number(v) / 1000).toFixed(2) : ''), cellClass: (_v, r) => tone((r as Quote).mp, r), sortable: false },
@@ -202,8 +202,34 @@
     result = `${mode} · ${out.symbols} symbols · ${perFrame} events/frame · frame p50 ${out.total.p50} ms / p95 ${out.total.p95} ms (apply ${out.apply.p50} · render ${out.render.p50} · layout ${out.layout.p50}) · ${out.over16ms}/${frames} over 16.7 ms`;
     return out;
   }
+  // Scroll benchmark: step the viewport `rowsPerFrame` rows at a time (a fast
+  // wheel/drag through the board), rendering each step synchronously.
+  async function benchScroll(opts: { frames?: number; rowsPerFrame?: number } = {}) {
+    const frames = opts.frames ?? 120;
+    const step = (opts.rowsPerFrame ?? 3) * 36;
+    live = false;
+    flushSync();
+    const vp = host.querySelector('.viewport') as HTMLElement;
+    vp.scrollTop = 0;
+    vp.dispatchEvent(new Event('scroll'));
+    flushSync();
+    const render: number[] = [], layout: number[] = [], total: number[] = [];
+    for (let f = 0; f < frames; f++) {
+      const t0 = performance.now();
+      vp.scrollTop += step;
+      vp.dispatchEvent(new Event('scroll'));
+      flushSync();
+      const t1 = performance.now();
+      void host.offsetHeight;
+      const t2 = performance.now();
+      render.push(t1 - t0); layout.push(t2 - t1); total.push(t2 - t0);
+      if (f % 20 === 19) await Promise.resolve();
+    }
+    const stat = (xs: number[]) => ({ p50: +pct(xs, 50).toFixed(2), p95: +pct(xs, 95).toFixed(2), max: +Math.max(...xs).toFixed(2) });
+    return { rowsPerFrame: opts.rowsPerFrame ?? 3, render: stat(render), layout: stat(layout), total: stat(total), over16ms: total.filter((t) => t > 16.7).length, frames };
+  }
   $effect(() => {
-    (window as unknown as Record<string, unknown>).__priceBoard = { bench, setSize, load, last: () => lastResult, rows: () => rows, api: () => api };
+    (window as unknown as Record<string, unknown>).__priceBoard = { bench, benchScroll, setSize, load, last: () => lastResult, rows: () => rows, api: () => api };
   });
 </script>
 

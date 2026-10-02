@@ -20,8 +20,8 @@ from here is feature parity with heavyweight grids.
 
 - **Flashing no longer rebuilds DOM.** Every tick used to destroy and recreate
   the flashing element to replay its animation; consecutive flashes now
-  alternate between two identical keyframes on the same element. Render cost per
-  frame on a busy board roughly halves.
+  alternate between two identical keyframes on the same element (~20% less
+  render time per frame on a busy board, and far fewer short-lived nodes).
 - **Date filters and the date editor use the viewer's calendar day.** A `date`
   cell displays its value as a local day, but the filter matched — and the
   editor wrote — the UTC day, so east or west of UTC a cell showing the 15th
@@ -43,10 +43,15 @@ from here is feature parity with heavyweight grids.
 
 - **Realtime fast path for busy markets: `api.patchRows`** — rows can be plain
   objects; `patchRows([[id, fields], …])` writes ticks in place and repaints only
-  the rendered rows it changed, skipping the reactive-proxy cost on every write.
-  On the new **Price board** demo (1,000 symbols, 24 flashing columns) a frame of
-  a 30,000 events/s feed drops from ~18 ms to ~8.5 ms. Feed it straight from
+  the rendered rows it changed, skipping the reactive-proxy cost on every write
+  (~2.7× cheaper writes; on the Price board a 30,000 events/s frame is ~4.5 ms
+  vs ~5.3 ms through `$state` rows, production build). Feed it straight from
   `createTickStream({ apply: (b) => api.patchRows(b) })`.
+- **Row recycling** — with uniform row heights the grid renders a fixed-length
+  window and hands the row that scrolls out to the row that scrolls in, so its
+  cells update in place instead of remounting; render items are also reused
+  while their row is unchanged. Scrolling the Price board is 3.5–9× cheaper per
+  frame (1 row/frame: 8.9 → 1.0 ms; 10 rows/frame: 28 → 8 ms).
 - **`flashColor: false`** — flash only the background, keeping the column's own
   text colour (price-limit tones on VN boards).
 - **Price board demo** — a full VN-style bảng giá (3 bid/ask levels, match,

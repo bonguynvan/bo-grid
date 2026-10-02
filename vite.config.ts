@@ -19,6 +19,7 @@ export default defineConfig({
   // Document-Policy enables the JS Self-Profiling API in dev, so the price-board
   // benchmark can sample where frame time goes (`new Profiler(...)`).
   server: { port: 5180, headers: { 'Document-Policy': 'js-profiling' } },
+  preview: { port: 5181, headers: { 'Document-Policy': 'js-profiling' } },
   // Demo/playground build only. The publishable library is built separately by
   // `pnpm package` (svelte-package) into dist/ — keep the two outputs apart so
   // the demo build never clobbers the package.

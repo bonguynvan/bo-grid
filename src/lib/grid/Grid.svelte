@@ -1188,12 +1188,25 @@
     hScroll ? `width:${layout.totalWidth + leadPx}px;min-width:100%;right:auto;` : '',
   );
   const visibleCount = $derived(Math.ceil(viewPx / baseH) + OVERSCAN * 2);
+  // Row recycling (uniform heights): render a window of exactly `recycleSlots`
+  // rows from `start` and key rows by `vr % recycleSlots`. A constant-length
+  // window makes the row that scrolls out free exactly the key the row that
+  // scrolls in needs, so its cells update in place instead of being destroyed
+  // and remounted — mounting ~25 cells per row was most of a fast scroll's cost.
+  // visibleCount + 1 rows always cover the viewport plus overscan on both sides.
+  const recycleSlots = $derived(useHeights ? 0 : visibleCount + 1);
   const start = $derived(Math.max(0, hm.indexAt(scrollTop) - OVERSCAN));
   const renderEnd = $derived(
     source
       ? (controller && controller.total > 0 ? Math.min(start + visibleCount, controller.total) : start + visibleCount)
-      : Math.min(flat.length, hm.indexAt(scrollTop + viewPx) + OVERSCAN + 1),
+      : recycleSlots
+        ? Math.min(flat.length, start + recycleSlots)
+        : Math.min(flat.length, hm.indexAt(scrollTop + viewPx) + OVERSCAN + 1),
   );
+
+  // Source mode renders a constant visibleCount-row window, so it recycles on
+  // that length; in-memory mode on recycleSlots (0 = variable heights, no recycling).
+  const rowSlots = $derived(source ? visibleCount : recycleSlots);
 
   type RenderItem =
     | { vr: number; kind: 'group'; group: GroupNode }
@@ -1201,23 +1214,43 @@
     | { vr: number; kind: 'treeloading'; depth: number }
     | { vr: number; kind: 'skeleton' };
 
+  // Render items are reused while the row behind a visual index is the same:
+  // the keyed {#each} then sees an identical item and skips the row entirely.
+  // Rebuilding every item on each scroll step made every on-screen cell
+  // re-evaluate its props just to mount the one row that scrolled in.
+  let itemCache = new Map<number, { src: unknown; item: RenderItem }>();
   const renderItems = $derived.by<RenderItem[]>(() => {
     const out: RenderItem[] = [];
+    const prev = itemCache;
+    const next = new Map<number, { src: unknown; item: RenderItem }>();
+    const reuse = (vr: number, src: unknown, make: () => RenderItem): RenderItem => {
+      const hit = prev.get(vr);
+      const entry = hit && hit.src === src ? hit : { src, item: make() };
+      next.set(vr, entry);
+      return entry.item;
+    };
     if (source && controller) {
       controller.version; // track cache updates
       for (let vr = start; vr < renderEnd; vr++) {
         const row = controller.rowAt(vr);
-        out.push(row ? { vr, kind: 'data', row } : { vr, kind: 'skeleton' });
+        out.push(reuse(vr, row ?? null, () => (row ? { vr, kind: 'data', row } : { vr, kind: 'skeleton' })));
       }
     } else {
       for (let vr = start; vr < renderEnd; vr++) {
         const item = flat[vr];
         if (!item) continue;
-        if (item.kind === 'group') out.push({ vr, kind: 'group', group: item.group });
-        else if (item.kind === 'treeloading') out.push({ vr, kind: 'treeloading', depth: item.depth });
-        else out.push({ vr, kind: 'data', row: item.row, depth: item.depth, hasChildren: item.hasChildren });
+        out.push(
+          reuse(vr, item, () =>
+            item.kind === 'group'
+              ? { vr, kind: 'group', group: item.group }
+              : item.kind === 'treeloading'
+                ? { vr, kind: 'treeloading', depth: item.depth }
+                : { vr, kind: 'data', row: item.row, depth: item.depth, hasChildren: item.hasChildren },
+          ),
+        );
       }
     }
+    itemCache = next;
     return out;
   });
 
@@ -2195,7 +2228,7 @@
       </div>
     {/if}
     <div class="spacer" style="height:{total}px;{hScroll ? `width:${layout.totalWidth + leadPx}px;` : ''}">
-      {#each renderItems as item (item.vr)}
+      {#each renderItems as item (rowSlots ? item.vr % rowSlots : item.vr)}
         {#if item.kind === 'group'}
           <div class="grouprow" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
             {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
