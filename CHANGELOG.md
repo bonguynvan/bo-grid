@@ -5,6 +5,12 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **The demo site and API page have a favicon**: the bo-grid mark (a grid with
+  one flashing cell) on an ink tile, as SVG with a 32 px PNG fallback and an
+  apple-touch-icon. Site-only; nothing is added to the npm package.
+
 ## [2.1.0] — 2026-10-03
 
 ### Added
