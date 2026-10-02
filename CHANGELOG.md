@@ -5,6 +5,8 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-10-03
+
 ### Added
 
 - **`tradecanvasTheme` / `tradecanvasLightTheme` presets** (`themePresets`
