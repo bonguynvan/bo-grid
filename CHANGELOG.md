@@ -7,6 +7,14 @@ All notable changes to this project are documented here. Format follows
 
 ### Added
 
+- **`onReady(api)` grid handle** — `scrollToRow(key, align?)`,
+  `focusCell(rowKey, columnKey)`, `getSelectedRows()`, `autosizeColumns(keys?)`,
+  `exportCSV(filename?)`, and `getState()` / `applyState()` for saving and
+  restoring the user's layout (order, widths, hidden columns, pins, sorts,
+  filters). Saved layouts are reconciled against the current columns, so
+  renamed, removed and added columns never apply a width to the wrong column.
+  Exports `GridApi`, `GridState`, `ScrollAlign`, `reconcileState`,
+  `GRID_STATE_VERSION`.
 - **`labels` and `locale` props** — every string the grid renders itself
   (column menu, filter editor, pager, columns panel, aria labels) can be
   overridden per grid; `locale` drives built-in `price` / `date` / `currency` /

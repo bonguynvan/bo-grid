@@ -36,6 +36,8 @@
   import Pager from './Pager.svelte';
   import RowMenu from './RowMenu.svelte';
   import { resolveLabels, type GridLabels } from './labels';
+  import { scrollTopFor, type GridApi, type ScrollAlign } from './api';
+  import { GRID_STATE_VERSION, reconcileState, type GridState } from './state';
 
   let {
     rows = [],
@@ -76,6 +78,7 @@
     emptyMessage,
     labels,
     locale,
+    onReady,
     loading = false,
     rowMenu,
     detail,
@@ -208,6 +211,10 @@
     /** BCP 47 locale for the grid's own number formatting (aggregation bar,
         pager row count). Default: the runtime's locale. */
     locale?: string;
+    /** Called once, when the grid mounts, with a handle for imperative actions:
+        `scrollToRow`, `focusCell`, `getSelectedRows`, `autosizeColumns`, `exportCSV`,
+        `getState` / `applyState`. */
+    onReady?: (api: GridApi) => void;
     /** Show a loading overlay over the grid (for consumer-driven async work in
         in-memory mode; source mode shows skeleton rows automatically). */
     loading?: boolean;
@@ -691,15 +698,17 @@
     order = next;
     sel.clear();
     editing = null;
-    const key = orderStorageKey();
-    if (key && typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem(key, JSON.stringify(next));
-      } catch {
-        /* storage unavailable — order still applies this session */
-      }
-    }
+    persistOrder(next);
     onColumnReorder?.(next.map((i) => columns[i].key));
+  }
+  function persistOrder(next: number[]): void {
+    const key = orderStorageKey();
+    if (!key || typeof localStorage === 'undefined') return;
+    try {
+      localStorage.setItem(key, JSON.stringify(next));
+    } catch {
+      /* storage unavailable — order still applies this session */
+    }
   }
 
   // ---- Column resizing -------------------------------------------------------
@@ -814,13 +823,15 @@
   });
   function setPinOverride(key: string, side: 'left' | 'right' | false): void {
     pinOverrides = { ...pinOverrides, [key]: side };
+    persistPins();
+  }
+  function persistPins(): void {
     const sk = pinStorageKey();
-    if (sk && typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem(sk, JSON.stringify(pinOverrides));
-      } catch {
-        /* storage unavailable — still applies this session */
-      }
+    if (!sk || typeof localStorage === 'undefined') return;
+    try {
+      localStorage.setItem(sk, JSON.stringify(pinOverrides));
+    } catch {
+      /* storage unavailable — still applies this session */
     }
   }
   // Effective pin side for a column key: runtime override, else static config.
@@ -1394,6 +1405,83 @@
     persistWidths();
     onColumnResize?.(col.key, w);
   }
+
+  // ---- Imperative handle (`onReady`) ----------------------------------------
+  function dataRowIndex(key: string | number): number {
+    return flat.findIndex((v) => v.kind === 'data' && getRowId(v.row) === key);
+  }
+
+  function scrollToRow(key: string | number, align: ScrollAlign = 'nearest'): boolean {
+    if (source || !viewportEl) return false;
+    const vr = dataRowIndex(key);
+    if (vr < 0) return false;
+    viewportEl.scrollTop = scrollTopFor(align, hm.offsetOf(vr), hm.heightOf(vr), viewportEl.scrollTop, viewPx);
+    return true;
+  }
+
+  function focusCell(rowKey: string | number, columnKey: string): boolean {
+    if (source) return false;
+    const vr = dataRowIndex(rowKey);
+    const ci = cols.findIndex((c) => c.key === columnKey);
+    if (vr < 0 || ci < 0) return false;
+    focusTo(vr, ci, false);
+    return true;
+  }
+
+  function getSelectedRows(): GridRow[] {
+    selRowsVersion;
+    return view.filter((r) => selectedRows.has(getRowId(r)));
+  }
+
+  function autosizeColumns(keys?: string[]): void {
+    const wanted = keys ? new Set(keys) : null;
+    for (const col of cols) {
+      if (wanted && !wanted.has(col.key)) continue;
+      if (isResizable(col, resizable)) autosizeColumn(col);
+    }
+  }
+
+  async function exportViewCSV(filename = 'export.csv'): Promise<void> {
+    const { exportCSV } = await import('./export');
+    exportCSV(filename, view, cols);
+  }
+
+  function getState(): GridState {
+    return {
+      version: GRID_STATE_VERSION,
+      order: ordered.map((c) => c.key),
+      widths: { ...widths },
+      hidden: [...runtimeHidden],
+      pinned: { ...pinOverrides },
+      sorts: sorts.map((s) => ({ ...s })),
+      filters: { ...activeColumnFilters },
+    };
+  }
+
+  function applyState(state: unknown): boolean {
+    const st = reconcileState(state, columns.map((c) => c.key));
+    if (!st) return false;
+    const indexOf = new Map(columns.map((c, i) => [c.key, i] as const));
+    const nextOrder = st.order.map((k) => indexOf.get(k) as number);
+    order = nextOrder;
+    persistOrder(nextOrder);
+    widths = st.widths;
+    persistWidths();
+    setRuntimeHidden(st.hidden);
+    pinOverrides = st.pinned;
+    persistPins();
+    setSorts(st.sorts);
+    setColumnFilters(st.filters);
+    sel.clear();
+    editing = null;
+    return true;
+  }
+
+  $effect(() => {
+    untrack(() =>
+      onReady?.({ scrollToRow, focusCell, getSelectedRows, autosizeColumns, exportCSV: exportViewCSV, getState, applyState }),
+    );
+  });
 
   // Column header menu (⋮): sort / pin / autosize / hide. Reuses the floating
   // RowMenu (a light action list — no lazy chunk, unlike the filter menu).

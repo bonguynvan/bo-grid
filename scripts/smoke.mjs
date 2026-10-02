@@ -672,6 +672,27 @@ await wait(30);
 if (document.querySelectorAll('.bo-grid .row').length !== sheetRows)
   fail('quick filter: clearing the query did not restore the rows');
 
+// Grid handle (`onReady`): a layout snapshot round-trips, and scrollToRow moves
+// the viewport. Compact hides two columns and sorts; Restore brings them back.
+{
+  const demoBtn = (name) => document.querySelector(`[data-demo="${name}"]`);
+  const headCount = () => document.querySelectorAll('.bo-grid .head .h').length;
+  const before = headCount();
+  demoBtn('save-layout').click();
+  await wait(20);
+  demoBtn('compact').click();
+  await wait(40);
+  if (headCount() !== before - 2) fail(`handle: applyState hid ${before - headCount()} columns, expected 2`);
+  demoBtn('restore-layout').click();
+  await wait(40);
+  if (headCount() !== before) fail('handle: Restore layout did not bring the columns back');
+  const vp = document.querySelector('.bo-grid .viewport');
+  const topBefore = vp.scrollTop;
+  demoBtn('jump').click();
+  await wait(40);
+  if (!(vp.scrollTop > topBefore)) fail('handle: scrollToRow did not scroll the viewport');
+}
+
 // Fill handle (v0.5): select an editable cell, drag its corner down two rows, and
 // assert the source value copied into the rows below.
 const FILL_COL = 4; // Bonus — editable number, no custom format

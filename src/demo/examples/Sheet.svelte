@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Grid, type ColumnDef, type GridRow } from '../../lib';
+  import { Grid, type ColumnDef, type GridRow, type GridApi, type GridState } from '../../lib';
   import { ui } from '../theme.svelte';
 
   // A plain, non-financial dataset — a team roster — to show the grid is a
@@ -62,6 +62,14 @@
   let pageMode = $state(false);
   let activeRow = $state<string | null>(null); // controlled active-row highlight
 
+  // The grid handle (`onReady`): layout snapshots and programmatic scrolling.
+  let api = $state<GridApi | null>(null);
+  let savedLayout = $state<GridState | null>(null);
+  const compactLayout = () => {
+    if (!api) return;
+    api.applyState({ ...api.getState(), hidden: ['bonus', 'rating'], sorts: [{ key: 'salary', dir: 'desc' }] });
+  };
+
   // Column show/hide: a controlled list of hidden keys + a little picker menu.
   let hidden = $state<string[]>([]);
   let menuOpen = $state(false);
@@ -122,6 +130,10 @@
   <button class="colbtn" class:on={pageMode} onclick={() => (pageMode = !pageMode)}>
     {pageMode ? 'Paged' : 'Scroll'}
   </button>
+  <button class="colbtn" data-demo="compact" onclick={compactLayout}>Compact</button>
+  <button class="colbtn" data-demo="save-layout" onclick={() => (savedLayout = api?.getState() ?? null)}>Save layout</button>
+  <button class="colbtn" data-demo="restore-layout" disabled={!savedLayout} onclick={() => api?.applyState(savedLayout)}>Restore layout</button>
+  <button class="colbtn" data-demo="jump" onclick={() => api?.scrollToRow('emp-45', 'center')}>Jump to #45</button>
   {#if selectedCount > 0}
     <span class="count">{selectedCount} selected</span>
   {/if}
@@ -165,6 +177,7 @@
     detailHeight={84}
     pageSize={pageMode ? 12 : 0}
     pageSizeOptions={[12, 24, 48]}
+    onReady={(a) => (api = a)}
   />
 </div>
 

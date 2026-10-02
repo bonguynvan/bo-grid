@@ -60,6 +60,9 @@ export {
 } from './grid/theme';
 export type { GridTheme, ThemePreset } from './grid/theme';
 export { DEFAULT_LABELS, resolveLabels } from './grid/labels';
+export { reconcileState, GRID_STATE_VERSION } from './grid/state';
+export type { GridState } from './grid/state';
+export type { GridApi, ScrollAlign } from './grid/api';
 export type { GridLabels } from './grid/labels';
 
 // Sparkline canvas primitives (draw candlesticks on your own canvas)
