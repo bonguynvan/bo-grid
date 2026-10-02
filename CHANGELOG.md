@@ -14,9 +14,16 @@ All notable changes to this project are documented here. Format follows
   passes WCAG AA on every row surface (tested).
 - **Live frame benchmark** on the Price board demo,
   `window.__priceBoard.benchLive()`: the real feed in real time, timed through
-  paint. BENCHMARKS.md records where a busy frame goes — two thirds of the main
-  thread is paint and layerize, not script — and two flash techniques measured
-  and dropped.
+  paint. BENCHMARKS.md records where a busy frame goes (script, paint, layout,
+  layerize) and the paint experiments measured with it.
+
+### Performance
+
+- **Value-only cells no longer clip twice.** A cell that renders just its
+  value span drops its own clip — the span already clips and ellipsizes inside
+  the cell. Layerize is ~23–34% cheaper on a busy board and main-thread work
+  ~15% lower at 10,000 events/s; output is identical. Cells with structured
+  content keep their clip.
 
 ### Changed
 

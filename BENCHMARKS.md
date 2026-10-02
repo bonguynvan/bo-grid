@@ -87,29 +87,44 @@ after it rendered, so paint is included. It needs a visible tab (hidden tabs get
 no animation frames); a traced headless Chrome run gives the same numbers plus a
 main-thread breakdown.
 
-Headless Chrome on an Intel UHD laptop GPU, 620 px board, 30,000 events/s —
-the renderer main thread spends ~18 ms per frame:
+Headless Chrome on an Intel UHD laptop GPU, the 620 px board on screen with
+the rest of the page hidden; each figure is the median of 5–12 interleaved,
+traced rounds. Renderer main thread per frame:
 
-| Step | ms / frame |
-| --- | --- |
-| Paint (recording the changed cells) | ~6.1 |
-| Layerize (grouping paint into layers) | ~5.6 |
-| Script (tick stream, `patchRows`, Svelte) | ~4.1 |
-| Layout + style + pre-paint | ~3.7 |
+| Step | 10,000 events/s | 30,000 events/s |
+| --- | --- | --- |
+| Script (tick stream, `patchRows`, Svelte) | ~1.5 ms | ~3.7 ms |
+| Paint (recording the changed cells) | ~2.0 ms | ~3.3 ms |
+| Layout + style + pre-paint | ~1.3 ms | ~2.6 ms |
+| Layerize (grouping paint into layers) | ~0.65 ms | ~0.8 ms |
+| **All main-thread tasks** | **~6 ms** | **~11.4 ms** |
 
-Paint and layerize are two thirds of it, and the longest frames (30–35 ms) are
-mostly those two. That is the next optimization target: the rows' paint
-structure, not the script.
+Both rates fit a 16.7 ms frame with room to spare; frames dropped in a 3 s run
+are in the single digits at 30,000 events/s.
 
-Two flash ideas were measured and dropped (6 rounds, randomized order, traced):
+What changed it, and what did not:
 
-- **A fading flash vs a stepped one (tint on, then off) vs no flash**: no
-  measurable difference in paint or layerize at 3,000, 10,000 or 30,000
-  events/s. At these rates nearly every visible cell's text changes within a
-  frame or two, so the cell repaints whether or not it is flashing — adapting
-  the flash to load would not buy frames.
-- **An opacity overlay instead of the background fade**: 4–8× more frame work.
-  Hundreds of simultaneously animating cells each become a compositor layer.
+- **Value-only cells drop their own clip.** A cell that renders nothing but its
+  value span used to clip twice — the cell and the span. The span already
+  clips and ellipsizes inside the cell, so the cell's clip was redundant;
+  without it, Layerize fell from ~0.98 to ~0.65 ms at 10,000 events/s and from
+  ~1.05 to ~0.81 ms at 30,000, and all main-thread work by ~15% at 10,000.
+  Output is identical (no value spills its cell; long values still end in …).
+  Cells with structured content (badges, links, sparklines, renderers, editors)
+  keep their clip.
+- **Flash style: no effect.** A fading flash, a stepped one (tint on, then off)
+  and no flash measured the same (~8 / 7.4 / 9 ms at 10,000 events/s,
+  ~12.8 / 12.8 / 13.3 ms at 30,000). On a busy board a cell's text changes
+  every frame or two, so it repaints whether or not it is flashing.
+- **An opacity overlay instead of the background fade: ~9× slower** (73–82 ms
+  a frame, 36–39 ms of it in Layerize). Every animating cell becomes a
+  compositor layer.
+- **Pinned columns cost a layer per row.** 31 of the board's 38 compositor
+  layers are its pinned cells: each sticky cell has its own scroll-dependent
+  position. Without sticky the frame is ~1 ms cheaper at 30,000 events/s;
+  keeping pinning at one layer needs a pinned-column container — a future
+  step. Removing `position: relative` from cells made paint slower (it lets
+  Chrome reuse an unchanged cell's paint), so that stays.
 
 ## Hot paths
 

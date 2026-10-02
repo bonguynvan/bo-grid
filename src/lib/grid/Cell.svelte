@@ -1,3 +1,11 @@
+<script module lang="ts">
+  // Column types rendered as structured content (badges, stars, links, a
+  // canvas…) rather than a single value span — those cells keep their clip.
+  const STRUCTURED_TYPES: ReadonlySet<string> = new Set([
+    'text', 'custom', 'sparkline', 'progress', 'rating', 'tags', 'badge', 'boolean', 'avatar', 'link',
+  ]);
+</script>
+
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { ColumnDef, GridRow } from './column';
@@ -290,6 +298,21 @@
   // Geometry/threshold logic lives in column.ts (pure, unit-tested); here we map
   // it to CSS (left/width %, tone → colour).
   const hasCf = $derived(!!col.dataBar || !!col.icons);
+  // A cell that renders nothing but its value span. The span clips and
+  // ellipsizes itself inside the cell, so the cell needs no clip of its own:
+  // one clip per cell instead of two is measurably cheaper to paint and
+  // layerize on a busy board (BENCHMARKS.md), with identical output.
+  const plainText = $derived(
+    !dragHandle &&
+      !tree &&
+      !editing &&
+      !fillCorner &&
+      !col.wrap &&
+      !col.component &&
+      !col.render &&
+      !hasCf &&
+      !STRUCTURED_TYPES.has(col.type ?? ''),
+  );
   const bar = $derived.by(() => {
     if (!col.dataBar || !cfRange) return null;
     const g = dataBarGeometry(value, cfRange, col.dataBar);
@@ -343,6 +366,7 @@
   class="c {kind} {extraClass}"
   class:dim={col.type === 'volume'}
   class:wrap={col.wrap}
+  class:plain={plainText}
   class:pos={col.type === 'percent' && Number(value) >= 0}
   class:neg={col.type === 'percent' && Number(value) < 0}
   class:sel={selected}
@@ -535,6 +559,10 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+  /* Value-only cells: the span below clips itself, so the cell does not. */
+  .c.plain {
+    overflow: visible;
   }
   /* Truncating text node inside the flex cell: a bare text child of a flex
      container won't honour text-overflow, so plain values render through this
