@@ -1033,6 +1033,11 @@ await solo('priceboard', '.bo-grid .row', 'Price board example rendered no rows'
 {
   const pb = globalThis.__priceBoard ?? window.__priceBoard;
   if (!pb?.api?.()) fail('Price board: grid handle (onReady) not exposed');
+  // onViewportChange + createViewportSubscriptions: a screenful streams, not the board.
+  const watching = pb.watching?.() ?? 0;
+  if (!(watching > 0 && watching < pb.rows().length)) {
+    fail(`Price board: viewport subscriptions stream ${watching} of ${pb.rows().length} symbols (expected one screenful)`);
+  }
   const head = [...document.querySelectorAll('.bo-grid .head [role=columnheader]')].find((h) => h.textContent.trim() === 'Giá');
   const ci = head?.getAttribute('aria-colindex');
   const row0 = document.querySelector('.bo-grid .viewport .row');

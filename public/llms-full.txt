@@ -310,7 +310,7 @@ column a `render(ctx)` function instead:
 ## 5. `bo-grid/realtime` — feed pipeline (own budget, ~1.7 KB gzip)
 
 ```ts
-import { createTickStream, createRowIndex, applyPatches, TickBuffer, TradeTape, centeredWindow } from 'bo-grid/realtime';
+import { createTickStream, createRowIndex, applyPatches, TickBuffer, TradeTape, centeredWindow, createViewportSubscriptions } from 'bo-grid/realtime';
 ```
 
 **Price feed** (coalesces per key, drains a bounded slice per animation
@@ -339,6 +339,26 @@ const tape = new TradeTape<Trade>(500);   // capacity must be a positive integer
 socket.onmessage = (e) => tape.push(JSON.parse(e.data));
 rows = tape.toArray();   // newest-first snapshot — call once per render, not per trade
 ```
+
+**Stream only the symbols on screen** (the grid reports its viewport; the
+helper diffs it into subscribe / unsubscribe calls):
+```svelte
+<script lang="ts">
+  const subs = createViewportSubscriptions({
+    key: (row) => row.symbol,
+    subscribe: (syms) => socket.send(JSON.stringify({ op: 'sub', syms })),
+    unsubscribe: (syms) => socket.send(JSON.stringify({ op: 'unsub', syms })),
+    delay: 150,                                   // ms a view must hold before it applies; default 150, 0 = at once
+  });
+  onDestroy(subs.clear);                          // unsubscribe everything
+</script>
+<Grid {rows} {columns} onViewportChange={subs.update} />
+```
+`onViewportChange(view)` → `{ first, last, rows }`: the data rows on screen
+plus the small rendered buffer, in view order; fires when that set changes
+(scroll, sort, filter, new data), never for a value-only tick. The first view
+subscribes at once; `subs.flush()` applies a pending change; `subs.active` is
+the subscribed key set.
 
 **Price ladder windowing** (centered/scroll-locked view over more levels
 than fit on screen — this is array-slicing math, not scroll control):

@@ -3,6 +3,17 @@ import type { GridState } from './state';
 
 export type ScrollAlign = 'start' | 'center' | 'end' | 'nearest';
 
+/** The data rows the grid has on screen, reported by `onViewportChange`:
+    the rows in view plus the small buffer rendered above and below them, in
+    view order. Group, loading and pinned rows are not included. */
+export interface ViewportRange {
+  /** Visual index of the first reported row; -1 when no data row is on screen. */
+  first: number;
+  /** Visual index of the last reported row; -1 when no data row is on screen. */
+  last: number;
+  rows: GridRow[];
+}
+
 /** The handle `onReady` hands out: things that are actions, not state. */
 export interface GridApi {
   /** Scroll a row into view by its id. Returns false when the row is not in the

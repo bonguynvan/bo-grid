@@ -84,7 +84,7 @@ export { reconcileState, GRID_STATE_VERSION } from './grid/state';
 export { buildMergePlan, colSpanRow } from './grid/merge';
 export type { MergePlan, MergeInput, SpanRun } from './grid/merge';
 export type { GridState } from './grid/state';
-export type { GridApi, ScrollAlign } from './grid/api';
+export type { GridApi, ScrollAlign, ViewportRange } from './grid/api';
 export type { GridLabels } from './grid/labels';
 
 // Sparkline canvas primitives (draw candlesticks on your own canvas)
