@@ -2,8 +2,8 @@
 
 Fast **Svelte 5** data grid for trading screens — built to keep a busy price
 board inside the frame budget (tens of thousands of ticks a second, row-recycled
-scrolling), with the features heavyweight grids paywall, in a ~40 KB gzip core
-(Svelte external; unused exports tree-shake).
+scrolling), with grouping, pivot, tree data and the rest included, in a ~40 KB
+gzip core (Svelte external; unused exports tree-shake).
 
 **[Live demo](https://bonguynvan.github.io/bo-grid/)** ·
 **[API reference](https://bonguynvan.github.io/bo-grid/api.html)** ·
@@ -36,17 +36,16 @@ reach it (jump between them from the contents rail).
 
 ## Why
 
-| | Heavy enterprise grids | bo-grid |
-| --- | --- | --- |
-| Price | $$$ / dev / year | Free (MIT) |
-| Sparklines | paid tier | built in |
-| Realtime cell updates | DIY / complex | built-in primitive |
-| Bundle | hundreds of KB | **~40 KB gzip core** ([benchmarks](./BENCHMARKS.md)) |
-| Svelte | wrapper | native Svelte 5 |
-
-bo-grid ships most of the features other grids put behind a **paid (Enterprise)**
-tier — grouping, pivot, tree data, master-detail, range selection, Excel export,
-sparklines — for free, and runs in any framework via a [custom element](./docs/frameworks.md).
+- **Built for live data.** Ticks coalesce to one update a frame, cells flash on
+  change (`flash: 'auto'`), and `api.patchRows` writes plain rows in place and
+  repaints only the cells on screen.
+- **Everything in one package.** Grouping, pivot, tree data, master-detail,
+  range selection, Excel export and sparklines ship with the grid under the MIT
+  licence: one install, no add-ons, no licence key.
+- **Small.** ~40 KB gzip core, no runtime dependencies
+  ([benchmarks](./BENCHMARKS.md)).
+- **Native Svelte 5**, and a [custom element](./docs/frameworks.md) for React,
+  Vue, Angular or plain JS.
 
 ## Using bo-grid with an AI coding assistant
 
