@@ -140,7 +140,10 @@ export interface ColBase {
   render?: (ctx: CellRenderContext) => string | Node | null | undefined;
   /** Svelte component that draws this cell (receives `value`, `row`, `column`
       and the formatted `text`). Display only, like `render`. Usually supplied by
-      a registered `cellTypes` entry, but any column can set it. */
+      a registered `cellTypes` entry, but any column can set it. It updates in
+      place as its props change; under `api.patchRows`, `row` is a fresh view of
+      the patched row on each patch (same fields, new identity), so read it
+      reactively (`$derived`, markup) rather than once at mount. */
   component?: Component<CellTypeProps>;
   /** Set false to disable drag-to-resize on this column (default on). */
   resizable?: boolean;

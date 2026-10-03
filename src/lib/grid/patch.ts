@@ -24,3 +24,20 @@ export function patchRowsInPlace<K, R extends object>(
   }
   return changed;
 }
+
+// Reads and writes go to the row itself, so getters and methods run with the
+// row as `this` (a class row's private fields stay reachable).
+const VIEW: ProxyHandler<object> = {
+  get(target, prop) {
+    const v = Reflect.get(target, prop);
+    return typeof v === 'function' ? v.bind(target) : v;
+  },
+  set: (target, prop, value) => Reflect.set(target, prop, value),
+};
+
+/** A fresh view of a row patched in place: a new object identity whose reads
+    and writes go to the row. Handed to component and snippet cells on each
+    patch, so they update in place instead of remounting. */
+export function rowView<R extends object>(row: R): R {
+  return new Proxy(row, VIEW) as R;
+}

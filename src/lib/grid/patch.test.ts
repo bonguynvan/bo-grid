@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { patchRowsInPlace } from './patch';
+import { patchRowsInPlace, rowView } from './patch';
 
 type R = { id: number; [k: string]: unknown };
 
@@ -48,5 +48,49 @@ describe('patchRowsInPlace', () => {
     const changed = patchRowsInPlace(index([a]), new Map([[1, { p: 5 }]]));
     expect(a.p).toBe(5);
     expect(changed.get(1)?.has('p')).toBe(true);
+  });
+});
+
+describe('rowView', () => {
+  it('is a new object each time, reading the row’s current values', () => {
+    const row: Record<string, unknown> = { id: 1, px: 10 };
+    const a = rowView(row);
+    const b = rowView(row);
+    expect(a).not.toBe(b);
+    expect(a).not.toBe(row);
+    row.px = 11;
+    expect(a.px).toBe(11);
+  });
+
+  it('runs getters and methods against the row itself (class rows with private fields)', () => {
+    class Quote {
+      #px = 10;
+      get px() {
+        return this.#px;
+      }
+      bump() {
+        this.#px += 1;
+        return this.#px;
+      }
+    }
+    const q = new Quote();
+    const v = rowView(q as unknown as Record<string, unknown>) as unknown as Quote;
+    expect(v.px).toBe(10);
+    expect(v.bump()).toBe(11);
+    expect(q.px).toBe(11);
+  });
+
+  it('shows the row’s own fields to `in`, keys, spread and JSON', () => {
+    const v = rowView({ id: 1, sym: 'AAA' });
+    expect('sym' in v).toBe(true);
+    expect(Object.keys(v)).toEqual(['id', 'sym']);
+    expect({ ...v }).toEqual({ id: 1, sym: 'AAA' });
+    expect(JSON.stringify(v)).toBe('{"id":1,"sym":"AAA"}');
+  });
+
+  it('writes through to the row', () => {
+    const row: Record<string, unknown> = { id: 1, px: 10 };
+    rowView(row).px = 12;
+    expect(row.px).toBe(12);
   });
 });
