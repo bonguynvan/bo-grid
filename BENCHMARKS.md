@@ -72,6 +72,22 @@ one heavier frame per refresh (in a slower session: ~42 ms at 1,000–1,600
 symbols, down from ~65–70 ms before sort keys were read once per row), with
 ordinary frames unchanged at a few ms.
 
+Where a refresh frame goes (~18–24 ms in a later session): sorting is ~0.3 ms
+at 1,600 rows (0.2 ms at 1,000, 1.1 ms at 5,000), about 1% of the frame. The
+rest is the rows that moved: each on-screen slot now shows a different row,
+so its cells re-render. That rules out a delta sort, which re-inserts only the
+changed rows: the most it could save is the 0.3 ms.
+
+Giving each row a stable DOM slot was built and measured. A row kept its slot
+across a re-sort, and 20–29 of the 31 on-screen rows survive one.
+- With rows kept in visual DOM order, the node moves and per-cell updates cost
+  as much as the repaint they saved.
+- Rendering rows in slot order instead cut the refresh frame by 12–28%. It
+  made scrolling ~20% slower and decoupled DOM order from screen order, which
+  matters to screen readers.
+
+Not adopted.
+
 At 30,000 events/s a frame applies ~500 coalesced ticks. The split is roughly
 0.6 ms writing rows (`patchRows`; 1.6 ms through `$state` proxies), 2 ms for
 Svelte to update the cells, and 1.8 ms of browser style + layout. Rows off screen
