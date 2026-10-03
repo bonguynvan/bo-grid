@@ -1,7 +1,7 @@
 <script lang="ts">
   import { flushSync } from 'svelte';
   import { Grid, type ColumnDef, type GridApi, type GridRow, type SortState } from '../../lib';
-  import { createTickStream, createRowIndex, applyPatches } from '../../lib/realtime';
+  import { createTickStream, createRowIndex, applyPatches, createViewportSubscriptions } from '../../lib/realtime';
   import { vnBands, vnTickSize } from '../../lib/trading';
   import { ui } from '../theme.svelte';
   import { FpsMeter } from '../perf/fps.svelte';
@@ -79,6 +79,23 @@
   const rows = $derived(mode === 'patch' ? plainRows : stateRows);
   let index = new Map<number, Quote>();
   let api: GridApi | null = null;
+  // Stream only the symbols on screen: the grid reports its viewport and the
+  // helper turns it into subscribe / unsubscribe calls. Here the "socket" is
+  // a Set; a real board would send sub / unsub messages to its feed.
+  const streamed = new Set<string>();
+  let watching = $state(0);
+  const subs = createViewportSubscriptions<Quote, string>({
+    key: (q) => q.symbol,
+    subscribe: (syms) => {
+      for (const s of syms) streamed.add(s);
+      watching = streamed.size;
+    },
+    unsubscribe: (syms) => {
+      for (const s of syms) streamed.delete(s);
+      watching = streamed.size;
+    },
+  });
+  $effect(() => () => subs.clear());
   const stream = createTickStream<number, Partial<Quote>>({
     cap: 2000,
     apply: (b) => (mode === 'patch' ? api?.patchRows(b) : applyPatches(index, b)),
@@ -335,7 +352,7 @@
     };
   }
   $effect(() => {
-    (window as unknown as Record<string, unknown>).__priceBoard = { bench, benchScroll, benchSorted, benchLive, setMovers, setSize, setHeight, load, last: () => lastResult, rows: () => rows, api: () => api };
+    (window as unknown as Record<string, unknown>).__priceBoard = { bench, benchScroll, benchSorted, benchLive, watching: () => watching, streamed: () => [...streamed], setMovers, setSize, setHeight, load, last: () => lastResult, rows: () => rows, api: () => api };
   });
 </script>
 
@@ -364,11 +381,12 @@
   <button class="pb-btn" class:on={movers} onclick={() => setMovers(!movers)}>Top movers</button>
   <button class="pb-btn" class:on={live} onclick={() => (live = !live)}>{live ? 'Stop feed' : 'Start feed'}</button>
   <button class="pb-btn" onclick={() => bench()}>Benchmark</button>
+  <span class="pb-stat">streaming {watching} of {rows.length.toLocaleString()} symbols</span>
   {#if live}<span class="pb-stat">{fps.fps} fps · {stream.pending} pending</span>{/if}
   {#if result}<span class="pb-stat">{result}</span>{/if}
 </div>
 <div class="gridwrap" bind:this={host}>
-  <Grid rows={rows as unknown as GridRow[]} {columns} height={gridHeight} theme={ui.grid} ariaLabel="Price board" {sort} onSortChange={(s) => (sort = s)} onReady={(a) => (api = a)} />
+  <Grid rows={rows as unknown as GridRow[]} {columns} height={gridHeight} theme={ui.grid} ariaLabel="Price board" {sort} onSortChange={(s) => (sort = s)} onReady={(a) => (api = a)} onViewportChange={subs.update} />
 </div>
 
 <style>

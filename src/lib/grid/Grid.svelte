@@ -40,7 +40,7 @@
   import { resolveColumns, type DefaultColumn } from './celltype';
   import { parseCellInput } from './edit';
   import { patchRowsInPlace } from './patch';
-  import { scrollTopFor, type GridApi, type ScrollAlign } from './api';
+  import { scrollTopFor, type GridApi, type ScrollAlign, type ViewportRange } from './api';
   import { buildMergePlan, combinedFlex, type MergePlan, type SpanRun } from './merge';
   import { GRID_STATE_VERSION, reconcileState, type GridState } from './state';
 
@@ -87,6 +87,7 @@
     labels,
     locale,
     onReady,
+    onViewportChange,
     loading = false,
     rowMenu,
     detail,
@@ -235,6 +236,12 @@
         `scrollToRow`, `focusCell`, `getSelectedRows`, `autosizeColumns`, `exportCSV`,
         `getState` / `applyState`. */
     onReady?: (api: GridApi) => void;
+    /** Called with the data rows on screen — the rows in view plus the small
+        buffer rendered around them — whenever that set changes (scroll, sort,
+        filter, new data), never for a tick that only changes values. Pass it
+        `createViewportSubscriptions(...).update` from `bo-grid/realtime` to
+        stream just the symbols in view. */
+    onViewportChange?: (view: ViewportRange) => void;
     /** Show a loading overlay over the grid (for consumer-driven async work in
         in-memory mode; source mode shows skeleton rows automatically). */
     loading?: boolean;
@@ -1309,6 +1316,36 @@
     }
     itemCache = next;
     return out;
+  });
+
+  // onViewportChange: report the data rows on screen whenever that set
+  // changes. Rows compare by identity, so a value-only tick never reports and
+  // a scroll reports once per new window, not once per frame.
+  let viewReported: ViewportRange | null = null;
+  $effect(() => {
+    const report = onViewportChange;
+    if (!report) return;
+    const rows: GridRow[] = [];
+    let first = -1;
+    let last = -1;
+    for (const it of renderItems) {
+      if (it.kind !== 'data') continue;
+      if (first < 0) first = it.vr;
+      last = it.vr;
+      rows.push(it.row);
+    }
+    const prev = viewReported;
+    if (
+      prev &&
+      prev.first === first &&
+      prev.last === last &&
+      prev.rows.length === rows.length &&
+      prev.rows.every((r, i) => r === rows[i])
+    )
+      return;
+    const view = { first, last, rows };
+    viewReported = view;
+    untrack(() => report(view));
   });
 
   // Merged cells (spanRows / colSpan). Built from the view like grouping:

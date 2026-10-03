@@ -21,5 +21,8 @@ export type {
 
 export { TradeTape } from './tape';
 
+export { createViewportSubscriptions, DEFAULT_VIEWPORT_DELAY } from './viewport';
+export type { ViewportSubscriptions, ViewportSubscriptionsOptions } from './viewport';
+
 export { centeredWindow } from './ladder';
 export type { LadderWindow } from './ladder';

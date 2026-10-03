@@ -5,6 +5,16 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- **`onViewportChange` and `createViewportSubscriptions`** — stream only the
+  symbols on screen. The grid reports the data rows in view (plus the small
+  rendered buffer) whenever that set changes, never for a value-only tick;
+  the `bo-grid/realtime` helper turns it into subscribe / unsubscribe calls,
+  subscribing the first view at once and settling later changes for `delay` ms
+  (default 150) so a fast scroll is one change. About a microsecond per
+  update. The Price board demo shows how many of its symbols stream.
+
 ### Changed
 
 - **The demo site and API page have a favicon**: the bo-grid mark (a grid with
