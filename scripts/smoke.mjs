@@ -1056,6 +1056,15 @@ await solo('priceboard', '.bo-grid .row', 'Price board example rendered no rows'
   if (delta !== '▲0.50') fail(`Price board: showChange delta was "${delta}", expected "▲0.50"`);
   if (document.querySelectorAll('.bo-grid .head [role=columnheader]').length !== 24)
     fail('Price board: expected 24 columns');
+  // api.flashCells: flashes the named cells of an on-screen row (the symbol is
+  // a text cell with no flash of its own), and skips rows that are off screen.
+  const symCell = () => document.querySelector('.bo-grid .viewport .row [aria-colindex="1"]');
+  const flashedRows = pb.api().flashCells({ rows: [q.id], columns: ['symbol'], dir: 'up' });
+  await wait(30);
+  if (flashedRows !== 1) fail(`Price board: flashCells reported ${flashedRows} rows, expected 1`);
+  if (!symCell()?.querySelector('strong.flash.up')) fail('Price board: flashCells did not flash the symbol cell');
+  const offScreen = pb.rows()[pb.rows().length - 1].id;
+  if (pb.api().flashCells({ rows: [offScreen] }) !== 0) fail('Price board: flashCells flashed a row that is off screen');
   // Top movers: sorted by change, values move in place, api.refresh() re-sorts.
   pb.setMovers(true);
   await wait(30);
