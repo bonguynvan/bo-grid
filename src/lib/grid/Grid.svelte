@@ -7,7 +7,7 @@
   import { untrack } from 'svelte';
   import type { Snippet } from 'svelte';
   import type { ColumnDef, GridRow, SortState, SortDir, CellEditEvent, CellTypeDef } from './column';
-  import { colStyle, colWidth, isNumeric, isSortable, isEditable, sortRows, formatCell, cellValue } from './column';
+  import { colStyle, baseWidth, isNumeric, isSortable, isEditable, sortRows, formatCell, cellValue } from './column';
   import { arrangePinned } from './pin';
   import { columnWindow, columnOffsets } from './colvirt';
   import { uniformHeights, variableHeights } from './rowheight';
@@ -600,12 +600,10 @@
   // grow to fill the viewport, so the grid never stops short of its right edge.
   // Columns that cannot fit the viewport switch the grid to horizontal scroll
   // instead of being clipped: fixed widths, plus a readable minimum for flex
-  // columns (which would otherwise squeeze to nothing).
-  const MIN_FLEX_W = 64;
-  const overflowing = $derived(
-    viewW > 0 &&
-      pinnedSized.reduce((a, c) => a + (c.flex ? (c.minWidth ?? MIN_FLEX_W) : colWidth(c)), leadPx) > viewW,
-  );
+  // columns (which would otherwise squeeze to nothing). The threshold is the
+  // same base width the fixed-width layout starts from, so crossing it never
+  // makes columns jump.
+  const overflowing = $derived(viewW > 0 && pinnedSized.reduce((a, c) => a + baseWidth(c), leadPx) > viewW);
   const fixedWidths = $derived(virtualizeColumns || overflowing || pinnedSized.some((c) => !!c.pinned));
   const layout = $derived(arrangePinned(pinnedSized, fixedWidths && viewW ? viewW - leadPx : 0));
   const cols = $derived(layout.columns);
@@ -2136,7 +2134,9 @@
     onpointerout={hasTooltips ? onTipOut : undefined}
   >
     {#if expandable}
-      <span class="expandcell selhead" role="columnheader" aria-colindex={1} style={expandCellStyle(true)}></span>
+      <span class="expandcell selhead" role="columnheader" aria-colindex={1} style={expandCellStyle(true)}
+        ><span class="bo-sr-only">{L.detailColumn}</span></span
+      >
     {/if}
     {#if rowSelection}
       <span class="selcell selhead" role="columnheader" aria-colindex={1 + expOffset} style={selCellStyle(true)}>
@@ -2153,15 +2153,20 @@
       </span>
     {/if}
     {#each cols as col, ci (ci)}
-      <button
+      <!-- A focusable column header, not a <button>: role="columnheader" is not
+           allowed on a button. It sorts on click and on Enter / Space, and its
+           name is the header text (or the column key when the header is empty),
+           not the sort arrows and menu labels inside it. -->
+      <div
         class="h {col.headerClass ?? ''}"
         class:right={isNumeric(col) || col.align === 'right'}
         class:sortable={isSortable(col)}
         class:dragging={ci === dragSrc}
         class:dragover={ci === dragOver && ci !== dragSrc}
         style={headStyle(ci)}
-        type="button"
         role="columnheader"
+        tabindex="0"
+        aria-label={col.header || col.key}
         aria-colindex={ci + 1 + leadCols}
         data-bo-tip={col.headerTooltip}
         draggable="true"
@@ -2171,6 +2176,14 @@
             : 'descending'
           : 'none'}
         onclick={(e) => toggleSort(col, e.shiftKey)}
+        onkeydown={(e) => {
+          if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return;
+          e.preventDefault();
+          // Handled here: the grid's own Enter / Space (edit the focused cell,
+          // tick the focused row) must not run for a key pressed on a header.
+          e.stopPropagation();
+          toggleSort(col, e.shiftKey);
+        }}
         ondragstart={(e) => {
           dragSrc = ci;
           e.dataTransfer?.setData('text/plain', String(ci));
@@ -2252,7 +2265,7 @@
             draggable="false"
           ></span>
         {/if}
-      </button>
+      </div>
     {/each}
   </div>
 
@@ -2734,6 +2747,18 @@
     background: transparent;
     border: 0;
     cursor: grab;
+  }
+  /* Text for assistive tech only (e.g. the expand column's header name). */
+  .bo-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
   }
   /* Visible keyboard focus (WCAG 2.4.7) for the grid's tabbable controls. */
   .h:focus-visible,

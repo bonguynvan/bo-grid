@@ -100,6 +100,29 @@ describe('arrangePinned — fill', () => {
     expect(r.info.map((i) => i.width)).toEqual([150, 450]);
   });
 
+  it('starts a flex column without a width at its minWidth, then fills — not at a 160 px default', () => {
+    // A narrow watchlist: 58 + flex + 60 + 54 in a 286 px pane.
+    const watch: ColumnDef[] = [
+      { type: 'text', key: 'sym', header: 'Symbol', width: 58, pinned: true },
+      { type: 'price', key: 'last', header: 'Last', flex: 1, minWidth: 84 },
+      { type: 'percent', key: 'chg', header: '24h', width: 60 },
+      { type: 'volume', key: 'vol', header: 'Vol', width: 54 },
+    ];
+    const r = arrangePinned(watch, 286);
+    expect(r.info.map((i) => i.width)).toEqual([58, 114, 60, 54]);
+    expect(r.totalWidth).toBe(286);
+  });
+
+  it('stops a flex column at its minWidth (64 without one) when the pane is too narrow', () => {
+    const narrow: ColumnDef[] = [
+      { type: 'text', key: 'sym', header: 'Symbol', width: 58, pinned: true },
+      { type: 'price', key: 'last', header: 'Last', flex: 1, minWidth: 84 },
+      { type: 'text', key: 'note', header: 'Note', flex: 1 },
+    ];
+    const r = arrangePinned(narrow, 120);
+    expect(r.info.map((i) => i.width)).toEqual([58, 84, 64]);
+  });
+
   it('recomputes right-pinned offsets from the filled widths', () => {
     const withRight: ColumnDef[] = [
       { type: 'text', key: 'a', header: 'A', flex: 1, width: 100 },

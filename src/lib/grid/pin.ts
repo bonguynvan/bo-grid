@@ -1,5 +1,5 @@
 import type { ColumnDef } from './column';
-import { colWidth } from './column';
+import { baseWidth } from './column';
 
 export type PinSide = 'left' | 'right';
 
@@ -75,7 +75,7 @@ export function arrangePinned(cols: readonly ColumnDef[], available = 0): PinLay
   const columns = left.length || right.length ? [...left, ...mid, ...right] : [...cols];
   const anyPinned = left.length > 0 || right.length > 0;
 
-  const base = columns.map(colWidth);
+  const base = columns.map(baseWidth);
   const widths = available > 0 ? fillWidths(columns, base, available) : base;
   const totalWidth = widths.reduce((a, b) => a + b, 0);
   const nLeft = left.length;

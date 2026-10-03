@@ -452,9 +452,17 @@ export function colStyle(col: ColumnDef): string {
   return `flex:0 0 ${col.width ?? 96}px;`;
 }
 
-/** Concrete pixel width for a column (flex columns get a sensible default). */
-export function colWidth(col: ColumnDef): number {
-  return col.flex ? (col.width ?? 160) : (col.width ?? 96);
+/** Narrowest a flex column without a `minWidth` gets before the grid scrolls
+    horizontally instead of squeezing it further. */
+export const MIN_FLEX_W = 64;
+
+/** A column's starting width in fixed-width mode (pinned columns, column
+    virtualization, or too little room): its `width`, and for a flex column
+    without one its `minWidth` (64 without one). Flex columns then grow to fill
+    the viewport, so they never start wider than they need to. */
+export function baseWidth(col: ColumnDef): number {
+  if (col.flex) return col.width ?? col.minWidth ?? MIN_FLEX_W;
+  return col.width ?? 96;
 }
 
 export function isNumeric(col: ColumnDef): boolean {

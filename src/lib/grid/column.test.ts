@@ -5,7 +5,7 @@ import {
   isNumeric,
   isEditable,
   isSortable,
-  colWidth,
+  baseWidth,
   cellValue,
   compareBySorts,
   dataBarGeometry,
@@ -155,11 +155,16 @@ describe('isSortable', () => {
   });
 });
 
-describe('colWidth', () => {
-  it('uses explicit width, else type-appropriate defaults', () => {
-    expect(colWidth({ type: 'number', key: 'n', header: 'N', width: 120 })).toBe(120);
-    expect(colWidth({ type: 'number', key: 'n', header: 'N' })).toBe(96); // fixed default
-    expect(colWidth({ type: 'text', key: 't', header: 'T', flex: 1 })).toBe(160); // flex default
+describe('baseWidth', () => {
+  it('uses an explicit width, else 96 for a fixed column', () => {
+    expect(baseWidth({ type: 'number', key: 'n', header: 'N', width: 120 })).toBe(120);
+    expect(baseWidth({ type: 'number', key: 'n', header: 'N' })).toBe(96);
+  });
+
+  it('starts a flex column without a width at its minWidth, else 64', () => {
+    expect(baseWidth({ type: 'text', key: 't', header: 'T', flex: 1, width: 140 })).toBe(140);
+    expect(baseWidth({ type: 'text', key: 't', header: 'T', flex: 1, minWidth: 84 })).toBe(84);
+    expect(baseWidth({ type: 'text', key: 't', header: 'T', flex: 1 })).toBe(64);
   });
 });
 
