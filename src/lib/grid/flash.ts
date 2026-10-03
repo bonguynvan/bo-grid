@@ -28,10 +28,15 @@ export interface FlashState {
   at: number;
   /** True only on the observation that saw the change. */
   changed: boolean;
+  /** Size of the last change (new − old) when both values are numbers. */
+  delta?: number;
 }
 
 /** Default flash duration (ms). Matches the CSS animation. */
 export const FLASH_MS = 300;
+
+/** Default time a `showChange` delta stays on screen (ms), fade included. */
+export const CHANGE_MS = 1000;
 
 /** Max tracked cells before the oldest are evicted. Generous enough for a full
     price board (rows x flashing columns) while staying bounded on a long
@@ -56,6 +61,13 @@ export function resolveFlashMode(
     a past flash's `seq` without replaying the animation. */
 export function isFresh(state: FlashState, now: number, ms: number = FLASH_MS): boolean {
   return state.seq > 0 && now - state.at < ms;
+}
+
+/** A value as a number for `delta`: numbers, and non-blank numeric strings. */
+function asNumber(v: unknown): number {
+  if (typeof v === 'number') return v;
+  if (typeof v === 'string' && v.trim() !== '') return Number(v);
+  return Number.NaN;
 }
 
 function direction(prev: unknown, next: unknown, mode: FlashMode): FlashDir {
@@ -119,11 +131,14 @@ export class FlashTracker {
       return prev.state;
     }
 
+    const a = asNumber(prev.value);
+    const b = asNumber(value);
     const state: FlashState = {
       seq: prev.state.seq + 1,
       dir: direction(prev.value, value, mode),
       at: now,
       changed: true,
+      delta: Number.isFinite(a) && Number.isFinite(b) ? b - a : undefined,
     };
     prev.value = value;
     prev.state = state;

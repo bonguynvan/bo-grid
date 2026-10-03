@@ -238,6 +238,17 @@ number of symbols and fields per tick. Numbers and method are in
 that colour their own text (price-limit tones) so a flash lights only the
 background.
 
+`showChange: true` shows how far a value moved, not just which way: `▲0.15`
+beside the price in the up colour (`▼` down), held, then faded over a second.
+The delta is written in the column's own format; `{ format, ms }` customises
+the text (`format(delta, row)` gets the signed change) and the duration. In a
+narrow column the delta gives way first, so the value is never cut for it. It
+fades by animating text colour, not opacity, so it adds no compositor layers.
+Use it on the one or two columns that matter (the match price): on the Price
+board, one such column measured the same as none, while turning it on for all
+13 flashing columns at 30,000 events/s more than doubled the main thread's
+work per frame.
+
 #### Stream only what's on screen — `onViewportChange`
 
 A board of 1,600 symbols shows 30–80 at a time. `onViewportChange` reports the

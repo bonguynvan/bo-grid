@@ -137,7 +137,7 @@
     { type: 'price', key: 'ceil', header: 'Trần', width: 62, format: k, cellClass: 'pb-ceil', sortable: false },
     { type: 'price', key: 'floor', header: 'Sàn', width: 62, format: k, cellClass: 'pb-floor', sortable: false },
     price('bp3', 'G3'), qty('bv3', 'KL3'), price('bp2', 'G2'), qty('bv2', 'KL2'), price('bp1', 'G1'), qty('bv1', 'KL1'),
-    { ...price('mp', 'Giá'), width: 62 }, qty('mv', 'KL'),
+    { ...price('mp', 'Giá'), width: 104, showChange: true }, qty('mv', 'KL'),
     { type: 'number', key: 'chg', header: '+/-', width: 56, format: (v) => (Number(v) ? (Number(v) / 1000).toFixed(2) : ''), cellClass: (_v, r) => tone((r as Quote).mp, r) },
     price('ap1', 'G1'), qty('av1', 'KL1'), price('ap2', 'G2'), qty('av2', 'KL2'), price('ap3', 'G3'), qty('av3', 'KL3'),
     price('hi', 'Cao'), price('lo', 'Thấp'), { ...qty('tv', 'Tổng KL'), width: 76 }, qty('fb', 'NN mua'), qty('fs', 'NN bán'),

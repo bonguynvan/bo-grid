@@ -21,7 +21,7 @@
   // The public Phase 0 surface: declare columns, hand over rows.
   const columns: ColumnDef[] = [
     { type: 'text', key: 'symbol', sub: 'sector', header: 'Symbol', width: 132 },
-    { type: 'price', key: 'price', header: 'Price', width: 88, flash: 'auto', groupAgg: 'avg' },
+    { type: 'price', key: 'price', header: 'Price', width: 128, flash: 'auto', showChange: true, groupAgg: 'avg' },
     { type: 'percent', key: 'changePct', header: 'Chg %', width: 84 },
     { type: 'heatmap', key: 'changePct', header: 'Heat', width: 76, min: -5, max: 5 },
     { type: 'custom', key: 'changePct', header: 'Signal', width: 66, sortable: false },

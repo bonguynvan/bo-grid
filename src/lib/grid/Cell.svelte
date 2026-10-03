@@ -25,7 +25,7 @@
   } from './column';
   import { heatColor } from './heatmap';
   import { toDateInput } from './date';
-  import { FlashTracker, resolveFlashMode, isFresh, FLASH_MS } from './flash';
+  import { FlashTracker, resolveFlashMode, isFresh, FLASH_MS, CHANGE_MS } from './flash';
   import Sparkline from '../sparkline/Sparkline.svelte';
 
   let {
@@ -258,16 +258,36 @@
   // `observe` is idempotent, so re-rendering for an unrelated reason (selection,
   // resize, a sibling column ticking) never re-flashes this cell.
   const flashMode = $derived(resolveFlashMode(col.flash));
+  // One tracker observation per value serves both the derived flash and the
+  // `showChange` delta.
+  const tracked = $derived.by(() => {
+    const mode = flashMode && flashMode !== 'row' ? flashMode : col.showChange ? 'up-down' : null;
+    if (!mode || !flashTracker || rowKey == null) return null;
+    const now = Date.now();
+    return { state: flashTracker.observe(rowKey, col.key, value, mode, now), now };
+  });
   const flash = $derived.by(() => {
     if (flashMode === null) return null;
     if (flashMode === 'row') {
       rowTick;
       return { seq: Number(row.flashSeq ?? 0), dir: row.flashDir ?? 'up', on: true };
     }
-    if (!flashTracker || rowKey == null) return null;
-    const now = Date.now();
-    const state = flashTracker.observe(rowKey, col.key, value, flashMode, now);
+    if (!tracked) return null;
+    const { state, now } = tracked;
     return { seq: state.seq, dir: state.dir, on: isFresh(state, now, col.flashMs ?? FLASH_MS) };
+  });
+  // showChange: the last change's size beside the value, held then faded by
+  // CSS. Rendered only while fresh, so a row scrolling into view shows none.
+  const changeOpts = $derived(col.showChange ? (col.showChange === true ? {} : col.showChange) : null);
+  const change = $derived.by(() => {
+    if (!changeOpts || !tracked) return null;
+    const { state, now } = tracked;
+    const d = state.delta;
+    if (d === undefined || d === 0 || !isFresh(state, now, changeOpts.ms ?? CHANGE_MS)) return null;
+    const label = changeOpts.format
+      ? changeOpts.format(d, row)
+      : `${d > 0 ? '▲' : '▼'}${formatCell(col, Math.abs(d), row)}`;
+    return { label, up: d > 0, alt: state.seq % 2 === 1 };
   });
   // The flash as one class string — a single DOM write per tick instead of a
   // toggle per modifier. `alt` alternates keyframes to replay the animation.
@@ -311,6 +331,7 @@
       !col.component &&
       !col.render &&
       !hasCf &&
+      !col.showChange &&
       !STRUCTURED_TYPES.has(col.type ?? ''),
   );
   const bar = $derived.by(() => {
@@ -526,6 +547,13 @@
   {:else}
     <span class="bo-cell-text">{text}</span>
   {/if}
+  {#if change}<span
+      class="bo-chg"
+      class:down={!change.up}
+      class:alt={change.alt}
+      style={changeOpts?.ms && changeOpts.ms !== CHANGE_MS ? `--bo-change-ms:${changeOpts.ms}ms` : undefined}
+      aria-hidden="true">{change.label}</span
+    >{/if}
   {#if fillCorner}
     <span
       class="fill-handle"
@@ -889,10 +917,63 @@
       background: transparent;
     }
   }
+  /* showChange: the delta beside the value. It fades by animating its text
+     colour, a repaint of a few glyphs — not opacity, which would give every
+     fading cell its own compositor layer (measured ~9x a frame's work on a
+     busy board). In a narrow cell it shrinks away first (flex-shrink 1000),
+     so the value is never cut for it. Numbers keep it on the value's left,
+     where it never moves the value. Consecutive changes alternate keyframes
+     to replay, as the flash does. */
+  .bo-chg {
+    --bo-chg-tint: var(--bo-up);
+    flex: 0 1000 auto;
+    min-width: 0;
+    overflow: hidden;
+    margin-left: 6px;
+    font-size: 0.82em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: transparent;
+    animation: bo-chg var(--bo-change-ms, 1000ms) linear forwards;
+  }
+  .bo-chg.down {
+    --bo-chg-tint: var(--bo-down);
+  }
+  .bo-chg.alt {
+    animation-name: bo-chg-alt;
+  }
+  .num .bo-chg {
+    order: -1;
+    margin-left: 0;
+    margin-right: 6px;
+  }
+  @keyframes bo-chg {
+    0%,
+    60% {
+      color: var(--bo-chg-tint);
+    }
+    100% {
+      color: transparent;
+    }
+  }
+  @keyframes bo-chg-alt {
+    0%,
+    60% {
+      color: var(--bo-chg-tint);
+    }
+    100% {
+      color: transparent;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     .flash,
     .flash.alt {
       animation: none;
+    }
+    /* No fade: the delta shows, then simply disappears. */
+    .bo-chg,
+    .bo-chg.alt {
+      animation-timing-function: steps(1, end);
     }
   }
 </style>

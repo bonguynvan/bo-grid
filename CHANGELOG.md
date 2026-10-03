@@ -7,6 +7,16 @@ All notable changes to this project are documented here. Format follows
 
 ### Added
 
+- **`showChange` column option** — how far a value moved, not just which way:
+  `▲0.15` beside the price in the up colour (`▼` down), held, then faded over a
+  second, in the column's own format (`{ format, ms }` to customise). The delta
+  gives way first in a narrow column, so the value is never cut for it, and it
+  fades by animating text colour, so it adds no compositor layers. On the Price
+  board, one such column measured the same as none; it is meant for one or two
+  key columns, since all 13 flashing columns at 30,000 events/s more than
+  doubled the main thread's work. The tick tracker now records each change's
+  `delta`.
+
 - **`onViewportChange` and `createViewportSubscriptions`** — stream only the
   symbols on screen. The grid reports the data rows in view (plus the small
   rendered buffer) whenever that set changes, never for a value-only tick;
