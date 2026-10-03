@@ -16,8 +16,7 @@ backward-compatible unless noted.
 
 ## 0.3 · Filtering & discoverability — done
 
-Closed the biggest functional gap vs heavyweight grids: rich, built-in column
-filtering. **Guiding principle: keep the core tiny** — heavy menu UI is
+Rich, built-in column filtering. **Guiding principle: keep the core tiny** — heavy menu UI is
 **lazy-loaded inside `Grid`**, so the core only grows by small glue and you
 download a menu only when you open one.
 
@@ -31,7 +30,7 @@ download a menu only when you open one.
 
 ## 0.4 · Column management & discoverability — done
 
-Runtime column management — the part heavyweight grids do that needs real capability.
+Runtime column management.
 Heavy UI (the tool panel) is lazy-loaded; the light column menu reuses the
 in-core action menu.
 
@@ -44,8 +43,8 @@ Shipped API (all additive): `columnMenu`, `columnsPanel`,
 
 ## 0.5 · Spreadsheet power — done
 
-Excel-grade editing. Lib budget recalibrated 24 → 28 KB (still ~15–20× smaller
-than heavyweight grids; heavy UI stays lazy and excluded from the core count).
+Excel-grade editing. Lib budget recalibrated 24 → 28 KB (heavy UI stays lazy
+and excluded from the core count).
 
 - [x] **M1 — Fill handle** (`fillHandle`): drag the selection's corner to copy
   the selected value(s) across the extended range (editable columns; tiles).
@@ -278,8 +277,8 @@ tested geometry holds for these too.
 
 ## 2.0 · Grid-only, built for busy markets — done
 
-bo-grid becomes a pure data grid, aiming at feature parity with heavyweight
-grids such as AG Grid. Standalone charting moves out: the
+bo-grid becomes a pure data grid, aiming at a complete feature set for trading
+and data-heavy screens. Standalone charting moves out: the
 [TradeCanvas](https://github.com/bonguynvan/tradecanvas) library covers it.
 
 - [x] **Removed `bo-grid/charts`** (breaking). In-cell sparklines stay — they
@@ -310,11 +309,11 @@ grids such as AG Grid. Standalone charting moves out: the
   lead figure.
 
 Remaining 2.0 ideas (explicit merge regions, layered source layout) and the
-parity backlog below move to **2.1+**.
+feature backlog below move to **2.1+**.
 
-### Parity backlog (vs AG Grid), in priority order
+### Feature backlog, in priority order
 
-What a team moving off AG Grid most often reaches for and bo-grid lacks:
+What data-heavy screens most often need that bo-grid does not have yet:
 
 1. [x] **Custom cell editors** (`editor` component), a value parser for typed
    and pasted text (`parse`), and `defaultColumn` for shared column settings.
@@ -331,7 +330,7 @@ What a team moving off AG Grid most often reaches for and bo-grid lacks:
 9. [ ] **Explicit merge regions** (above) and **multiple selection ranges**.
 10. [ ] **RTL layout.**
 
-Already at parity: virtual rows/columns, pinning, sort/filter (text, number,
+Already shipped: virtual rows/columns, pinning, sort/filter (text, number,
 date, set, custom), quick filter, floating filter row, grouping with
 aggregation, tree data (incl. lazy), master-detail, pivot, server-side rows,
 inline editing with undo/redo, fill handle, clipboard, CSV/Excel export,
@@ -349,8 +348,8 @@ CSV round-trip. Remaining ideas are polish or demand-driven:
 - Driven by real-world usage now that it's published — open an issue with what's
   missing.
 
-Note on size: the eager core is ~40 KB gzip. Feature growth is expected on the
-way to heavyweight-grid parity and is not capped; `pnpm size:lib` reports the
+Note on size: the eager core is ~40 KB gzip. Feature growth is expected as the
+feature set fills out and is not capped; `pnpm size:lib` reports the
 number on every run so optimization has a target, and only fails on an
 accidental blow-up. The
 realtime (2 KB) and trading (2 KB) companions, each on its own budget, are the

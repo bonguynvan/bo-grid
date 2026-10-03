@@ -15,8 +15,7 @@ excluded — you already ship the Svelte runtime):
 | `bo-grid/realtime` (optional) | **~1 KB** |
 | `bo-grid/trading` (optional) | **~1 KB** |
 
-This is an order of magnitude smaller than typical heavyweight data grids, whose
-core bundles run into the hundreds of KB before features. A few notes:
+A few notes:
 
 - The number is the **whole public API** measured eagerly. A consumer who imports
   only what they use (e.g. `import { Grid }`) tree-shakes the rest — the package is

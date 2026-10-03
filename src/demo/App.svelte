@@ -52,20 +52,20 @@
     ['MSN', '63.90', 0.7], ['VPB', '19.55', -0.1], ['SHS', '15.10', 0.3], ['PVS', '33.60', 0],
   ];
 
-  // Enterprise-only features in AG Grid, all free in bo-grid.
-  const LISTINGS = [
-    'Row grouping & aggregation',
-    'Pivot tables',
-    'Tree data',
-    'Master / detail',
-    'Range selection & fill handle',
-    'Clipboard copy & paste',
-    'Set filter',
-    'Columns tool panel',
-    'Context menu',
-    'Server-side rows',
-    'Excel export',
-    'Sparklines',
+  // What ships in the one MIT package, and where to find it.
+  const LISTINGS: Array<[string, string]> = [
+    ['Row grouping & aggregation', 'groupBy'],
+    ['Pivot tables', 'pivot()'],
+    ['Tree data', 'getChildren'],
+    ['Master / detail', 'detail'],
+    ['Range selection & fill handle', 'fillHandle'],
+    ['Clipboard copy & paste', 'Ctrl+C / Ctrl+V'],
+    ['Set filter', "filter: 'set'"],
+    ['Columns tool panel', 'columnsPanel'],
+    ['Context menu', 'rowMenu'],
+    ['Server-side rows', 'source'],
+    ['Excel export', 'exportXLSX()'],
+    ['Sparklines', "type: 'sparkline'"],
   ];
 
   // From BENCHMARKS.md and the size report — the grid's own work, not paint.
@@ -73,7 +73,7 @@
     ['30,000', 'ticks a second, coalesced to one update a frame'],
     ['~1 ms', 'grid work per scroll step through 1,000 symbols'],
     ['40 KB', 'gzip core, Svelte external, no runtime dependencies'],
-    ['$0', 'MIT licence, no enterprise tier'],
+    ['$0', 'MIT licence, every feature included'],
   ];
 
   const INSTALL: Array<[string, string]> = [
@@ -126,8 +126,8 @@
       <h1 id="hero-h" class="lp-wordmark">The data grid<span>for busy markets.</span></h1>
       <p class="lp-deck">
         Built for price boards: tens of thousands of ticks a second coalesced into one update a frame, a
-        thousand symbols scrolled in millisecond steps, and the features heavyweight grids keep behind an
-        enterprise licence, free.
+        thousand symbols scrolled in millisecond steps, and grouping, pivot, tree data and the rest in the
+        same MIT package.
       </p>
       <div class="lp-install">
         <div class="lp-install-tabs" role="tablist" aria-label="Package manager">
@@ -179,14 +179,14 @@
 
   <section class="lp-listing" aria-labelledby="listing-h">
     <header>
-      <p class="lp-eyebrow">Parity</p>
-      <h2 id="listing-h">Enterprise elsewhere. Free here.</h2>
-      <p class="lp-sub">Every feature below sits behind AG Grid's enterprise licence. In bo-grid it ships in the MIT package.</p>
+      <p class="lp-eyebrow">In the box</p>
+      <h2 id="listing-h">Everything in one package.</h2>
+      <p class="lp-sub">Each feature below ships with the grid, under the MIT licence: one install, no add-ons, no licence key.</p>
     </header>
     <ul class="lp-list">
-      <li class="lp-list-head" aria-hidden="true"><span>Feature</span><span>AG Grid</span><span>bo-grid</span></li>
-      {#each LISTINGS as f (f)}
-        <li><span>{f}</span><span class="lp-paid">Enterprise</span><span class="lp-free">Free</span></li>
+      <li class="lp-list-head" aria-hidden="true"><span>Feature</span><span>Where</span></li>
+      {#each LISTINGS as [f, api] (f)}
+        <li><span>{f}</span><code class="lp-api">{api}</code></li>
       {/each}
     </ul>
   </section>
@@ -651,7 +651,7 @@
   }
   .lp-list li {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 104px 72px;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 12px;
     min-height: 36px;
@@ -673,21 +673,11 @@
     background: var(--panel-2);
     border-top: 0;
   }
-  .lp-paid {
+  .lp-api {
     font-family: var(--font-mono);
     font-size: 12px;
-    color: var(--text-3);
-    text-decoration: line-through;
-  }
-  .lp-free {
-    justify-self: start;
-    padding: 1px 7px;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--up);
-    background: var(--up-dim);
-    border-radius: var(--radius-sm);
+    color: var(--accent);
+    white-space: nowrap;
   }
 
   /* ---- examples ---- */

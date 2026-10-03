@@ -4,7 +4,7 @@
 
 import type { BuiltinCellType, CellTypeDef, ColBase, ColumnDef } from './column';
 
-/** Settings applied under every column (AG Grid's `defaultColDef`). */
+/** Settings applied under every column. */
 export type DefaultColumn = Omit<Partial<ColBase>, 'key' | 'header'>;
 
 function resolveOne(

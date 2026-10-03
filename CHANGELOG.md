@@ -138,7 +138,7 @@ All notable changes to this project are documented here. Format follows
 **bo-grid is now grid-only, and built for busy markets.** Standalone charting is
 out of scope — use [TradeCanvas](https://github.com/bonguynvan/tradecanvas) for
 charts. This release adds a realtime fast path and a round of measured
-performance work on price-board workloads, the first AG Grid parity features
+performance work on price-board workloads, new grid features
 (merged cells, registered cell and filter types, custom editors, localization,
 layout save/restore), alignment and layout fixes, and a new demo site.
 
@@ -166,8 +166,8 @@ layout save/restore), alignment and layout fixes, and a new demo site.
   default (a "terminal" palette behind the theme toggle), Fraunces + JetBrains
   Mono, a masthead with the live HOSE session, a ticker tape, a lead story whose
   figure is a live price board fed through `api.patchRows`, real benchmark
-  figures, a listings table of AG Grid Enterprise-only features that are free
-  here, and numbered example contents.
+  figures, a table of the features included in the package, and numbered
+  example contents.
 
 ### Removed
 
@@ -467,7 +467,7 @@ API changes from 0.25.
   page-size dropdown; the **vanilla** starter uses `createBoGrid` + a `render`
   cell.
 - Library bundle budget raised 32 → 35 KB gzip for the 1.0 feature wave (core is
-  ~32 KB; still ~15× smaller than typical heavyweight grids).
+  ~32 KB).
 
 ## [0.25.0] — Unreleased
 
@@ -650,8 +650,7 @@ Theme: **scale — column (horizontal) virtualization** for very wide grids. See
 
 - **Library size budget recalibrated 28 → 32 KB** (gzip, eager core). The analytics
   + scale wave (conditional formatting, computed columns, more rich types, column
-  virtualization) grew the always-loaded core to ~28 KB — still ~15× smaller than
-  typical heavyweight grids (~500 KB). The charts companion keeps its own 8 KB
+  virtualization) grew the always-loaded core to ~28 KB. The charts companion keeps its own 8 KB
   budget; heavy menu UI stays lazy and excluded.
 
 ## [0.15.0] — Unreleased

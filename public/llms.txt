@@ -2,9 +2,8 @@
 
 > Tiny, fast Svelte 5 data grid for fintech UIs — canvas sparklines, batched
 > realtime cell updates, and virtual scrolling, with a core that gzips to
-> ~40 KB (Svelte peer excluded). Free MIT alternative to heavyweight
-> enterprise grids for grouping, pivot, tree data, master-detail, range
-> selection, and Excel export.
+> ~40 KB (Svelte peer excluded). MIT licensed, with grouping, pivot, tree
+> data, master-detail, range selection and Excel export included.
 
 Facts an AI assistant must get right before generating code against bo-grid
 (see llms-full.txt for the complete, copy-paste-ready reference):

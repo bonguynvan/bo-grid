@@ -223,7 +223,7 @@
         `component` renderer…) under its own fields, and the built-in type
         named by `extends` for sorting, filtering and export. */
     /** Settings applied under every column — its own fields (and a registered
-        `cellType`) win. Like AG Grid's `defaultColDef`. */
+        `cellType`) win. */
     defaultColumn?: DefaultColumn;
     cellTypes?: Record<string, CellTypeDef>;
     /** Custom filter kinds, by name. A column selects one with `filter: 'name'`;
