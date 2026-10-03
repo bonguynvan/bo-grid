@@ -25,6 +25,7 @@
   } from './column';
   import { heatColor } from './heatmap';
   import { toDateInput } from './date';
+  import { rowView } from './patch';
   import { FlashTracker, resolveFlashMode, isFresh, mergeFlash, holdFlash, FLASH_MS, CHANGE_MS, type CellFlash, type ShownFlash } from './flash';
   import Sparkline from '../sparkline/Sparkline.svelte';
 
@@ -321,6 +322,11 @@
 
   // JS cell renderer (framework-agnostic alt to the `cell` snippet). Returns an
   // HTML string ({@html}) or a DOM Node (mounted via the action below).
+  // Component cells and the `cell` snippet take the row as a prop. A row patched
+  // in place (api.patchRows) keeps its identity, so each patch hands them a
+  // fresh view of it and they update in place, where they used to remount.
+  const rowProp = $derived(version ? rowView(row) : row);
+
   const rendered = $derived.by(() => {
     if (!col.render) return undefined;
     version;
@@ -505,7 +511,7 @@
     />
   {:else if col.component}
     {@const Renderer = col.component}
-    {#key version}<Renderer {value} {row} column={col} {text} />{/key}
+    <Renderer {value} row={rowProp} column={col} {text} />
   {:else if col.render}
     {#if typeof rendered === 'string'}
       <span class="bo-render">{@html rendered}</span>
@@ -513,7 +519,7 @@
       <span class="bo-render" use:renderNode={rendered}></span>
     {/if}
   {:else if col.type === 'custom'}
-    {#if cellSnippet}{#key version}{@render cellSnippet({ row, column: col, value })}{/key}{:else}{value ?? ''}{/if}
+    {#if cellSnippet}{@render cellSnippet({ row: rowProp, column: col, value })}{:else}{value ?? ''}{/if}
   {:else if col.type === 'sparkline'}
     <Sparkline {candles} />
   {:else if col.type === 'progress'}

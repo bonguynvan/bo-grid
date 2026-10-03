@@ -7,6 +7,16 @@ All notable changes to this project are documented here. Format follows
 
 ### Performance
 
+- **`component` cells and the `cell` snippet update in place under
+  `api.patchRows`.** They used to be rebuilt on every patch of their row.
+  Each patch now hands them a fresh view of the row: a forwarding proxy, so
+  no copy, with the same fields and a new identity. Their markup and
+  `$derived` values re-run while their DOM, focus and local state survive.
+  Price board with one component column, 30,000 events/s, motion allowed:
+  ~18.9 → ~14.8 ms of main-thread work per frame (script 5.3 → 3.7 ms), and
+  dropped frames in 3 s fell from ~20 to ~7. A component that read `row`
+  once at mount should read it reactively.
+
 - **`flashMotion: 'hold'` — flashes for busy boards at 3–4× less
   main-thread work.** The default `'fade'` is a CSS animation, restyled and
   repainted on every frame it runs; on a busy feed most visible cells are

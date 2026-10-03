@@ -211,6 +211,14 @@ that don't concern it. Off-screen rows pay nothing reactive and read current
 values when they scroll in. Footer totals, group subtotals and
 selection aggregates stay live.
 
+`component` cells and the `cell` snippet update **in place**. On each patch
+they receive a fresh view of the row: same fields, new identity. Their markup
+and `$derived` values re-run; the component is not rebuilt, so its DOM, focus
+and local state survive. Read `row` reactively, not once at mount. On the
+Price board, one component column measured ~22% less main-thread work per
+frame at 30,000 events/s than rebuilding it on every patch, and dropped frames
+fell from ~20 to ~7.
+
 Values that change in place never re-sort or re-filter the view by themselves —
 that would mean sorting on every tick. Call **`api.refresh()`** when the order
 should catch up, e.g. once a second on a "top movers" board:
