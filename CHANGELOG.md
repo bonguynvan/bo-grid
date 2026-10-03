@@ -5,6 +5,28 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **Flex columns no longer overflow in fixed-width mode.** With pinned
+  columns, column virtualization or too little room, a flex column without a
+  `width` started at a 160 px default and could only grow, so a narrow grid
+  scrolled sideways for nothing (a 300 px watchlist with a pinned symbol
+  column overflowed by 46 px). It now starts at its `minWidth` (64 without
+  one) and grows to fill; the switch to horizontal scrolling uses the same
+  base, so crossing it no longer makes columns jump. A grid whose columns
+  truly do not fit still scrolls by exactly the missing width.
+- **Column headers have an accessible name and a valid role.** Headers were
+  `<button role="columnheader">` — a role a button may not take — and took
+  their name from everything inside them, empty when the header text was.
+  They are now focusable `role="columnheader"` elements named by the header
+  text (the column key when empty), sorting on Enter or Space; the expand
+  column's header is named by the new `detailColumn` label. axe-core: from
+  199 `aria-allowed-role` and 1 `empty-table-header` violations on the demo's
+  headers to none.
+- **Enter / Space on a header only sorts**: the grid's own Enter / Space
+  (edit the focused cell, tick the focused row) no longer runs for a key
+  pressed on a header.
+
 ### Added
 
 - **`showChange` column option** — how far a value moved, not just which way:

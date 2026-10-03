@@ -11,8 +11,13 @@ the keyboard model, and the conformance notes from the 0.15 audit.
 - Rows are `role="row"` with 1-based `aria-rowindex`; cells are `role="gridcell"`
   with `aria-colindex` and `aria-selected`. Off-screen virtualization duplicates
   are `aria-hidden`.
-- Column headers are `role="columnheader"` with `aria-sort` (`ascending` /
-  `descending` / `none`) kept in sync with the sort state.
+- Column headers are focusable `role="columnheader"` elements with `aria-sort`
+  (`ascending` / `descending` / `none`) kept in sync with the sort state, and
+  an explicit name: the header text, or the column key when the header is
+  empty (the sort arrows and the filter / menu buttons inside are not part of
+  it). Enter or Space sorts, Shift adds a sort key. The master-detail expand
+  column's header is named by the `detailColumn` label. axe-core reports no
+  violations on the demo's headers.
 - Tree data uses the treegrid semantics: `aria-level`, `aria-expanded`, and
   `ArrowRight`/`ArrowLeft` to expand/collapse.
 - Floating menus are `role="menu"` / `role="menuitem"`; the filter and columns
@@ -78,7 +83,7 @@ The loading overlay is an `aria-live="polite"` region with `aria-busy`.
 
 ## Known limitations
 
-- **Headers are individually tabbable** (real `<button>`s) rather than a single
+- **Headers are individually tabbable** (each a focusable column header) rather than a single
   roving tab stop — fully keyboard-operable, just more tab stops on very wide
   grids. Use `Alt`+`↓` for per-column actions to avoid tabbing.
 - A formal screen-reader pass (NVDA / VoiceOver) and an automated axe-core sweep
