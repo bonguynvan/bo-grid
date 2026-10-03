@@ -1054,6 +1054,17 @@ await solo('priceboard', '.bo-grid .row', 'Price board example rendered no rows'
   // showChange: the +500 tick shows its size, in the column's own format (÷1000).
   const delta = after.querySelector('.bo-chg')?.textContent.trim();
   if (delta !== '▲0.50') fail(`Price board: showChange delta was "${delta}", expected "▲0.50"`);
+  // flashMotion 'hold' (the board's default): a static tint the grid's clock drops.
+  const priceCell = () => document.querySelector('.bo-grid .viewport .row').querySelector(`[aria-colindex="${ci}"]`);
+  if (!after.querySelector('.flash.held')) fail('Price board: hold flash is missing its held class');
+  await wait(450);
+  if (priceCell().querySelector('.flash')) fail('Price board: held flash did not drop after its window');
+  pb.setFlashMotion('fade');
+  pb.api().patchRows([[q.id, { mp: q.mp + 1000 }]]);
+  await wait(30);
+  const faded = priceCell().querySelector('.flash');
+  if (!faded || faded.classList.contains('held')) fail('Price board: fade flash did not play as a fade');
+  pb.setFlashMotion('hold');
   if (document.querySelectorAll('.bo-grid .head [role=columnheader]').length !== 24)
     fail('Price board: expected 24 columns');
   // api.flashCells: flashes the named cells of an on-screen row (the symbol is

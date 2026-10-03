@@ -162,6 +162,12 @@
   // "Top movers": sorted by change, re-sorted once a second while the feed runs
   // (api.refresh — values move in place, so the order only catches up on demand).
   let movers = $state(false);
+  // A busy board holds its flashes: a static tint, a fraction of a fade's cost.
+  let flashMotion = $state<'fade' | 'hold'>('hold');
+  function setFlashMotion(m: 'fade' | 'hold') {
+    flashMotion = m;
+    flushSync();
+  }
   let sort = $state<SortState[]>([]);
   function setMovers(on: boolean) {
     movers = on;
@@ -364,7 +370,7 @@
     };
   }
   $effect(() => {
-    (window as unknown as Record<string, unknown>).__priceBoard = { bench, benchScroll, benchSorted, benchLive, watching: () => watching, streamed: () => [...streamed], setMovers, setSize, setHeight, load, last: () => lastResult, rows: () => rows, api: () => api };
+    (window as unknown as Record<string, unknown>).__priceBoard = { bench, benchScroll, benchSorted, benchLive, watching: () => watching, streamed: () => [...streamed], setMovers, setFlashMotion, setSize, setHeight, load, last: () => lastResult, rows: () => rows, api: () => api };
   });
 </script>
 
@@ -390,6 +396,12 @@
       {#each [620, 1400, 2400] as v (v)}<option value={v}>{v}px</option>{/each}
     </select>
   </label>
+  <label>Flash
+    <select value={flashMotion} onchange={(e) => setFlashMotion(e.currentTarget.value as 'fade' | 'hold')}>
+      <option value="hold">hold (busy boards)</option>
+      <option value="fade">fade</option>
+    </select>
+  </label>
   <button class="pb-btn" class:on={movers} onclick={() => setMovers(!movers)}>Top movers</button>
   <button class="pb-btn" class:on={live} onclick={() => (live = !live)}>{live ? 'Stop feed' : 'Start feed'}</button>
   <button class="pb-btn" onclick={() => bench()}>Benchmark</button>
@@ -398,7 +410,7 @@
   {#if result}<span class="pb-stat">{result}</span>{/if}
 </div>
 <div class="gridwrap" bind:this={host}>
-  <Grid rows={rows as unknown as GridRow[]} {columns} height={gridHeight} theme={ui.grid} ariaLabel="Price board" {sort} onSortChange={(s) => (sort = s)} onReady={(a) => (api = a)} onViewportChange={subs.update} />
+  <Grid rows={rows as unknown as GridRow[]} {columns} height={gridHeight} theme={ui.grid} ariaLabel="Price board" {sort} {flashMotion} onSortChange={(s) => (sort = s)} onReady={(a) => (api = a)} onViewportChange={subs.update} />
 </div>
 
 <style>

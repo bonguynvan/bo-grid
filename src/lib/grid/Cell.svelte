@@ -25,7 +25,7 @@
   } from './column';
   import { heatColor } from './heatmap';
   import { toDateInput } from './date';
-  import { FlashTracker, resolveFlashMode, isFresh, mergeFlash, FLASH_MS, CHANGE_MS, type CellFlash, type ShownFlash } from './flash';
+  import { FlashTracker, resolveFlashMode, isFresh, mergeFlash, holdFlash, FLASH_MS, CHANGE_MS, type CellFlash, type ShownFlash } from './flash';
   import Sparkline from '../sparkline/Sparkline.svelte';
 
   let {
@@ -50,6 +50,7 @@
     fieldVersion = 0,
     flashTracker = null,
     cellFlash = null,
+    flashHold = null,
     colIndex,
     cellId,
     cellSnippet,
@@ -104,6 +105,8 @@
     flashTracker?: FlashTracker | null;
     /** The latest `api.flashCells` request covering this row, if any. */
     cellFlash?: CellFlash | null;
+    /** The grid's flash clock when flashes hold (`flashMotion: 'hold'`). */
+    flashHold?: { clock: () => number; until: (t: number) => void } | null;
     colIndex?: number;
     cellId?: string;
     cellSnippet?: Snippet<[{ row: GridRow; column: ColumnDef; value: unknown }]>;
@@ -281,7 +284,16 @@
     return { seq: state.seq, dir: state.dir, on: isFresh(state, now, flashMs), ms: flashMs, at: state.at };
   });
   // An `api.flashCells` request plays the same animation, on any value cell.
-  const flash = $derived(cellFlash ? mergeFlash(tick, cellFlash, col.key, flashMs, Date.now()) : tick);
+  const flash = $derived.by(() => {
+    const f = cellFlash ? mergeFlash(tick, cellFlash, col.key, flashMs, Date.now()) : tick;
+    if (!flashHold || !f?.on || f.at === 0) return f;
+    // Held: no animation ends the tint, so a cell holding one reads the grid's
+    // clock (subscribing only while it holds) and drops it once its window has passed.
+    const held = holdFlash(f, Math.max(Date.now(), flashHold.clock()));
+    if (held?.on) flashHold.until(held.at + held.ms);
+    return held;
+  });
+  const isHeld = $derived(!!flashHold && !!flash?.on && flash.at > 0);
   // showChange: the last change's size beside the value, held then faded by
   // CSS. Rendered only while fresh, so a row scrolling into view shows none.
   const changeOpts = $derived(col.showChange ? (col.showChange === true ? {} : col.showChange) : null);
@@ -296,15 +308,16 @@
     return { label, up: d > 0, alt: state.seq % 2 === 1 };
   });
   // The flash as one class string — a single DOM write per tick instead of a
-  // toggle per modifier. `alt` alternates keyframes to replay the animation.
-  const flashClass = $derived(
-    flash?.on
-      ? `flash${flash.seq % 2 === 1 ? ' alt' : ''}${flash.dir === 'up' ? ' up' : flash.dir === 'down' ? ' down' : ''}${col.flashColor === false ? ' keep' : ''}`
-      : '',
-  );
+  // toggle per modifier. `alt` alternates keyframes to replay the animation; a
+  // held tint has none to replay, so a repeat tick leaves its class untouched.
+  const flashClass = $derived.by(() => {
+    if (!flash?.on) return '';
+    const replay = isHeld ? ' held' : flash.seq % 2 === 1 ? ' alt' : '';
+    return `flash${replay}${flash.dir === 'up' ? ' up' : flash.dir === 'down' ? ' down' : ''}${col.flashColor === false ? ' keep' : ''}`;
+  });
   // Only emit the duration override when it differs from the stylesheet
   // default, so the common case adds no inline style at all.
-  const flashStyle = $derived(flash?.on && flash.ms !== FLASH_MS ? `--bo-flash-ms:${flash.ms}ms` : undefined);
+  const flashStyle = $derived(flash?.on && !isHeld && flash.ms !== FLASH_MS ? `--bo-flash-ms:${flash.ms}ms` : undefined);
 
   // JS cell renderer (framework-agnostic alt to the `cell` snippet). Returns an
   // HTML string ({@html}) or a DOM Node (mounted via the action below).
@@ -919,6 +932,13 @@
       background: transparent;
     }
   }
+  /* flashMotion: 'hold' — a static tint for the flash window, removed by the
+     grid's clock: restyled and repainted when it starts and when it drops,
+     where a fade is on every frame between. */
+  .flash.held {
+    animation: none;
+    background: color-mix(in srgb, var(--bo-flash-tint) 30%, transparent);
+  }
   /* showChange: the delta beside the value. It fades by animating its text
      colour, a repaint of a few glyphs — not opacity, which would give every
      fading cell its own compositor layer (measured ~9x a frame's work on a
@@ -971,6 +991,10 @@
     .flash,
     .flash.alt {
       animation: none;
+    }
+    /* Held tints follow the same rule: no flash under reduced motion. */
+    .flash.held {
+      background: none;
     }
     /* No fade: the delta shows, then simply disappears. */
     .bo-chg,

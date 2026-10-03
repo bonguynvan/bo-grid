@@ -17,7 +17,7 @@
   import { buildFlatRows, buildLazyGroupRows, activeGroupsAt, type VisualRow, type GroupNode, type LazyGroup } from './grouping';
   import { buildTreeRows } from './tree';
   import { moveIndex } from './reorder';
-  import { FlashTracker, type CellFlash } from './flash';
+  import { FlashTracker, FlashClock, type CellFlash } from './flash';
   import { parseClipboard, isSingleCell } from './clipboard';
   import { applyWidths, clampWidth, isResizable, type WidthMap } from './sizing';
   import {
@@ -88,6 +88,7 @@
     locale,
     onReady,
     onViewportChange,
+    flashMotion = 'fade',
     loading = false,
     rowMenu,
     detail,
@@ -242,6 +243,10 @@
         `createViewportSubscriptions(...).update` from `bo-grid/realtime` to
         stream just the symbols in view. */
     onViewportChange?: (view: ViewportRange) => void;
+    /** How a flash plays. `'fade'` (default): the tint fades out. `'hold'`: the
+        tint holds for the flash window, then drops — no CSS animation, so a busy
+        board restyles and repaints a flashing cell twice instead of every frame. */
+    flashMotion?: 'fade' | 'hold';
     /** Show a loading overlay over the grid (for consumer-driven async work in
         in-memory mode; source mode shows skeleton rows automatically). */
     loading?: boolean;
@@ -592,6 +597,16 @@
   // silently means nothing ever flashes. One stable instance per grid — an empty
   // Map until a column with derived flash actually observes through it.
   const flashTracker = new FlashTracker();
+
+  // `flashMotion: 'hold'`: a held flash is a static tint, not a CSS animation —
+  // a running animation is restyled and repainted every frame, which is most of
+  // a busy board's frame; a held tint changes only when it starts and when it
+  // drops. Cells holding a tint read `flashNow` and drop it once their window
+  // has passed; the clock ticks only while some cell holds one.
+  let flashNow = $state(0);
+  const holdClock = new FlashClock((now) => (flashNow = now));
+  const flashHold = { clock: () => flashNow, until: (t: number) => holdClock.until(t) };
+  $effect(() => () => holdClock.stop());
 
   // Pin-arrangement: pinned columns move to the edges and get sticky offsets.
   // When nothing is pinned this is a no-op and the grid stays fit-to-width.
@@ -2348,6 +2363,7 @@
                 cellSnippet={cell}
                 rowKey={getRowId(prow)}
                 {flashTracker}
+                flashHold={flashMotion === 'hold' ? flashHold : null}
                 cellFlash={cellFlashOf(getRowId(prow))}
                 pinned={pinned && layout.info[ci].pinned}
                 pinSide={layout.info[ci].side ?? 'left'}
@@ -2458,6 +2474,7 @@
                   version={rowVersions[getRowId(item.row)]}
                   fieldVersion={fieldVersions[fieldKey(getRowId(item.row), col.key)]}
                   {flashTracker}
+                  flashHold={flashMotion === 'hold' ? flashHold : null}
                   cellFlash={cellFlashOf(getRowId(item.row))}
                   selected={cellSelection && (m ? rectSelected(m.r0, m.r1, ci, m.c1) : sel.contains(item.vr, ci))}
                   focused={cellSelection && (m ? rectFocused(m.r0, m.r1, ci, m.c1) : sel.isFocus(item.vr, ci))}

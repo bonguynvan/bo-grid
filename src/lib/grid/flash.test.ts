@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { FlashTracker, resolveFlashMode, isFresh, mergeFlash, type CellFlash, type ShownFlash } from './flash';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { FlashTracker, FlashClock, resolveFlashMode, isFresh, mergeFlash, holdFlash, type CellFlash, type ShownFlash } from './flash';
 
 describe('resolveFlashMode', () => {
   it('maps legacy `true` to row-driven mode', () => {
@@ -215,5 +215,80 @@ describe('mergeFlash (api.flashCells)', () => {
   it('keeps the summed replay key once the request is over, so an always-on flash does not replay', () => {
     const shown = mergeFlash(tick({ at: 0 }), req({ at: 1000 }), 'px', 300, 5000);
     expect(shown).toMatchObject({ dir: 'up', seq: 5 });
+  });
+});
+
+describe('holdFlash (flashMotion: hold)', () => {
+  const shown = (over: Partial<ShownFlash> = {}): ShownFlash => ({ seq: 3, dir: 'up', on: true, ms: 300, at: 1000, ...over });
+
+  it('keeps a flash on inside its window', () => {
+    const f = shown();
+    expect(holdFlash(f, 1299)).toBe(f);
+  });
+
+  it('turns it off once the window has passed, keeping its replay key and tint', () => {
+    expect(holdFlash(shown(), 1300)).toEqual({ seq: 3, dir: 'up', on: false, ms: 300, at: 1000 });
+  });
+
+  it('leaves a flash with no start time alone (legacy row-driven flash keeps its fade)', () => {
+    const f = shown({ at: 0 });
+    expect(holdFlash(f, 99_999)).toBe(f);
+  });
+
+  it('passes through no flash and a flash that is already off', () => {
+    const off = shown({ on: false });
+    expect(holdFlash(null, 1000)).toBeNull();
+    expect(holdFlash(off, 5000)).toBe(off);
+  });
+});
+
+describe('FlashClock', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('does not tick until a held flash asks for it', () => {
+    vi.useFakeTimers();
+    const onTick = vi.fn();
+    const clock = new FlashClock(onTick, 50);
+    vi.advanceTimersByTime(500);
+    expect(onTick).not.toHaveBeenCalled();
+    expect(clock.running).toBe(false);
+  });
+
+  it('ticks while a flash holds, then stops once the latest deadline has passed', () => {
+    vi.useFakeTimers({ now: 0 });
+    const ticks: number[] = [];
+    const clock = new FlashClock((now) => ticks.push(now), 50);
+    clock.until(120);
+    clock.until(80); // an earlier deadline never shortens the run
+    expect(clock.running).toBe(true);
+    vi.advanceTimersByTime(400);
+    expect(ticks).toEqual([50, 100, 150]);
+    expect(clock.running).toBe(false);
+  });
+
+  it('runs one timer however many cells ask, and restarts for a later flash', () => {
+    vi.useFakeTimers({ now: 0 });
+    const onTick = vi.fn();
+    const clock = new FlashClock(onTick, 50);
+    for (let i = 0; i < 100; i++) clock.until(40);
+    vi.advanceTimersByTime(50);
+    expect(onTick).toHaveBeenCalledTimes(1);
+    expect(clock.running).toBe(false);
+    clock.until(Date.now() + 30);
+    vi.advanceTimersByTime(50);
+    expect(onTick).toHaveBeenCalledTimes(2);
+  });
+
+  it('stops on demand', () => {
+    vi.useFakeTimers({ now: 0 });
+    const onTick = vi.fn();
+    const clock = new FlashClock(onTick, 50);
+    clock.until(1000);
+    clock.stop();
+    vi.advanceTimersByTime(1000);
+    expect(onTick).not.toHaveBeenCalled();
+    expect(clock.running).toBe(false);
   });
 });

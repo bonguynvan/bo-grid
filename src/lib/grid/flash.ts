@@ -105,6 +105,53 @@ export function mergeFlash(
   return { seq, dir: req.dir, on: true, ms, at: req.at };
 }
 
+/** How often a held flash is checked for its end (ms): a hold ends up to this
+    much after its window. */
+export const HOLD_TICK_MS = 50;
+
+/** `flashMotion: 'hold'`: a flash whose window has passed by `now` is off.
+    A flash with no start time (the legacy row-driven one) keeps its fade. */
+export function holdFlash(f: ShownFlash | null, now: number): ShownFlash | null {
+  if (!f?.on || f.at === 0 || now - f.at < f.ms) return f;
+  return { ...f, on: false };
+}
+
+/**
+ * The clock a held flash is ended by. A held tint is static — no CSS animation
+ * ends it — so the cells holding one read this clock and drop the tint once
+ * their window has passed. One timer per grid, running only from the first
+ * `until(deadline)` to the latest deadline.
+ */
+export class FlashClock {
+  private timer: ReturnType<typeof setInterval> | undefined;
+  private deadline = 0;
+
+  constructor(
+    private readonly onTick: (now: number) => void,
+    private readonly tickMs: number = HOLD_TICK_MS,
+  ) {}
+
+  get running(): boolean {
+    return this.timer !== undefined;
+  }
+
+  /** Keep ticking until at least `t` (ms, Date.now() time). */
+  until(t: number): void {
+    if (t > this.deadline) this.deadline = t;
+    if (this.timer !== undefined) return;
+    this.timer = setInterval(() => {
+      const now = Date.now();
+      this.onTick(now);
+      if (now > this.deadline) this.stop();
+    }, this.tickMs);
+  }
+
+  stop(): void {
+    clearInterval(this.timer);
+    this.timer = undefined;
+  }
+}
+
 /** A value as a number for `delta`: numbers, and non-blank numeric strings. */
 function asNumber(v: unknown): number {
   if (typeof v === 'number') return v;

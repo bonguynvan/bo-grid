@@ -88,21 +88,51 @@ no animation frames); a traced headless Chrome run gives the same numbers plus a
 main-thread breakdown.
 
 Headless Chrome on an Intel UHD laptop GPU, the 620 px board on screen with
-the rest of the page hidden; each figure is the median of 5–12 interleaved,
-traced rounds. Renderer main thread per frame:
+the rest of the page hidden, motion allowed (`prefers-reduced-motion:
+no-preference` emulated — see below); each figure is the median of 10
+interleaved, traced rounds. Renderer main thread per frame, for the two
+`flashMotion` settings:
 
-| Step | 10,000 events/s | 30,000 events/s |
-| --- | --- | --- |
-| Script (tick stream, `patchRows`, Svelte) | ~1.5 ms | ~3.7 ms |
-| Paint (recording the changed cells) | ~2.0 ms | ~3.3 ms |
-| Layout + style + pre-paint | ~1.3 ms | ~2.6 ms |
-| Layerize (grouping paint into layers) | ~0.65 ms | ~0.8 ms |
-| **All main-thread tasks** | **~6 ms** | **~11.4 ms** |
+| Step | 10k events/s, fade | 10k, hold | 30k events/s, fade | 30k, hold |
+| --- | --- | --- | --- | --- |
+| Script (tick stream, `patchRows`, Svelte) | ~2.7 ms | ~1.6 ms | ~4.9 ms | ~3.1 ms |
+| Paint (recording the changed cells) | ~9.7 ms | ~2.6 ms | ~10.9 ms | ~3.3 ms |
+| Layout + style + pre-paint | ~10.6 ms | ~1.9 ms | ~15.4 ms | ~2.8 ms |
+| Layerize (grouping paint into layers) | ~1.3 ms | ~0.9 ms | ~1.0 ms | ~0.9 ms |
+| **All main-thread tasks** | **~30 ms** | **~9.4 ms** | **~40 ms** | **~12.3 ms** |
+| Frames dropped in a 3 s run | ~10 | 0 | ~5 | 0 |
 
-Both rates fit a 16.7 ms frame with room to spare; frames dropped in a 3 s run
-are in the single digits at 30,000 events/s.
+With held flashes both rates fit a 16.7 ms frame with room to spare. With
+fading flashes the board is over budget at either rate. With reduced motion
+there is no flash animation at all: ~8.2 and ~11 ms.
+
+**Measure with motion allowed.** Headless Chrome inherits the operating
+system's reduced-motion setting, and under reduced motion the grid plays no
+flash animation. An earlier version of this page was measured that way. It
+reported ~6 / ~11.4 ms and concluded that the flash style made no difference;
+both figures describe a board with no flash animation running. Emulate
+`prefers-reduced-motion: no-preference` (puppeteer:
+`page.emulateMediaFeatures`) and check `matchMedia` in the page.
 
 What changed it, and what did not:
+
+- **Held flashes (`flashMotion: 'hold'`): 3–4× less main-thread work.** A CSS
+  animation is restyled and repainted on every frame it runs. On a busy board
+  most visible flashing cells are mid-fade at any moment, which costs ~8–12 ms
+  of style and ~10 ms of paint per frame. A held tint is a static background:
+  restyled and repainted when it starts and when the grid's clock drops it,
+  and a repeat tick during the hold changes nothing. It lands within ~1 ms of
+  no flash at all (30k events/s: ~13.7 vs ~12.7 ms in a paired run).
+  Approaches that did not get there:
+  - Stepped timing (`steps(1, end)`, tint on then off): ~6% cheaper. Chrome
+    still services a running animation every frame, even when its value
+    holds.
+  - Holding the tint in the animation's delay phase
+    (`animation-fill-mode: backwards`): ~27–36% cheaper. Paint halves, but
+    restarting an animation on every tick still restyles.
+
+The entries below were measured before the harness emulated motion, so the
+fade was off in them. Their comparisons hold for the work around the flash:
 
 - **Value-only cells drop their own clip.** A cell that renders nothing but its
   value span used to clip twice — the cell and the span. The span already
@@ -112,10 +142,6 @@ What changed it, and what did not:
   Output is identical (no value spills its cell; long values still end in …).
   Cells with structured content (badges, links, sparklines, renderers, editors)
   keep their clip.
-- **Flash style: no effect.** A fading flash, a stepped one (tint on, then off)
-  and no flash measured the same (~8 / 7.4 / 9 ms at 10,000 events/s,
-  ~12.8 / 12.8 / 13.3 ms at 30,000). On a busy board a cell's text changes
-  every frame or two, so it repaints whether or not it is flashing.
 - **An opacity overlay instead of the background fade: ~9× slower** (73–82 ms
   a frame, 36–39 ms of it in Layerize). Every animating cell becomes a
   compositor layer.
@@ -200,3 +226,10 @@ pnpm bench       # hot-path timings
 pnpm size:lib    # bundle size report
 pnpm dev         # demo with the 1M-row Big data example + FPS meter
 ```
+
+Live frames: open the demo, scroll to the Price board, and run
+`await __priceBoard.benchLive({ seconds: 3, eventsPerSec: 30000 })` in the
+console (`__priceBoard.setFlashMotion('fade' | 'hold')` switches the flash).
+If your OS asks for reduced motion, that run has no flash animation. Check
+`matchMedia('(prefers-reduced-motion: reduce)').matches` first; in DevTools,
+Rendering → "Emulate CSS media feature prefers-reduced-motion" overrides it.
