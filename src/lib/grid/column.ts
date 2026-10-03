@@ -6,6 +6,15 @@ import type { FilterKind } from './filtering';
 
 export type Align = 'left' | 'right';
 
+/** `showChange` options: the delta's text and how long it stays. */
+export interface ShowChangeOptions {
+  /** Text for a change; gets the signed delta (new − old) and the row.
+      Default: `▲` / `▼` and the size in the column's own format. */
+  format?: (delta: number, row: GridRow) => string;
+  /** How long the delta shows, fade included, in ms. Default 1000. */
+  ms?: number;
+}
+
 export interface ColBase {
   /** Field on the row to read for this column's value. */
   key: string;
@@ -71,6 +80,16 @@ export interface ColBase {
       VN board (ceiling / floor / reference) — so the flash only lights the
       background. */
   flashColor?: boolean;
+  /** Show the size of each change beside the value for a moment — `▲0.15` in
+      the up colour, `▼` down — held, then faded. The delta is the last change,
+      written in the column's own format. Numeric values only; first paint and
+      rows scrolling into view show nothing. `{ format, ms }` sets the text
+      (`format(delta, row)` gets the signed change) and how long it shows
+      (default 1000 ms). In a narrow column the delta gives way first: the
+      value itself is never cut for it. Meant for one or two key columns (the
+      match price): each change runs a short animation, so a busy board with
+      it on every column pays real frame time. */
+  showChange?: boolean | ShowChangeOptions;
   /** Set false to disable header-click sorting on this column. */
   sortable?: boolean;
   /** Custom ascending comparator for this column's values (e.g. enum priority or

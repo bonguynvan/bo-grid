@@ -35,6 +35,7 @@ export type {
   CellTypeProps,
   CellEditorProps,
   BuiltinCellType,
+  ShowChangeOptions,
 } from './grid/column';
 export { resolveColumns } from './grid/celltype';
 export { sortRows } from './grid/column';

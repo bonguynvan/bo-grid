@@ -129,6 +129,32 @@ describe('FlashTracker', () => {
   });
 });
 
+describe('FlashTracker delta', () => {
+  it('reports the signed size of a numeric change', () => {
+    const t = new FlashTracker();
+    t.observe(1, 'px', 100, 'up-down', 0);
+    expect(t.observe(1, 'px', 101.5, 'up-down', 1).delta).toBe(1.5);
+    expect(t.observe(1, 'px', 99, 'up-down', 2).delta).toBe(-2.5);
+  });
+
+  it('reads numeric strings, and has no delta for anything else', () => {
+    const t = new FlashTracker();
+    t.observe(1, 'px', '10', 'change', 0);
+    expect(t.observe(1, 'px', '12', 'change', 1).delta).toBe(2);
+    t.observe(2, 'status', 'open', 'change', 0);
+    expect(t.observe(2, 'status', 'filled', 'change', 1).delta).toBeUndefined();
+    t.observe(3, 'px', '', 'change', 0);
+    expect(t.observe(3, 'px', 5, 'change', 1).delta).toBeUndefined();
+  });
+
+  it('has no delta on first sight, and keeps the last one while the value holds', () => {
+    const t = new FlashTracker();
+    expect(t.observe(1, 'px', 100, 'up-down', 0).delta).toBeUndefined();
+    t.observe(1, 'px', 103, 'up-down', 1);
+    expect(t.observe(1, 'px', 103, 'up-down', 2).delta).toBe(3);
+  });
+});
+
 describe('isFresh', () => {
   const state = { seq: 1, dir: 'up' as const, at: 1000, changed: true };
 

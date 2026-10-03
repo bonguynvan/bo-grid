@@ -39,7 +39,7 @@
   }
   const columns: ColumnDef[] = [
     { type: 'text', key: 'sym', header: 'Mã', flex: 1, width: 64, cellClass: tone, sortable: false },
-    { type: 'price', key: 'px', header: 'Giá', flex: 1.2, width: 74, format: k, cellClass: tone, flash: 'auto', flashColor: false, sortable: false },
+    { type: 'price', key: 'px', header: 'Giá', flex: 1.2, width: 74, format: k, cellClass: tone, flash: 'auto', flashColor: false, showChange: true, sortable: false },
     { type: 'number', key: 'chg', header: '+/-', flex: 1.1, width: 66, format: (v) => (Number(v) > 0 ? '+' : '') + k(v), cellClass: tone, sortable: false },
     { type: 'percent', key: 'pct', header: '%', flex: 1.1, width: 72, cellClass: tone, sortable: false },
     { type: 'volume', key: 'vol', header: 'KL', flex: 1.1, width: 72, flash: 'auto', sortable: false },

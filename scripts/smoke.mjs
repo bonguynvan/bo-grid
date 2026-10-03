@@ -1051,6 +1051,9 @@ await solo('priceboard', '.bo-grid .row', 'Price board example rendered no rows'
   if (changed !== 1) fail(`Price board: patchRows reported ${changed} changed rows, expected 1`);
   if (after.textContent.trim() === before) fail('Price board: patchRows did not repaint the on-screen cell');
   if (!after.querySelector('.flash')) fail('Price board: patched cell did not flash');
+  // showChange: the +500 tick shows its size, in the column's own format (÷1000).
+  const delta = after.querySelector('.bo-chg')?.textContent.trim();
+  if (delta !== '▲0.50') fail(`Price board: showChange delta was "${delta}", expected "▲0.50"`);
   if (document.querySelectorAll('.bo-grid .head [role=columnheader]').length !== 24)
     fail('Price board: expected 24 columns');
   // Top movers: sorted by change, values move in place, api.refresh() re-sorts.

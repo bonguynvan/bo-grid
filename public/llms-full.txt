@@ -212,6 +212,9 @@ interface ColBase {
   flash?: boolean | 'auto' | 'up-down' | 'change';   // §4.2 — use 'auto', not true
   flashMs?: number;           // derived-mode flash duration, default 300
   flashColor?: boolean;       // default true; false = flash background only, keep the column's text colour (price-limit tones)
+  showChange?: boolean | { format?: (delta: number, row: GridRow) => string; ms?: number };
+                              // '▲0.15' / '▼0.15' beside the value, held then faded (default 1000 ms), in the
+                              // column's format; gives way first in a narrow column; use on 1–2 key columns only
 
   sortable?: boolean;         // default true
   compare?: (a: unknown, b: unknown) => number;
