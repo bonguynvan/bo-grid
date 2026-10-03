@@ -238,6 +238,20 @@ number of symbols and fields per tick. Numbers and method are in
 that colour their own text (price-limit tones) so a flash lights only the
 background.
 
+On a busy board, set **`flashMotion="hold"`**. By default a flash fades out,
+and a CSS fade is restyled and repainted on every frame it runs. With a busy
+feed most visible cells are always mid-fade, and that becomes most of the
+frame. A held flash is a static tint for the flash window: repainted when it
+starts and when the grid's clock drops it, and a repeat tick during the hold
+changes nothing. On the Price board with motion allowed, it cuts the main
+thread's work per frame from ~30 to ~9 ms at 10,000 events/s and from ~40 to
+~12 ms at 30,000, with no dropped frames. That is within ~1 ms of no flash at
+all.
+
+```svelte
+<Grid {rows} {columns} flashMotion="hold" onReady={(a) => (api = a)} />
+```
+
 `showChange: true` shows how far a value moved, not just which way: `▲0.15`
 beside the price in the up colour (`▼` down), held, then faded over a second.
 The delta is written in the column's own format; `{ format, ms }` customises

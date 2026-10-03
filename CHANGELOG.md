@@ -5,7 +5,27 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Performance
+
+- **`flashMotion: 'hold'` — flashes for busy boards at 3–4× less
+  main-thread work.** The default `'fade'` is a CSS animation, restyled and
+  repainted on every frame it runs; on a busy feed most visible cells are
+  always mid-fade. A held flash is a static tint for the flash window. It is
+  restyled and repainted when it starts and when the grid's clock drops it,
+  and a repeat tick during the hold writes nothing. Price board, motion
+  allowed, main thread per frame: ~30 → ~9 ms at 10,000 events/s and ~40 →
+  ~12 ms at 30,000, with no dropped frames (within ~1 ms of no flash).
+  Legacy `flash: true` keeps its fade, and reduced motion still shows no
+  flash. The Price board demo holds by default and has a Flash switch.
+
 ### Fixed
+
+- **Benchmarks of the live board were measured without flash animation.**
+  Headless Chrome inherits the operating system's reduced-motion setting,
+  and under it the grid plays no flash. BENCHMARKS.md's live-frame figures
+  and its "flash style makes no difference" finding came from such runs.
+  The section is re-measured with motion allowed and says how to check.
+
 
 - **Flex columns no longer overflow in fixed-width mode.** With pinned
   columns, column virtualization or too little room, a flex column without a

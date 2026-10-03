@@ -75,7 +75,9 @@ text/`textDim` ≥ 4.5:1 against `bg`/`rowA`/`rowB`, and `selBorder` ≥ 3:1.
 ## Motion (2.3.3)
 
 All keyframe animations (cell flash, loading spinner, skeleton shimmer) are
-disabled under `@media (prefers-reduced-motion: reduce)`.
+disabled under `@media (prefers-reduced-motion: reduce)`. Held flashes
+(`flashMotion: 'hold'`) are static tints, not animations, but follow the same
+rule: no flash under reduced motion.
 
 ## Status messages (4.1.3)
 
