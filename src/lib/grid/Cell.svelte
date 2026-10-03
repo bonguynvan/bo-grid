@@ -25,7 +25,7 @@
   } from './column';
   import { heatColor } from './heatmap';
   import { toDateInput } from './date';
-  import { FlashTracker, resolveFlashMode, isFresh, FLASH_MS, CHANGE_MS } from './flash';
+  import { FlashTracker, resolveFlashMode, isFresh, mergeFlash, FLASH_MS, CHANGE_MS, type CellFlash, type ShownFlash } from './flash';
   import Sparkline from '../sparkline/Sparkline.svelte';
 
   let {
@@ -49,6 +49,7 @@
     version = 0,
     fieldVersion = 0,
     flashTracker = null,
+    cellFlash = null,
     colIndex,
     cellId,
     cellSnippet,
@@ -101,6 +102,8 @@
     fieldVersion?: number;
     /** The grid's flash tracker; null when no column uses derived flash. */
     flashTracker?: FlashTracker | null;
+    /** The latest `api.flashCells` request covering this row, if any. */
+    cellFlash?: CellFlash | null;
     colIndex?: number;
     cellId?: string;
     cellSnippet?: Snippet<[{ row: GridRow; column: ColumnDef; value: unknown }]>;
@@ -266,16 +269,19 @@
     const now = Date.now();
     return { state: flashTracker.observe(rowKey, col.key, value, mode, now), now };
   });
-  const flash = $derived.by(() => {
+  const flashMs = $derived(col.flashMs ?? FLASH_MS);
+  const tick = $derived.by((): ShownFlash | null => {
     if (flashMode === null) return null;
     if (flashMode === 'row') {
       rowTick;
-      return { seq: Number(row.flashSeq ?? 0), dir: row.flashDir ?? 'up', on: true };
+      return { seq: Number(row.flashSeq ?? 0), dir: row.flashDir ?? 'up', on: true, ms: flashMs, at: 0 };
     }
     if (!tracked) return null;
     const { state, now } = tracked;
-    return { seq: state.seq, dir: state.dir, on: isFresh(state, now, col.flashMs ?? FLASH_MS) };
+    return { seq: state.seq, dir: state.dir, on: isFresh(state, now, flashMs), ms: flashMs, at: state.at };
   });
+  // An `api.flashCells` request plays the same animation, on any value cell.
+  const flash = $derived(cellFlash ? mergeFlash(tick, cellFlash, col.key, flashMs, Date.now()) : tick);
   // showChange: the last change's size beside the value, held then faded by
   // CSS. Rendered only while fresh, so a row scrolling into view shows none.
   const changeOpts = $derived(col.showChange ? (col.showChange === true ? {} : col.showChange) : null);
@@ -296,6 +302,9 @@
       ? `flash${flash.seq % 2 === 1 ? ' alt' : ''}${flash.dir === 'up' ? ' up' : flash.dir === 'down' ? ' down' : ''}${col.flashColor === false ? ' keep' : ''}`
       : '',
   );
+  // Only emit the duration override when it differs from the stylesheet
+  // default, so the common case adds no inline style at all.
+  const flashStyle = $derived(flash?.on && flash.ms !== FLASH_MS ? `--bo-flash-ms:${flash.ms}ms` : undefined);
 
   // JS cell renderer (framework-agnostic alt to the `cell` snippet). Returns an
   // HTML string ({@html}) or a DOM Node (mounted via the action below).
@@ -347,12 +356,6 @@
   });
   // Colour-scale cell tint (applied as a cell background in cellStyle).
   const scaleBg = $derived(col.colorScale && cfRange ? colorScaleBackground(value, cfRange, col.colorScale) : null);
-
-  // Only emit the custom-property override when it differs from the stylesheet
-  // default, so the common case adds no inline style at all.
-  function flashDuration(c: ColumnDef): string | undefined {
-    return c.flashMs && c.flashMs !== FLASH_MS ? `--bo-flash-ms:${c.flashMs}ms` : undefined;
-  }
 
   // Stacking: pinned cells (2) cover scrolled content; a merged run (1, or 3
   // when pinned) paints over the rows below it, which are later in the DOM.
@@ -536,16 +539,15 @@
         onpointerdown={(e) => e.stopPropagation()}
         onclick={(e) => e.stopPropagation()}>{value ?? ''}</a>{:else}{value ?? ''}{/if}
   {:else if col.type === 'text'}
-    <strong>{text}</strong>{#if subField}<em>{subText}</em>{/if}
+    <strong class={flashClass || undefined} style={flashStyle}>{text}</strong>{#if subField}<em>{subText}</em>{/if}
   {:else if hasCf}
     {#if bar}<span class="bo-databar" style="left:{bar.left};width:{bar.width};background:{bar.color}"></span>{/if}
-    <span class="bo-cf-val {flashClass}" style={flash?.on ? flashDuration(col) : undefined}>
+    <span class="bo-cf-val {flashClass}" style={flashStyle}>
       {#if icon}<span class="bo-cf-icon" style="color:{icon.color}">{icon.icon}</span>{/if}{text}
     </span>
-  {:else if flash}
-    <span class="bo-cell-text {flashClass}" style={flash.on ? flashDuration(col) : undefined}>{text}</span>
   {:else}
-    <span class="bo-cell-text">{text}</span>
+    <!-- One branch with or without a flash, so a cell that starts flashing keeps its node. -->
+    <span class="bo-cell-text {flashClass}" style={flashStyle}>{text}</span>
   {/if}
   {#if change}<span
       class="bo-chg"

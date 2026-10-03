@@ -14,6 +14,18 @@ export interface ViewportRange {
   rows: GridRow[];
 }
 
+/** What `api.flashCells` flashes, and how. */
+export interface FlashCellsOptions {
+  /** Row ids; every rendered row when omitted. */
+  rows?: Iterable<string | number>;
+  /** Column keys; every column when omitted. */
+  columns?: Iterable<string>;
+  /** Tint like a rise or a fall; the neutral amber when omitted. */
+  dir?: 'up' | 'down';
+  /** Duration in ms; each column's `flashMs` (else 300) when omitted. */
+  ms?: number;
+}
+
 /** The handle `onReady` hands out: things that are actions, not state. */
 export interface GridApi {
   /** Scroll a row into view by its id. Returns false when the row is not in the
@@ -46,6 +58,12 @@ export interface GridApi {
       mean re-sorting on every tick — so call this when the order should catch
       up, e.g. every second on a "top movers" board. */
   refresh(): void;
+  /** Flash cells on demand — a fill, an alert, a row to notice — with the
+      tick animation, whether or not their values changed. Only rows on screen
+      flash. Value cells flash (numbers, text); cells that draw their own
+      content (badges, sparklines, components) do not. Returns how many rows
+      it flashed. */
+  flashCells(opts?: FlashCellsOptions): number;
 }
 
 /** The `scrollTop` that brings a row of `rowH` at `rowTop` into a viewport of

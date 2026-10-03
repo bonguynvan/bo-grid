@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { FlashTracker, resolveFlashMode, isFresh } from './flash';
+import { FlashTracker, resolveFlashMode, isFresh, mergeFlash, type CellFlash, type ShownFlash } from './flash';
 
 describe('resolveFlashMode', () => {
   it('maps legacy `true` to row-driven mode', () => {
@@ -168,5 +168,52 @@ describe('isFresh', () => {
 
   it('is never fresh for a cell that has not changed yet', () => {
     expect(isFresh({ seq: 0, dir: 'same', at: 0, changed: false }, 0, 300)).toBe(false);
+  });
+});
+
+describe('mergeFlash (api.flashCells)', () => {
+  const req = (over: Partial<CellFlash> = {}): CellFlash => ({ seq: 1, dir: 'same', at: 1000, columns: null, ...over });
+  const tick = (over: Partial<ShownFlash> = {}): ShownFlash => ({ seq: 4, dir: 'up', on: true, ms: 300, at: 900, ...over });
+
+  it('leaves the cell’s own flash alone without a request', () => {
+    const own = tick();
+    expect(mergeFlash(own, null, 'px', 300, 1000)).toBe(own);
+    expect(mergeFlash(null, undefined, 'px', 300, 1000)).toBeNull();
+  });
+
+  it('ignores a request for other columns', () => {
+    const own = tick();
+    expect(mergeFlash(own, req({ columns: new Set(['qty']) }), 'px', 300, 1000)).toBe(own);
+  });
+
+  it('flashes a cell that has no flash of its own, over the column’s duration', () => {
+    expect(mergeFlash(null, req({ dir: 'down' }), 'px', 300, 1100)).toEqual({ seq: 1, dir: 'down', on: true, ms: 300, at: 1000 });
+  });
+
+  it('covers every column when the request names none', () => {
+    expect(mergeFlash(null, req(), 'anything', 300, 1000)?.on).toBe(true);
+  });
+
+  it('uses the request’s own duration, and stops showing once it has passed', () => {
+    expect(mergeFlash(null, req({ ms: 800 }), 'px', 300, 1700)).toMatchObject({ on: true, ms: 800 });
+    expect(mergeFlash(null, req({ ms: 800 }), 'px', 300, 1800)).toBeNull();
+  });
+
+  it('takes over a running tick with its own tint, and replays the animation', () => {
+    const own = tick({ at: 900 });
+    const shown = mergeFlash(own, req({ at: 1000 }), 'px', 300, 1000);
+    expect(shown).toMatchObject({ on: true, dir: 'same' });
+    // The replay key moves with either source, so its parity flips.
+    expect((shown?.seq ?? 0) % 2).not.toBe(own.seq % 2);
+  });
+
+  it('lets a newer tick show over an older request', () => {
+    const shown = mergeFlash(tick({ at: 1100, dir: 'down' }), req({ at: 1000 }), 'px', 300, 1100);
+    expect(shown).toMatchObject({ on: true, dir: 'down', seq: 5 });
+  });
+
+  it('keeps the summed replay key once the request is over, so an always-on flash does not replay', () => {
+    const shown = mergeFlash(tick({ at: 0 }), req({ at: 1000 }), 'px', 300, 5000);
+    expect(shown).toMatchObject({ dir: 'up', seq: 5 });
   });
 });

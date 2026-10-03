@@ -63,6 +63,48 @@ export function isFresh(state: FlashState, now: number, ms: number = FLASH_MS): 
   return state.seq > 0 && now - state.at < ms;
 }
 
+/** The flash a cell shows: its replay key (`seq` parity picks the keyframes),
+    tint, whether it is playing, its duration, and when it started. */
+export interface ShownFlash {
+  seq: number;
+  dir: FlashDir;
+  on: boolean;
+  ms: number;
+  at: number;
+}
+
+/** One `api.flashCells` request, as the grid hands it to a row's cells. */
+export interface CellFlash {
+  /** Counts the row's requests, so a repeat replays the animation. */
+  seq: number;
+  dir: FlashDir;
+  at: number;
+  /** Duration; each column's own (`flashMs`, else 300 ms) when unset. */
+  ms?: number;
+  /** The column keys it covers; every column when null. */
+  columns: ReadonlySet<string> | null;
+}
+
+/**
+ * A cell's own flash (a tick) merged with an `api.flashCells` request. The
+ * newer of the two shows while it is fresh. `seq` is the sum of both, so
+ * either one moving flips its parity and replays the animation — and a flash
+ * that is always on (`flash: true`) keeps the same key once a request is over.
+ */
+export function mergeFlash(
+  own: ShownFlash | null,
+  req: CellFlash | null | undefined,
+  colKey: string,
+  colMs: number,
+  now: number,
+): ShownFlash | null {
+  if (!req || (req.columns && !req.columns.has(colKey))) return own;
+  const seq = (own?.seq ?? 0) + req.seq;
+  const ms = req.ms ?? colMs;
+  if (now - req.at >= ms || (own?.on && own.at > req.at)) return own ? { ...own, seq } : null;
+  return { seq, dir: req.dir, on: true, ms, at: req.at };
+}
+
 /** A value as a number for `delta`: numbers, and non-blank numeric strings. */
 function asNumber(v: unknown): number {
   if (typeof v === 'number') return v;

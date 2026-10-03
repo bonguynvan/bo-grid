@@ -29,6 +29,18 @@ All notable changes to this project are documented here. Format follows
 
 ### Added
 
+- **`api.flashCells({ rows?, columns?, dir?, ms? })`** — flash cells on demand
+  (a block trade, an order filling, an alert) with the tick animation, whether
+  or not their values changed. Every rendered row and every column by default;
+  `dir` tints like a rise or fall, `ms` overrides each column's `flashMs`.
+  Only rows on screen flash; returns how many rows it flashed. A tick during
+  the flash takes over with its own direction, a repeat call replays it.
+  Value cells flash, including `text` columns, which now also show their own
+  `flash` setting; cells that draw their own content do not. The Price board
+  demo flashes the symbol of each block trade. No measurable cost on the live
+  board when unused (traced A/B against the previous build, with and without
+  motion).
+
 - **`showChange` column option** — how far a value moved, not just which way:
   `▲0.15` beside the price in the up colour (`▼` down), held, then faded over a
   second, in the column's own format (`{ format, ms }` to customise). The delta

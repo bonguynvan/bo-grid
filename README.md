@@ -249,6 +249,26 @@ board, one such column measured the same as none, while turning it on for all
 13 flashing columns at 30,000 events/s more than doubled the main thread's
 work per frame.
 
+#### Flash on demand — `api.flashCells`
+
+Some events don't change a value you show: a block trade, your order filling,
+an alert level crossed. `api.flashCells` plays the tick flash on the cells you
+name, changed or not:
+
+```ts
+api.flashCells({ rows: [fill.symbol] });                        // the whole row, amber
+api.flashCells({ rows: ids, columns: ['symbol'], ms: 1200 });  // just the symbol, longer
+api.flashCells({ rows: [id], columns: ['last'], dir: 'up' });   // tinted like a rise
+```
+
+`rows` are row ids (every rendered row when omitted), `columns` are column keys
+(every column when omitted), `dir: 'up' | 'down'` tints like a rise or fall,
+and `ms` overrides each column's `flashMs`. Only rows on screen flash — like a
+tick, a flash off screen is never seen — and the call returns how many rows it
+flashed. Value cells flash (numbers and text); cells that draw their own
+content (badges, sparklines, components) don't. A tick that lands during the
+flash takes over with its own direction, and a repeat call replays it.
+
 #### Stream only what's on screen — `onViewportChange`
 
 A board of 1,600 symbols shows 30–80 at a time. `onViewportChange` reports the

@@ -96,9 +96,21 @@
     },
   });
   $effect(() => () => subs.clear());
+  // A block trade (a fill of 4,950+ shares) flashes its symbol: api.flashCells
+  // marks an event the values alone don't show.
+  const BLOCK = 4950;
+  function flagBlocks(b: Array<[number, Partial<Quote>]>) {
+    const ids: number[] = [];
+    for (const [id, p] of b) if ((p.mv ?? 0) >= BLOCK) ids.push(id);
+    if (ids.length > 0) api?.flashCells({ rows: ids, columns: ['symbol'], ms: 1200 });
+  }
   const stream = createTickStream<number, Partial<Quote>>({
     cap: 2000,
-    apply: (b) => (mode === 'patch' ? api?.patchRows(b) : applyPatches(index, b)),
+    apply: (b) => {
+      if (mode === 'patch') api?.patchRows(b);
+      else applyPatches(index, b);
+      flagBlocks(b);
+    },
   });
   function load(nextMode: 'patch' | 'state', size: number) {
     stream.stop({ discard: true });

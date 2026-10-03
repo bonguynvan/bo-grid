@@ -17,7 +17,7 @@
   import { buildFlatRows, buildLazyGroupRows, activeGroupsAt, type VisualRow, type GroupNode, type LazyGroup } from './grouping';
   import { buildTreeRows } from './tree';
   import { moveIndex } from './reorder';
-  import { FlashTracker } from './flash';
+  import { FlashTracker, type CellFlash } from './flash';
   import { parseClipboard, isSingleCell } from './clipboard';
   import { applyWidths, clampWidth, isResizable, type WidthMap } from './sizing';
   import {
@@ -40,7 +40,7 @@
   import { resolveColumns, type DefaultColumn } from './celltype';
   import { parseCellInput } from './edit';
   import { patchRowsInPlace } from './patch';
-  import { scrollTopFor, type GridApi, type ScrollAlign, type ViewportRange } from './api';
+  import { scrollTopFor, type FlashCellsOptions, type GridApi, type ScrollAlign, type ViewportRange } from './api';
   import { buildMergePlan, combinedFlex, type MergePlan, type SpanRun } from './merge';
   import { GRID_STATE_VERSION, reconcileState, type GridState } from './state';
 
@@ -1719,6 +1719,33 @@
     return changed.size;
   }
 
+  // ---- On-demand flash (`api.flashCells`) ------------------------------------
+  // Each rendered row a request covers keeps it (the latest) in a plain map; a
+  // per-row counter, read like rowVersions, wakes that row's cells alone. Rows
+  // off screen are skipped, as a tick off screen never shows either.
+  const rowFlashSeq: Record<string, number> = $state({});
+  const rowFlashes = new Map<string | number, CellFlash>();
+  const cellFlashOf = (key: string | number): CellFlash | null => (rowFlashSeq[key] ? (rowFlashes.get(key) ?? null) : null);
+
+  function flashCells(opts: FlashCellsOptions = {}): number {
+    const wanted = opts.rows ? new Set(opts.rows) : null;
+    const columns = opts.columns ? new Set(opts.columns) : null;
+    const at = Date.now();
+    // A pinned row may share its id with a data row: one request per id.
+    const done = new Set<string | number>();
+    const flashRow = (row: GridRow) => {
+      const key = getRowId(row);
+      if ((wanted && !wanted.has(key)) || done.has(key)) return;
+      done.add(key);
+      const seq = (rowFlashes.get(key)?.seq ?? 0) + 1;
+      rowFlashes.set(key, { seq, dir: opts.dir ?? 'same', at, ms: opts.ms, columns });
+      rowFlashSeq[key] = seq;
+    };
+    for (const row of pinnedRows) flashRow(row);
+    for (const item of renderItems) if (item.kind === 'data') flashRow(item.row);
+    return done.size;
+  }
+
   // ---- Imperative handle (`onReady`) ----------------------------------------
   function dataRowIndex(key: string | number): number {
     return flat.findIndex((v) => v.kind === 'data' && getRowId(v.row) === key);
@@ -1792,7 +1819,7 @@
 
   $effect(() => {
     untrack(() =>
-      onReady?.({ scrollToRow, focusCell, getSelectedRows, autosizeColumns, exportCSV: exportViewCSV, getState, applyState, patchRows, refresh }),
+      onReady?.({ scrollToRow, focusCell, getSelectedRows, autosizeColumns, exportCSV: exportViewCSV, getState, applyState, patchRows, refresh, flashCells }),
     );
   });
 
@@ -2321,6 +2348,7 @@
                 cellSnippet={cell}
                 rowKey={getRowId(prow)}
                 {flashTracker}
+                cellFlash={cellFlashOf(getRowId(prow))}
                 pinned={pinned && layout.info[ci].pinned}
                 pinSide={layout.info[ci].side ?? 'left'}
                 pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right + bodyPinFix : layout.info[ci].left + leadPx}
@@ -2430,6 +2458,7 @@
                   version={rowVersions[getRowId(item.row)]}
                   fieldVersion={fieldVersions[fieldKey(getRowId(item.row), col.key)]}
                   {flashTracker}
+                  cellFlash={cellFlashOf(getRowId(item.row))}
                   selected={cellSelection && (m ? rectSelected(m.r0, m.r1, ci, m.c1) : sel.contains(item.vr, ci))}
                   focused={cellSelection && (m ? rectFocused(m.r0, m.r1, ci, m.c1) : sel.isFocus(item.vr, ci))}
                   span={m?.span}
