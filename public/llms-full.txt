@@ -124,6 +124,7 @@ interface GridProps {
   rowClass?: (row: GridRow) => string | undefined;  // conditional row class
   pinnedRows?: GridRow[];              // rows pinned above the scroll
   rowPinning?: boolean;                // users pin rows from the row menu (right-click), default false
+  findBar?: boolean;                   // Ctrl/Cmd+F in the grid opens a find bar (displayed text, Enter/Shift+Enter), default false
   onRowPinChange?: (ids: rowId[]) => void;
   emptyMessage?: string;               // default labels.noRows
   loading?: boolean;
@@ -190,6 +191,7 @@ interface GridApi {
   flashCells(opts?: { rows?: rowId[]; columns?: string[]; dir?: 'up' | 'down'; ms?: number }): number;  // flash on-screen cells on demand (a fill, an alert), changed or not; returns rows flashed
   pinRow(id: rowId, pinned?: boolean): boolean;  // pin above the scroll (row stays in the body); false = unknown id
   getPinnedRowIds(): rowId[];
+  openFind(query?: string): void;      // open the find bar (findBar), optionally searching at once
 }
 ```
 Row keys are whatever `getRowId` returns (default `row.id`). For a busy feed

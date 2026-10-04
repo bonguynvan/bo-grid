@@ -52,6 +52,14 @@ export interface GridLabels {
   rowNumber: string;
   /** Row menu item that pins the row above the scroll (`rowPinning`). */
   pinRow: string;
+  /** Find bar (`findBar`): the input's name and placeholder. */
+  find: string;
+  findNext: string;
+  findPrevious: string;
+  findClose: string;
+  /** "3 of 12": the current match and how many there are. */
+  findCount: (index: number, total: number) => string;
+  findNone: string;
   toggleChildren: string;
   dragToReorder: string;
   fill: string;
@@ -117,6 +125,12 @@ export const DEFAULT_LABELS: GridLabels = {
   detailColumn: 'Details',
   rowNumber: 'Row',
   pinRow: 'Pin to top',
+  find: 'Find in grid',
+  findNext: 'Next match',
+  findPrevious: 'Previous match',
+  findClose: 'Close find',
+  findCount: (i, n) => `${i} of ${n}`,
+  findNone: 'No matches',
   toggleChildren: 'Toggle children',
   dragToReorder: 'Drag to reorder row',
   fill: 'Fill',
