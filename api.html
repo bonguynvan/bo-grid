@@ -455,7 +455,7 @@ rows = tape.toArray();</code></pre>
         <thead><tr><th>Export</th><th>Signature</th><th>Purpose</th></tr></thead>
         <tbody>
           <tr><td>resolveTone</td><td><span class="type">(value, bands, opts?) =&gt; Tone</span></td><td>Classify a value against <code>{'{'} ref, ceiling?, floor? {'}'}</code> → <code>'ceiling' | 'floor' | 'ref' | 'up' | 'down'</code>. <code>ceiling</code>/<code>floor</code> are optional — omit for plain up/down/ref. <code>opts.epsilon</code> absorbs float noise at a boundary (default 1e-6).</td></tr>
-          <tr><td>toneColor</td><td><span class="type">(tone, colors?) =&gt; string</span></td><td>Tone → CSS colour. Default palette (<code>defaultToneColors</code>): purple ceiling, cyan floor, yellow ref, green up, red down — pass a partial override for your own.</td></tr>
+          <tr><td>toneColor</td><td><span class="type">(tone, colors?) =&gt; string</span></td><td>Tone → CSS colour: purple ceiling, cyan floor, yellow ref, green up, red down. Uses <code>darkToneColors</code> by default; pass <code>lightToneColors</code> on a light theme, or a partial object for your own tones. Both palettes keep every tone at WCAG AA (4.5:1) on the grid's presets for their side.</td></tr>
         </tbody>
       </table>
       <h3>Vietnam bands <span style="font-weight:400;color:var(--dim)">(HOSE/HNX/UPCOM)</span></h3>

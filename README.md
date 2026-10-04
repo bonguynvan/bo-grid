@@ -338,6 +338,11 @@ const color = toneColor(tone);                // CSS colour for that tone
 const text = fmtTradingPrice(row.price, vnTickSize(row.price, 'HOSE')); // "68,500", not "68500.00"
 ```
 
+`toneColor` uses `darkToneColors` unless told otherwise. On a light theme, pass
+`lightToneColors` (`toneColor(tone, lightToneColors)`). Each palette keeps
+every tone at WCAG AA (4.5:1) on the grid's presets for its side, and a partial
+object overrides single tones.
+
 ```ts
 import { sessionStateAt, sessionLabel, VN_HOSE_SCHEDULE } from 'bo-grid/trading';
 

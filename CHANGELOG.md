@@ -30,6 +30,23 @@ All notable changes to this project are documented here. Format follows
 
 ### Fixed
 
+- **`bo-grid/trading`'s tone colours meet WCAG AA.** The single default
+  palette sat between dark and light, failing on both: the ceiling tone was
+  3.85:1 on dark themes, and yellow and cyan were near-unreadable on white.
+  - It is now two palettes, `darkToneColors` and `lightToneColors`, each at
+    4.5:1 or better on every surface of the grid's presets for its side.
+  - `defaultToneColors` (what `toneColor` falls back to) is the dark one,
+    matching the grid's default theme, so the defaults are brighter than
+    before. Pass `lightToneColors` on a light theme.
+  - The VN board demo follows the page theme.
+- **Badges meet WCAG AA in every preset.** A badge's text was its tone
+  colour on a pill tinted with the same tone, which went as low as 3.4:1
+  (amber on the light preset).
+  - The text is now the tone mixed 60 / 40 with the theme's text colour. That
+    makes it darker on light themes and lighter on dark ones, while keeping
+    its hue: 4.9:1 or better everywhere, checked per preset in `theme.test.ts`.
+  - axe on the demo, both page themes: no colour-contrast violations left.
+
 - **Pinned rows sit above the body instead of on top of it.** The shared row
   rule positioned them absolutely, so the pinned area was 0 px tall.
   - The first data row hid under the pinned rows.
