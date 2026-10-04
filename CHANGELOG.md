@@ -30,6 +30,21 @@ All notable changes to this project are documented here. Format follows
 
 ### Fixed
 
+- **The grid's ARIA structure passes axe-core.** Across every grid in the
+  demo, 34 `aria-required-children`, 9 `aria-conditional-attr` and 1
+  `aria-hidden-focus` violations went to none.
+  - Every control in a row now sits in a `gridcell`: the expand and checkbox
+    columns, the filter row's inputs, the footer's totals, and a group row's
+    toggle and subtotals.
+  - A grid with tree data is a `treegrid`, where `aria-level` and
+    `aria-expanded` belong.
+  - The sticky group header copied over the scroll keeps its toggle out of
+    the tab order.
+- **Space and Enter typed in the quick filter no longer tick or edit the
+  focused row.** The toolbar was inside the element that handles the grid's
+  keys, so its keystrokes reached the grid's shortcuts.
+- **Group subtotals meet 4.5:1 contrast.** They had used the dim text colour
+  (4.2:1 on the group row in the TradeCanvas theme).
 - **Benchmarks of the live board were measured without flash animation.**
   Headless Chrome inherits the operating system's reduced-motion setting,
   and under it the grid plays no flash. BENCHMARKS.md's live-frame figures
@@ -112,6 +127,16 @@ All notable changes to this project are documented here. Format follows
   update. The Price board demo shows how many of its symbols stream.
 
 ### Changed
+
+- **`role="grid"` moved from the `.bo-grid` box to an inner element.**
+  - The grid's focus, `aria-*` attributes and keyboard handling now live on
+    `.bo-grid > [role="grid"]`, which holds only the header, filter row and
+    rows.
+  - The toolbar, aggregation bar, pager, menus and panels stay in the
+    `.bo-grid` box beside it.
+  - Styling hooks on `.bo-grid` are unchanged. A test that read `role`,
+    `aria-label` or `aria-activedescendant` off `.bo-grid` itself should query
+    `[role="grid"]` inside it.
 
 - **The demo site and API page have a favicon**: the bo-grid mark (a grid with
   one flashing cell) on an ink tile, as SVG with a 32 px PNG fallback and an

@@ -2188,20 +2188,7 @@
 </script>
 
 <!-- `bo-grid` is an unscoped public class: a stable hook for consumer overrides. -->
-<div
-  class="bo-grid grid"
-  role="grid"
-  tabindex="0"
-  id={gid}
-  aria-label={ariaLabel}
-  aria-rowcount={rowCount + 1}
-  aria-colcount={cols.length + leadCols}
-  aria-multiselectable="true"
-  aria-activedescendant={activeId}
-  style="{themeStyle}{heightIsPx ? '' : `;height:${height};min-height:0`}"
-  bind:this={gridEl}
-  onkeydown={onKeydown}
->
+<div class="bo-grid grid" style="{themeStyle}{heightIsPx ? '' : `;height:${height};min-height:0`}">
   {#if quickFilter || columnsPanel}
     <div class="bo-toolbar">
       {#if quickFilter}
@@ -2218,6 +2205,23 @@
       {/if}
     </div>
   {/if}
+  <!-- The grid proper: only rows inside it. The toolbar, aggregation bar,
+       pager, menus and panels around it are not part of the grid. Its role is
+       grid or treegrid, both interactive; the check cannot read a dynamic role. -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <div
+    class="gridmain"
+    role={treeData ? 'treegrid' : 'grid'}
+    tabindex="0"
+    id={gid}
+    aria-label={ariaLabel}
+    aria-rowcount={rowCount + 1}
+    aria-colcount={cols.length + leadCols}
+    aria-multiselectable="true"
+    aria-activedescendant={activeId}
+    bind:this={gridEl}
+    onkeydown={onKeydown}
+  >
   {#if headerGroups}
     <div class="head-groups" aria-hidden="true" bind:this={groupHeadEl} style={headRowStyle}>
       {#if rowNumbers}<span class="numcell" style={numCellStyle(true)}></span>{/if}
@@ -2387,7 +2391,7 @@
       {#if expandable}<span class="expandcell" style={expandCellStyle(false)}></span>{/if}
       {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
       {#each cols as col, ci (ci)}
-        <span class="fr-cell" style={cellWidthStyle(ci, true)}>
+        <span class="fr-cell" role="gridcell" aria-colindex={ci + 1 + leadCols} style={cellWidthStyle(ci, true)}>
           {#if col.type !== 'sparkline' && col.type !== 'custom'}
             <input
               class="fr-input"
@@ -2461,7 +2465,7 @@
       <div class="sticky">
         {#each stickyGroups as g (g.depth)}
           <div class="sticky-row" aria-hidden="true" style="height:{baseH}px">
-            <GroupRow version={dataVersion} group={g} columns={cols} onToggle={toggleGroup} />
+            <GroupRow version={dataVersion} group={g} columns={cols} onToggle={toggleGroup} colStart={1 + leadCols} focusable={false} />
           </div>
         {/each}
       </div>
@@ -2474,7 +2478,7 @@
             {#if rowNumbers}<span class="numcell" aria-hidden="true" style={numCellStyle(false)}></span>{/if}
             {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
             {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
-            <GroupRow version={dataVersion} group={item.group} columns={cols} onToggle={lazyGrouped ? toggleLazyGroup : toggleGroup} rowIndex={item.vr + 2} />
+            <GroupRow version={dataVersion} group={item.group} columns={cols} onToggle={lazyGrouped ? toggleLazyGroup : toggleGroup} rowIndex={item.vr + 2} colStart={1 + leadCols} />
           </div>
         {:else if item.kind === 'skeleton'}
           <div class="row skeleton" role="row" aria-rowindex={item.vr + 2} aria-hidden="true" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
@@ -2500,7 +2504,7 @@
           <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:rowactive={selectedRowId != null && getRowId(item.row) === selectedRowId} class:clickable={!!onRowClick} class:droptarget={reorderable && dropRowVr === item.vr && dragRowVr !== item.vr} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : undefined} aria-level={treeData ? (item.depth ?? 0) + 1 : undefined} aria-expanded={treeData && item.hasChildren ? isExpanded(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{expandable ? baseH : hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)} oncontextmenu={(e) => openRowMenu(item.row, e)} ondragover={reorderable ? (e) => { if (dragRowVr < 0) return; e.preventDefault(); dropRowVr = item.vr; } : undefined} ondrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(); } : undefined}>
             {#if rowNumbers}<span class="numcell" role="rowheader" aria-colindex={1} style={numCellStyle(false)}>{rowNumberAt(item.vr)}</span>{/if}
             {#if expandable}
-              <span class="expandcell" style={expandCellStyle(false)}>
+              <span class="expandcell" role="gridcell" aria-colindex={1 + numOffset} style={expandCellStyle(false)}>
                 <button
                   class="expand-toggle"
                   type="button"
@@ -2517,7 +2521,7 @@
               </span>
             {/if}
             {#if rowSelection}
-              <span class="selcell" style={selCellStyle(false)}>
+              <span class="selcell" role="gridcell" aria-colindex={1 + numOffset + expOffset} style={selCellStyle(false)}>
                 <input
                   type="checkbox"
                   class="rowcheck"
@@ -2613,12 +2617,13 @@
         {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
         {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
         {#each cols as col, ci (ci)}
-          <span class="fcell" class:right={isNumeric(col)} style={cellWidthStyle(ci)}>
+          <span class="fcell" role="gridcell" aria-colindex={ci + 1 + leadCols} class:right={isNumeric(col)} style={cellWidthStyle(ci)}>
             {ci === 0 && !footerCells[ci] ? L.total : footerCells[ci]}
           </span>
         {/each}
       </div>
     {/if}
+  </div>
   </div>
 
   <AggregationBar result={agg} kinds={aggregations} {locale} />
@@ -2723,9 +2728,15 @@
     border: 0.5px solid var(--bo-border);
     border-radius: var(--bo-radius);
     overflow: hidden;
+  }
+  .gridmain {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
     outline: none;
   }
-  .grid:focus-visible {
+  .grid:has(> .gridmain:focus-visible) {
     border-color: var(--bo-sel-border);
   }
   /* Styled floating tooltip (opt-in via column `tooltip`). Fixed-positioned so

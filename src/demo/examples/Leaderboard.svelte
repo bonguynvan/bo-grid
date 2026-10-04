@@ -105,7 +105,7 @@
   .rank {
     font-family: var(--mono);
     font-variant-numeric: tabular-nums;
-    color: var(--text-dim);
+    color: var(--text-2);
   }
   .rank.podium {
     font-size: 15px;
