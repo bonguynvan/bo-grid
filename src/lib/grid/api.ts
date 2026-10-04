@@ -70,6 +70,8 @@ export interface GridApi {
   pinRow(key: string | number, pinned?: boolean): boolean;
   /** Ids of the rows pinned at runtime, in pin order. */
   getPinnedRowIds(): (string | number)[];
+  /** Open the find bar (`findBar`), optionally searching for `query` at once. */
+  openFind(query?: string): void;
 }
 
 /** The `scrollTop` that brings a row of `rowH` at `rowTop` into a viewport of

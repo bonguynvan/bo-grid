@@ -25,6 +25,10 @@ the keyboard model, and the conformance notes from the 0.15 audit.
   it). Enter or Space sorts, Shift adds a sort key. The master-detail expand
   column's header is named by the `detailColumn` label. axe-core reports no
   violations on the demo's headers.
+- The find bar (`findBar`) is a `role="search"` region beside the grid. Its
+  input and buttons are labelled, the match count ("3 of 12") is announced
+  through `aria-live`, Escape returns focus to the grid, and each match
+  becomes the grid's active cell.
 - The row-number column (`rowNumbers`) is made of `role="rowheader"` cells, so
   a screen reader announces the row's number as focus moves along it. Its
   header is named by the `rowNumber` label.

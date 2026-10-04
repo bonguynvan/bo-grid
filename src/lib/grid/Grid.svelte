@@ -93,6 +93,7 @@
     columnHover = false,
     rowNumbers = false,
     rowPinning = false,
+    findBar = false,
     onRowPinChange,
     loading = false,
     rowMenu,
@@ -264,6 +265,12 @@
         "Pin to top" / "Unpin". A pinned row stays in the body too, keeps
         updating, and is remembered with `persistKey` and in `getState()`. */
     rowPinning?: boolean;
+    /** Ctrl/⌘+F in the grid opens a find bar: it matches the cells' displayed
+        text (case-insensitive) and steps through matches with Enter /
+        Shift+Enter, focusing and scrolling to each. Escape closes it. Off by
+        default, as it takes Ctrl+F from the browser while the grid has focus.
+        In-memory rows only. */
+    findBar?: boolean;
     /** Called with the pinned row ids (in pin order) whenever they change. */
     onRowPinChange?: (ids: (string | number)[]) => void;
     /** Show a loading overlay over the grid (for consumer-driven async work in
@@ -1981,7 +1988,7 @@
 
   $effect(() => {
     untrack(() =>
-      onReady?.({ scrollToRow, focusCell, getSelectedRows, autosizeColumns, exportCSV: exportViewCSV, getState, applyState, patchRows, refresh, flashCells, pinRow, getPinnedRowIds }),
+      onReady?.({ scrollToRow, focusCell, getSelectedRows, autosizeColumns, exportCSV: exportViewCSV, getState, applyState, patchRows, refresh, flashCells, pinRow, getPinnedRowIds, openFind }),
     );
   });
 
@@ -2043,6 +2050,38 @@
     const h = hm.heightOf(f.r);
     if (top < viewportEl.scrollTop) viewportEl.scrollTop = top;
     else if (top + h > viewportEl.scrollTop + viewPx) viewportEl.scrollTop = top + h - viewPx;
+    scrollColumnIntoView(f.c);
+  }
+  // Sideways too, when the grid scrolls horizontally: bring the column clear
+  // of the pinned columns on either side. Pinned columns are always in view.
+  function scrollColumnIntoView(ci: number) {
+    const inf = layout.info[ci];
+    if (!hScroll || !viewportEl || !inf || inf.pinned) return;
+    let x = leadPx;
+    let leftPin = 0;
+    let rightPin = 0;
+    layout.info.forEach((c, i) => {
+      if (i < ci) x += c.width;
+      if (c.pinned && c.side === 'right') rightPin += c.width;
+      else if (c.pinned) leftPin += c.width;
+    });
+    const sl = viewportEl.scrollLeft;
+    if (x < sl + leadPx + leftPin) viewportEl.scrollLeft = x - leadPx - leftPin;
+    else if (x + inf.width > sl + viewportEl.clientWidth - rightPin) viewportEl.scrollLeft = x + inf.width - viewportEl.clientWidth + rightPin;
+  }
+
+  // ---- Find in grid (`findBar`) ----------------------------------------------
+  // The bar (FindBar.svelte) loads on first open, like the filter menu. A new
+  // request object per open lets it search for a query and refocus its input.
+  let FindBarComp = $state<typeof import('./FindBar.svelte').default | null>(null);
+  let findRequest = $state<{ query?: string; n: number } | null>(null);
+  async function openFind(query?: string) {
+    if (!FindBarComp) FindBarComp = (await import('./FindBar.svelte')).default;
+    findRequest = { query, n: (findRequest?.n ?? 0) + 1 };
+  }
+  function closeFind() {
+    findRequest = null;
+    gridEl?.focus();
   }
 
   async function copySelection() {
@@ -2152,6 +2191,11 @@
         startEdit(f.r, f.c, e.key);
         return;
       }
+    }
+    if (mod && e.key.toLowerCase() === 'f' && findBar && !source) {
+      e.preventDefault();
+      void openFind();
+      return;
     }
     if (mod && e.key.toLowerCase() === 'z' && !e.shiftKey) {
       if (undoStack.length) {
@@ -2288,6 +2332,18 @@
         <button class="bo-cols-toggle" type="button" onclick={openToolPanel}>⊟ {L.columns}</button>
       {/if}
     </div>
+  {/if}
+  {#if findRequest && FindBarComp}
+    {@const Find = FindBarComp}
+    <Find
+      request={findRequest}
+      rows={flat}
+      columns={cols}
+      labels={L}
+      getFocus={() => sel.focus}
+      onGo={(r, c) => focusTo(r, c, false)}
+      onClose={closeFind}
+    />
   {/if}
   <!-- The grid proper: only rows inside it. The toolbar, aggregation bar,
        pager, menus and panels around it are not part of the grid. Its role is
@@ -2815,6 +2871,7 @@
     border: 0.5px solid var(--bo-border);
     border-radius: var(--bo-radius);
     overflow: hidden;
+    position: relative;
   }
   .gridmain {
     display: flex;
