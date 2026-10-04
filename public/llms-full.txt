@@ -123,6 +123,8 @@ interface GridProps {
   // Rows
   rowClass?: (row: GridRow) => string | undefined;  // conditional row class
   pinnedRows?: GridRow[];              // rows pinned above the scroll
+  rowPinning?: boolean;                // users pin rows from the row menu (right-click), default false
+  onRowPinChange?: (ids: rowId[]) => void;
   emptyMessage?: string;               // default labels.noRows
   loading?: boolean;
   rowMenu?: (row: GridRow) => Array<{ label: string; onSelect: () => void }>;
@@ -186,6 +188,8 @@ interface GridApi {
   refresh(): void;                         // re-run filter+sort on current values (live values never re-sort by themselves) — e.g. every 1s for top movers
   patchRows(patches: Iterable<[rowId, Partial<Row>]>): number;  // BUSY FEEDS: rows may be plain objects ($state.raw); writes in place, repaints only rendered cells whose field changed (+ row-aware ones). format/cellClass/tooltip: declare `(value, row)` ONLY if the fn reads other row fields
   flashCells(opts?: { rows?: rowId[]; columns?: string[]; dir?: 'up' | 'down'; ms?: number }): number;  // flash on-screen cells on demand (a fill, an alert), changed or not; returns rows flashed
+  pinRow(id: rowId, pinned?: boolean): boolean;  // pin above the scroll (row stays in the body); false = unknown id
+  getPinnedRowIds(): rowId[];
 }
 ```
 Row keys are whatever `getRowId` returns (default `row.id`). For a busy feed

@@ -30,6 +30,17 @@ All notable changes to this project are documented here. Format follows
 
 ### Fixed
 
+- **Pinned rows sit above the body instead of on top of it.** The shared row
+  rule positioned them absolutely, so the pinned area was 0 px tall.
+  - The first data row hid under the pinned rows.
+  - Body text showed through their translucent background.
+  - Several pinned rows would overlap one another.
+
+  They now stack in flow and the body starts below them. Virtualization,
+  keep-in-view and sticky group headers count the pinned area.
+- **Pinned rows repaint under `api.patchRows`.** Their cells did not follow
+  the per-row and per-field versions that patched rows repaint by.
+
 - **The grid's ARIA structure passes axe-core.** Across every grid in the
   demo, 34 `aria-required-children`, 9 `aria-conditional-attr` and 1
   `aria-hidden-focus` violations went to none.
@@ -73,6 +84,17 @@ All notable changes to this project are documented here. Format follows
   pressed on a header.
 
 ### Added
+
+- **`rowPinning`** — users pin rows above the scroll from the row menu
+  (right-click: "Pin to top", then "Unpin"), for the symbols they watch on a
+  long board.
+  - A pinned row also stays in its place in the body, and keeps updating and
+    flashing, `api.patchRows` included.
+  - Pins are remembered with `persistKey` and carried by `getState()` /
+    `applyState()` (an optional `pinnedRows` field).
+  - `onRowPinChange(ids)` reports changes, and `api.pinRow(id, pinned?)` /
+    `api.getPinnedRowIds()` do the same from code.
+  - The Price board demo turns it on.
 
 - **`rowNumbers`** — a leading row-number column, as in a spreadsheet.
   - Data rows are numbered 1, 2, 3… in view order, so the numbers follow sort
