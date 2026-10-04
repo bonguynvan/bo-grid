@@ -64,6 +64,12 @@ export interface GridApi {
       content (badges, sparklines, components) do not. Returns how many rows
       it flashed. */
   flashCells(opts?: FlashCellsOptions): number;
+  /** Pin a row above the scroll (or unpin it with `pinned: false`), as the
+      row menu does under `rowPinning`. The row stays in the body too. Returns
+      false when no row has that id. */
+  pinRow(key: string | number, pinned?: boolean): boolean;
+  /** Ids of the rows pinned at runtime, in pin order. */
+  getPinnedRowIds(): (string | number)[];
 }
 
 /** The `scrollTop` that brings a row of `rowH` at `rowTop` into a viewport of

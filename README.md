@@ -772,6 +772,20 @@ columns (and `rowClass`) but are display-only:
 <Grid {rows} {columns} height={640} pinnedRows={[benchmark]} />
 ```
 
+To let users pin rows themselves, such as the symbols they watch on a long
+board, add **`rowPinning`**. Right-clicking a row then offers "Pin to top", and
+on a pinned row "Unpin", ahead of any `rowMenu` items.
+- A pinned row shows above the scroll and also stays in its place in the body.
+  It keeps updating, `api.patchRows` included.
+- Pins are remembered with `persistKey` and carried by `getState()` /
+  `applyState()`.
+- `onRowPinChange(ids)` reports changes. `api.pinRow(id, pinned?)` and
+  `api.getPinnedRowIds()` do the same from code.
+
+```svelte
+<Grid {rows} {columns} rowPinning persistKey="watchlist" onRowPinChange={(ids) => save(ids)} />
+```
+
 ## Row selection
 
 Set `rowSelection` for a leading checkbox column — whole-row selection keyed by

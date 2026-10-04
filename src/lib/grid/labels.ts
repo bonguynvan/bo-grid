@@ -50,6 +50,8 @@ export interface GridLabels {
   detailColumn: string;
   /** Header of the row-number column (`rowNumbers`), read by screen readers. */
   rowNumber: string;
+  /** Row menu item that pins the row above the scroll (`rowPinning`). */
+  pinRow: string;
   toggleChildren: string;
   dragToReorder: string;
   fill: string;
@@ -114,6 +116,7 @@ export const DEFAULT_LABELS: GridLabels = {
   toggleDetail: 'Toggle detail',
   detailColumn: 'Details',
   rowNumber: 'Row',
+  pinRow: 'Pin to top',
   toggleChildren: 'Toggle children',
   dragToReorder: 'Drag to reorder row',
   fill: 'Fill',

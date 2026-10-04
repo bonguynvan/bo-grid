@@ -92,6 +92,8 @@
     flashMotion = 'fade',
     columnHover = false,
     rowNumbers = false,
+    rowPinning = false,
+    onRowPinChange,
     loading = false,
     rowMenu,
     detail,
@@ -195,7 +197,8 @@
         Their `getRowId` must not collide with a row in `rows`/`source` — with a
         derived-flash column (`flash: 'auto'`), a shared id means the pinned
         cell and the data-row cell share one flash-tracker entry, so updating
-        one can suppress or trigger a flash on the other. */
+        one can suppress or trigger a flash on the other. To let users pin rows
+        of `rows` themselves, use `rowPinning`. */
     pinnedRows?: GridRow[];
     /** Show a per-column filter input row under the header. Rows must match every
         non-empty column filter (AND). In-memory mode only. Default false. */
@@ -257,6 +260,12 @@
         in a spreadsheet. Its cells are row headers, so screen readers announce
         the number with each row. */
     rowNumbers?: boolean;
+    /** Let users pin rows above the scroll from the row menu (right-click):
+        "Pin to top" / "Unpin". A pinned row stays in the body too, keeps
+        updating, and is remembered with `persistKey` and in `getState()`. */
+    rowPinning?: boolean;
+    /** Called with the pinned row ids (in pin order) whenever they change. */
+    onRowPinChange?: (ids: (string | number)[]) => void;
     /** Show a loading overlay over the grid (for consumer-driven async work in
         in-memory mode; source mode shows skeleton rows automatically). */
     loading?: boolean;
@@ -658,7 +667,13 @@
   // height (clientHeight), with a sane fallback before the first measure.
   const heightIsPx = $derived(typeof height === 'number');
   let viewH = $state(0);
-  const viewPx = $derived(heightIsPx ? (height as number) : viewH || 400);
+  // Rows pinned above the scroll take the top of the viewport, so the body
+  // shows `pinnedH` fewer pixels: virtualization and keep-in-view use that.
+  // (Read lazily: topRows is declared with the row pinning state below; the
+  // measured height outlives the area, so it only counts while there is one.)
+  let pinnedH = $state(0);
+  const pinnedPx = $derived.by(() => (topRows.length > 0 ? pinnedH : 0));
+  const viewPx = $derived.by(() => Math.max(baseH, (heightIsPx ? (height as number) : viewH || 400) - pinnedPx));
   type ColItem = { kind: 'cell'; ci: number; key: string } | { kind: 'spacer'; w: number; key: string };
   const colItems = $derived.by<ColItem[]>(() => {
     const n = cols.length;
@@ -958,6 +973,68 @@
       /* storage unavailable — still applies this session */
     }
   }
+  // ---- Runtime row pinning (`rowPinning`) ------------------------------------
+  // Ids pinned from the row menu or the API, in pin order. The rows stay in
+  // the body; the area above the scroll shows them as well, after any
+  // `pinnedRows`. Remembered with persistKey and carried by getState().
+  let pinnedIds = $state<(string | number)[]>([]);
+  function rowPinStorageKey(): string | null {
+    return persistKey ? `bo-grid:rowpin:${persistKey}` : null;
+  }
+  $effect(() => {
+    persistKey;
+    untrack(() => {
+      const key = rowPinStorageKey();
+      if (!key || typeof localStorage === 'undefined') return;
+      try {
+        const saved = JSON.parse(localStorage.getItem(key) ?? 'null');
+        if (Array.isArray(saved)) pinnedIds = saved.filter((id) => typeof id === 'string' || typeof id === 'number');
+      } catch {
+        /* corrupt value — ignore */
+      }
+    });
+  });
+  function setPinnedIds(next: (string | number)[]): void {
+    pinnedIds = next;
+    const key = rowPinStorageKey();
+    if (key && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(key, JSON.stringify(next));
+      } catch {
+        /* storage unavailable — still applies this session */
+      }
+    }
+    onRowPinChange?.([...next]);
+  }
+  function pinRow(key: string | number, pin = true): boolean {
+    if (!rowIndex.has(key)) return false;
+    if (pinnedIds.includes(key) !== pin) setPinnedIds(pin ? [...pinnedIds, key] : pinnedIds.filter((k) => k !== key));
+    return true;
+  }
+  const getPinnedRowIds = (): (string | number)[] => [...pinnedIds];
+  // The row menu's pin item, for rows of `rows` (not for `pinnedRows` extras).
+  function rowPinItem(row: GridRow): { label: string; onSelect: () => void } | null {
+    const key = getRowId(row);
+    if (!rowIndex.has(key)) return null;
+    const on = pinnedIds.includes(key);
+    return { label: on ? L.unpin : L.pinRow, onSelect: () => pinRow(key, !on) };
+  }
+  // Everything shown above the scroll: `pinnedRows`, then runtime pins whose
+  // row is in the data now.
+  const topRows = $derived.by((): GridRow[] => {
+    if (pinnedIds.length === 0) return pinnedRows;
+    const out = [...pinnedRows];
+    const seen = new Set(pinnedRows.map((r) => getRowId(r)));
+    for (const key of pinnedIds) {
+      const row = rowIndex.get(key);
+      if (row && !seen.has(key)) {
+        out.push(row);
+        seen.add(key);
+      }
+    }
+    return out;
+  });
+
   // Effective pin side for a column key: runtime override, else static config.
   function pinSideOf(col: ColumnDef): 'left' | 'right' | false {
     if (col.key in pinOverrides) return pinOverrides[col.key];
@@ -1674,8 +1751,8 @@
   // Right-click row menu (floating).
   let menu = $state<{ x: number; y: number; items: Array<{ label: string; onSelect: () => void }> } | null>(null);
   function openRowMenu(row: GridRow, e: MouseEvent) {
-    if (!rowMenu) return;
-    const items = rowMenu(row);
+    const pin = rowPinning ? rowPinItem(row) : null;
+    const items = [...(pin ? [pin] : []), ...(rowMenu ? rowMenu(row) : [])];
     if (items.length === 0) return;
     e.preventDefault();
     menu = { x: e.clientX, y: e.clientY, items };
@@ -1782,17 +1859,22 @@
   function patchRows(patches: Iterable<readonly [string | number, Record<string, unknown>]>): number {
     const changed = patchRowsInPlace(rowIndex, patches);
     if (changed.size === 0) return 0;
-    for (const item of renderItems) {
-      if (item.kind !== 'data') continue;
-      const key = getRowId(item.row);
+    // Rendered rows repaint: the body's, and the pinned ones above the scroll
+    // (a pinned row may also be on screen in the body — bump it once).
+    const bumped = new Set<string | number>();
+    const bump = (row: GridRow) => {
+      const key = getRowId(row);
       const fields = changed.get(key);
-      if (!fields) continue;
+      if (!fields || bumped.has(key)) return;
+      bumped.add(key);
       rowVersions[key] = (rowVersions[key] ?? 0) + 1;
       for (const f of fields) {
         const fk = fieldKey(key, f);
         fieldVersions[fk] = (fieldVersions[fk] ?? 0) + 1;
       }
-    }
+    };
+    for (const item of renderItems) if (item.kind === 'data') bump(item.row);
+    for (const row of topRows) bump(row);
     dataVersion++;
     return changed.size;
   }
@@ -1819,7 +1901,7 @@
       rowFlashes.set(key, { seq, dir: opts.dir ?? 'same', at, ms: opts.ms, columns });
       rowFlashSeq[key] = seq;
     };
-    for (const row of pinnedRows) flashRow(row);
+    for (const row of topRows) flashRow(row);
     for (const item of renderItems) if (item.kind === 'data') flashRow(item.row);
     return done.size;
   }
@@ -1873,6 +1955,7 @@
       pinned: { ...pinOverrides },
       sorts: sorts.map((s) => ({ ...s })),
       filters: { ...activeColumnFilters },
+      ...(rowPinning || pinnedIds.length > 0 ? { pinnedRows: [...pinnedIds] } : {}),
     };
   }
 
@@ -1890,6 +1973,7 @@
     persistPins();
     setSorts(st.sorts);
     setColumnFilters(st.filters);
+    if (st.pinnedRows) setPinnedIds(st.pinnedRows);
     sel.clear();
     editing = null;
     return true;
@@ -1897,7 +1981,7 @@
 
   $effect(() => {
     untrack(() =>
-      onReady?.({ scrollToRow, focusCell, getSelectedRows, autosizeColumns, exportCSV: exportViewCSV, getState, applyState, patchRows, refresh, flashCells }),
+      onReady?.({ scrollToRow, focusCell, getSelectedRows, autosizeColumns, exportCSV: exportViewCSV, getState, applyState, patchRows, refresh, flashCells, pinRow, getPinnedRowIds }),
     );
   });
 
@@ -2421,10 +2505,11 @@
     onpointerout={hasTooltips ? onTipOut : undefined}
     onpointerleave={columnHover ? clearColHover : undefined}
   >
-    {#if pinnedRows.length > 0}
-      <div class="pinned-top">
-        {#each pinnedRows as prow, pi (getRowId(prow))}
-          <div class="row pinrow {rowClass?.(prow) ?? ''}" role="row" aria-hidden="true" style="height:{baseH}px;{rowWidthStyle}">
+    {#if topRows.length > 0}
+      <div class="pinned-top" bind:clientHeight={pinnedH}>
+        {#each topRows as prow, pi (getRowId(prow))}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div class="row pinrow {rowClass?.(prow) ?? ''}" role="row" aria-hidden="true" style="height:{baseH}px;{rowWidthStyle}" oncontextmenu={rowPinning || rowMenu ? (e) => openRowMenu(prow, e) : undefined}>
             {#if rowNumbers}<span class="numcell" style={numCellStyle(false)}></span>{/if}
             {#if expandable}<span class="expandcell" style={expandCellStyle(false)}></span>{/if}
             {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
@@ -2439,6 +2524,8 @@
                 cellId={`${gid}-pin${pi}-c${ci}`}
                 cellSnippet={cell}
                 rowKey={getRowId(prow)}
+                version={rowVersions[getRowId(prow)]}
+                fieldVersion={fieldVersions[fieldKey(getRowId(prow), col.key)]}
                 {flashTracker}
                 flashHold={flashMotion === 'hold' ? flashHold : null}
                 cellFlash={cellFlashOf(getRowId(prow))}
@@ -2462,7 +2549,7 @@
       </div>
     {/if}
     {#if stickyGroups.length > 0}
-      <div class="sticky">
+      <div class="sticky" style={pinnedPx ? `top:${pinnedPx}px` : undefined}>
         {#each stickyGroups as g (g.depth)}
           <div class="sticky-row" aria-hidden="true" style="height:{baseH}px">
             <GroupRow version={dataVersion} group={g} columns={cols} onToggle={toggleGroup} colStart={1 + leadCols} focusable={false} />
@@ -3241,6 +3328,9 @@
     box-shadow: 0 1px 0 var(--bo-border);
   }
   .pinned-top .pinrow {
+    /* In flow, unlike body rows: the area takes their height, so they stack
+       and the body starts below them instead of under them. */
+    position: relative;
     display: flex;
     align-items: stretch;
     min-width: 100%;

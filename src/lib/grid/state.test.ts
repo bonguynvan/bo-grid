@@ -86,6 +86,12 @@ describe('reconcileState', () => {
     expect(out.widths).toEqual({ c: 80 });
   });
 
+  it('keeps pinned row ids as given, deduplicated, and only when saved', () => {
+    const out = reconcileState({ ...base(), pinnedRows: [3, 'x', 3, null, {}] }, ['a', 'b', 'c'])!;
+    expect(out.pinnedRows).toEqual([3, 'x']);
+    expect('pinnedRows' in reconcileState(base(), ['a', 'b', 'c'])!).toBe(false);
+  });
+
   it('does not mutate its input', () => {
     const saved = base({ order: ['a', 'zzz'], hidden: ['zzz'] });
     const copy = JSON.parse(JSON.stringify(saved));

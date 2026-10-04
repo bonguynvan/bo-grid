@@ -21,6 +21,9 @@ export interface GridState {
   pinned: Record<string, PinSide>;
   sorts: SortState[];
   filters: Record<string, AnyFilter>;
+  /** Ids of rows pinned to the top at runtime (`rowPinning`), in pin order.
+      Absent in snapshots that predate it. */
+  pinnedRows?: (string | number)[];
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
@@ -99,5 +102,11 @@ export function reconcileState(saved: unknown, columnKeys: readonly string[]): G
     }
   }
 
-  return { version: GRID_STATE_VERSION, order, widths, hidden, pinned, sorts, filters };
+  const out: GridState = { version: GRID_STATE_VERSION, order, widths, hidden, pinned, sorts, filters };
+  // Row ids are not column keys: kept as given (a pinned row may be absent
+  // from today's data and come back), only deduplicated and type-checked.
+  if (Array.isArray(saved.pinnedRows)) {
+    out.pinnedRows = [...new Set(saved.pinnedRows.filter((id): id is string | number => typeof id === 'string' || typeof id === 'number'))];
+  }
+  return out;
 }

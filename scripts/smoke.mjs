@@ -1076,6 +1076,20 @@ await solo('priceboard', '.bo-grid .row', 'Price board example rendered no rows'
   if (!symCell()?.querySelector('strong.flash.up')) fail('Price board: flashCells did not flash the symbol cell');
   const offScreen = pb.rows()[pb.rows().length - 1].id;
   if (pb.api().flashCells({ rows: [offScreen] }) !== 0) fail('Price board: flashCells flashed a row that is off screen');
+  // rowPinning: pin a row far down the board; it shows above the scroll and
+  // repaints under patchRows; unpinning removes it.
+  if (!pb.api().pinRow(offScreen)) fail('Price board: pinRow refused a known row');
+  await wait(30);
+  const pinnedRow = () => document.querySelector('.bo-grid .pinned-top .row');
+  if (!pinnedRow()) fail('Price board: pinned row did not appear above the scroll');
+  const lastQ = pb.rows()[pb.rows().length - 1];
+  pb.api().patchRows([[offScreen, { mp: lastQ.mp + 700 }]]);
+  await wait(30);
+  const pinnedPrice = pinnedRow()?.querySelector(`[aria-colindex="${ci}"]`)?.textContent.trim() ?? '';
+  if (!pinnedPrice.includes(((lastQ.mp) / 1000).toFixed(2))) fail(`Price board: pinned row did not repaint under patchRows ("${pinnedPrice}")`);
+  pb.api().pinRow(offScreen, false);
+  await wait(30);
+  if (pinnedRow()) fail('Price board: unpinned row is still above the scroll');
   // Top movers: sorted by change, values move in place, api.refresh() re-sorts.
   pb.setMovers(true);
   await wait(30);
