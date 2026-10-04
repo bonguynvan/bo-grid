@@ -195,7 +195,7 @@ if (afterBad !== '999.99') fail(`validate should reject the negative edit (cell 
 
 // Clipboard paste (Phase 5): select the Target cell on row 1, put a value on the
 // clipboard, press Ctrl+V, and assert it commits through the same edit path.
-const gridForPaste = document.querySelector('.bo-grid.grid');
+const gridForPaste = document.querySelector('.bo-grid .gridmain');
 const pasteRow = document.querySelectorAll('.row')[1];
 pasteRow.querySelectorAll('.c')[TARGET_COL].dispatchEvent(
   new window.MouseEvent('pointerdown', { button: 0, bubbles: true }),
@@ -216,7 +216,7 @@ document.querySelectorAll('.row')[3].querySelectorAll('.c')[TARGET_COL].dispatch
 );
 window.dispatchEvent(new window.Event('pointerup'));
 await wait(20);
-document.querySelector('.bo-grid.grid').dispatchEvent(
+document.querySelector('.bo-grid .gridmain').dispatchEvent(
   new window.KeyboardEvent('keydown', { key: '8', bubbles: true }),
 );
 await wait(40);
@@ -270,7 +270,7 @@ await wait(40);
 
 // Accessibility: grid exposes true dimensions despite virtualization, and
 // rows/cells carry 1-based aria indices.
-const gridEl = document.querySelector('.bo-grid.grid');
+const gridEl = document.querySelector('.bo-grid .gridmain');
 if (gridEl.getAttribute('aria-rowcount') !== '1001') {
   fail(`aria-rowcount should be 1001 (got ${gridEl.getAttribute('aria-rowcount')})`);
 }
@@ -281,7 +281,7 @@ const ariaRow = document.querySelector('.row[aria-rowindex]');
 if (!ariaRow || !ariaRow.querySelector('.c[aria-colindex]')) {
   fail('rows/cells missing aria-rowindex/aria-colindex');
 }
-if (document.querySelector('.bo-grid.grid')?.getAttribute('aria-label') !== 'Market watchlist') {
+if (document.querySelector('.bo-grid .gridmain')?.getAttribute('aria-label') !== 'Market watchlist') {
   fail('grid ariaLabel not applied');
 }
 
@@ -329,14 +329,14 @@ if (selCount < 2) fail(`drag-selection produced ${selCount} highlighted cells (e
 if (!hasAgg) fail('aggregation bar did not appear for a multi-cell selection');
 
 // a11y: the focus cell is exposed to AT via aria-activedescendant.
-const adesc = document.querySelector('.bo-grid.grid').getAttribute('aria-activedescendant');
+const adesc = document.querySelector('.bo-grid .gridmain').getAttribute('aria-activedescendant');
 if (!adesc || !document.getElementById(adesc)) {
   fail(`aria-activedescendant not set to a live focus cell (${adesc})`);
 }
 
 // Keyboard navigation: Home/End move within the row; Ctrl+Home jumps to the
 // first cell. The focus is read back off aria-activedescendant.
-const gridK = document.querySelector('.bo-grid.grid');
+const gridK = document.querySelector('.bo-grid .gridmain');
 const pressKey = (k, opts = {}) =>
   gridK.dispatchEvent(new window.KeyboardEvent('keydown', { key: k, bubbles: true, ...opts }));
 pressKey('Home');
@@ -509,7 +509,7 @@ document.querySelector('.bo-grid .c').dispatchEvent(
 );
 window.dispatchEvent(new window.Event('pointerup'));
 await wait(20);
-document.querySelector('.bo-grid.grid').dispatchEvent(
+document.querySelector('.bo-grid .gridmain').dispatchEvent(
   new window.KeyboardEvent('keydown', { key: 'ContextMenu', bubbles: true }),
 );
 await wait(20);
@@ -525,7 +525,7 @@ kbFirst.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowDown', bu
 await wait(10);
 if (document.activeElement === kbFirst || !document.activeElement?.classList?.contains('rowmenu-item'))
   fail('ArrowDown did not move focus within the keyboard menu');
-document.querySelector('.bo-grid.grid').dispatchEvent(
+document.querySelector('.bo-grid .gridmain').dispatchEvent(
   new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
 );
 await wait(20);
@@ -674,12 +674,12 @@ document
 window.dispatchEvent(new window.Event('pointerup'));
 await wait(20);
 document
-  .querySelector('.bo-grid.grid')
+  .querySelector('.bo-grid .gridmain')
   .dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true }));
 await wait(20);
 if (!document.querySelector('.rowmenu')) fail('Alt+ArrowDown did not open the column menu');
 document
-  .querySelector('.bo-grid.grid')
+  .querySelector('.bo-grid .gridmain')
   .dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 await wait(20);
 
@@ -743,7 +743,7 @@ await wait(30);
 const fillDst = cAt(sheetRowEls()[2], FILL_COL).textContent.trim();
 if (fillDst !== fillSrc) fail(`fill handle did not copy down (src "${fillSrc}", row 2 "${fillDst}")`);
 // Undo/redo (v0.5): one Ctrl+Z reverts the whole fill (grouped); Ctrl+Y re-applies.
-const sheetGrid = document.querySelector('.bo-grid.grid');
+const sheetGrid = document.querySelector('.bo-grid .gridmain');
 sheetGrid.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true }));
 await wait(30);
 if (cAt(sheetRowEls()[2], FILL_COL).textContent.trim() !== fillRow2Before)
@@ -838,7 +838,7 @@ kbRow.querySelector('.c').dispatchEvent(
 );
 window.dispatchEvent(new window.Event('pointerup'));
 await wait(20);
-document.querySelector('.bo-grid.grid').dispatchEvent(
+document.querySelector('.bo-grid .gridmain').dispatchEvent(
   new window.KeyboardEvent('keydown', { key: ' ', bubbles: true }),
 );
 await wait(20);
@@ -1280,7 +1280,7 @@ const treeAfter = document.querySelectorAll('.bo-grid .row').length;
 if (!(treeAfter > treeRootsCount)) fail(`expanding a tree node did not reveal children (${treeRootsCount} → ${treeAfter})`);
 // Treegrid a11y: the expanded node carries aria-expanded; ArrowLeft collapses it.
 if (document.querySelector('.bo-grid .row[aria-expanded="true"]') == null) fail('expanded tree row missing aria-expanded');
-const treeGridK = document.querySelector('.bo-grid.grid');
+const treeGridK = document.querySelector('.bo-grid .gridmain');
 document.querySelectorAll('.bo-grid .row')[0].querySelector('.c').dispatchEvent(
   new window.MouseEvent('pointerdown', { button: 0, bubbles: true }),
 );

@@ -5,12 +5,19 @@ the keyboard model, and the conformance notes from the 0.15 audit.
 
 ## Roles & semantics (1.3.1, 4.1.2)
 
-- The grid root is `role="grid"` with `aria-rowcount` / `aria-colcount` reflecting
-  the **true** dataset size (not the virtualized window), an optional `ariaLabel`,
-  and `aria-multiselectable` when range selection is on.
+- The grid is `role="grid"` (`role="treegrid"` with tree data) with
+  `aria-rowcount` / `aria-colcount` reflecting the **true** dataset size (not the
+  virtualized window), an optional `ariaLabel`, and `aria-multiselectable` when
+  range selection is on. It holds only rows: the toolbar (quick filter, Columns
+  button), aggregation bar, pager, menus and panels sit beside it inside the
+  `.bo-grid` box, so keys typed in them never reach the grid's own shortcuts.
 - Rows are `role="row"` with 1-based `aria-rowindex`; cells are `role="gridcell"`
-  with `aria-colindex` and `aria-selected`. Off-screen virtualization duplicates
-  are `aria-hidden`.
+  with `aria-colindex` and `aria-selected`. Every control in a row sits in a
+  cell: the expand and checkbox columns, the filter row's inputs, the footer's
+  totals and a group row's toggle and subtotals are all `gridcell`s with their
+  column index. Off-screen virtualization duplicates are `aria-hidden`, and the
+  sticky group header copied over the scroll keeps its toggle out of the tab
+  order.
 - Column headers are focusable `role="columnheader"` elements with `aria-sort`
   (`ascending` / `descending` / `none`) kept in sync with the sort state, and
   an explicit name: the header text, or the column key when the header is
@@ -91,7 +98,16 @@ The loading overlay is an `aria-live="polite"` region with `aria-busy`.
 - **Headers are individually tabbable** (each a focusable column header) rather than a single
   roving tab stop — fully keyboard-operable, just more tab stops on very wide
   grids. Use `Alt`+`↓` for per-column actions to avoid tabbing.
-- A formal screen-reader pass (NVDA / VoiceOver) and an automated axe-core sweep
-  are recommended for any specific deployment; this audit is code-level.
+- axe-core on every grid in the demo reports no ARIA-structure violations. Two
+  findings remain, both understood:
+  - `scrollable-region-focusable` on the body's scroll container. It is not
+    a tab stop of its own by design. The grid is the single tab stop, and
+    the arrow keys, Page Up / Down and Home / End move the active cell and
+    scroll it into view.
+  - Colour contrast of `bo-grid/trading`'s default ceiling tone (`#c026d3`) on
+    dark themes (3.85:1). Pass your own colours to `toneColor` until the
+    defaults gain a dark-theme palette.
+- A formal screen-reader pass (NVDA / VoiceOver) is recommended for any specific
+  deployment; this audit is code-level.
 
 Found an issue? Please open one — accessibility regressions are treated as bugs.

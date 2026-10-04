@@ -10,6 +10,8 @@
     onToggle,
     rowIndex,
     version = 0,
+    colStart = 1,
+    focusable = true,
   }: {
     group: GroupNode;
     columns: ColumnDef[];
@@ -17,6 +19,11 @@
     rowIndex?: number;
     /** Bumped by the grid on every patchRows, so subtotals over plain rows stay live. */
     version?: number;
+    /** aria-colindex of the first column (after the grid's leading columns). */
+    colStart?: number;
+    /** False for the sticky copy shown at the top while scrolling: it is
+        aria-hidden, so its toggle must stay out of the tab order. */
+    focusable?: boolean;
   } = $props();
 
   // Aggregate over the group's leaf rows. Reads row $state values, so group
@@ -40,21 +47,23 @@
 </script>
 
 <div class="group" role="row" aria-rowindex={rowIndex}>
-  <button
-    class="toggle"
-    type="button"
-    style={colStyle(columns[0])}
-    aria-expanded={!group.collapsed}
-    onclick={() => onToggle(group.path)}
-  >
-    <span class="chev" style="margin-left:{group.depth * 12}px">{group.collapsed ? '▸' : '▾'}</span>
-    <span class="val">{group.value}</span>
-    <span class="count">{group.count}</span>
-  </button>
+  <span class="gcell" role="gridcell" aria-colindex={colStart} style={colStyle(columns[0])}>
+    <button
+      class="toggle"
+      type="button"
+      tabindex={focusable ? undefined : -1}
+      aria-expanded={!group.collapsed}
+      onclick={() => onToggle(group.path)}
+    >
+      <span class="chev" style="margin-left:{group.depth * 12}px">{group.collapsed ? '▸' : '▾'}</span>
+      <span class="val">{group.value}</span>
+      <span class="count">{group.count}</span>
+    </button>
+  </span>
 
   {#each columns as col, ci (ci)}
     {#if ci > 0}
-      <span class="agg" style={colStyle(col)}>{aggText(col)}</span>
+      <span class="agg" role="gridcell" aria-colindex={colStart + ci} style={colStyle(col)}>{aggText(col)}</span>
     {/if}
   {/each}
 </div>
@@ -68,8 +77,14 @@
     background: color-mix(in srgb, var(--bo-header-bg) 85%, var(--bo-text) 4%);
     border-bottom: 0.5px solid var(--bo-border);
   }
+  /* The first column's cell: sized like the column, filled by the toggle. */
+  .gcell {
+    display: flex;
+    min-width: 0;
+  }
   .toggle {
     display: flex;
+    flex: 1 1 auto;
     align-items: center;
     gap: 6px;
     min-width: 0;
@@ -110,7 +125,9 @@
     font-family: var(--bo-mono);
     font-size: 11px;
     font-variant-numeric: tabular-nums;
-    color: var(--bo-text-dim);
+    /* Between the text and dim colours: subtotals read as secondary while
+       clearing 4.5:1 on the group row in every preset. */
+    color: color-mix(in srgb, var(--bo-text) 55%, var(--bo-text-dim));
     overflow: hidden;
     white-space: nowrap;
   }

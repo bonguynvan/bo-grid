@@ -1393,8 +1393,10 @@ It's a pure function, so call it as a snapshot or reactively as you prefer.
 The grid follows the ARIA grid pattern. Because rows are virtualized, it exposes
 the real dimensions and positions so assistive tech isn't misled:
 
-- `role="grid"` with `aria-rowcount` / `aria-colcount` (full size, not the
-  rendered window) and `aria-multiselectable`.
+- `role="grid"` (`treegrid` with tree data) with `aria-rowcount` /
+  `aria-colcount` (full size, not the rendered window) and
+  `aria-multiselectable`. It holds only rows; the toolbar, pager and menus sit
+  beside it.
 - `role="row"` + `aria-rowindex` on rows, `role="gridcell"` + `aria-colindex` +
   `aria-selected` on cells, `role="columnheader"` + `aria-sort` on headers.
 - `aria-activedescendant` tracks the focused cell for screen readers.
