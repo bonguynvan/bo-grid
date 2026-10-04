@@ -48,6 +48,8 @@ export interface GridLabels {
   toggleDetail: string;
   /** Name of the master-detail expand column's header. */
   detailColumn: string;
+  /** Header of the row-number column (`rowNumbers`), read by screen readers. */
+  rowNumber: string;
   toggleChildren: string;
   dragToReorder: string;
   fill: string;
@@ -111,6 +113,7 @@ export const DEFAULT_LABELS: GridLabels = {
   selectAllRows: 'Select all rows',
   toggleDetail: 'Toggle detail',
   detailColumn: 'Details',
+  rowNumber: 'Row',
   toggleChildren: 'Toggle children',
   dragToReorder: 'Drag to reorder row',
   fill: 'Fill',

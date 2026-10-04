@@ -40,6 +40,7 @@
   import { resolveColumns, type DefaultColumn } from './celltype';
   import { parseCellInput } from './edit';
   import { patchRowsInPlace } from './patch';
+  import { dataOrdinals, rowNumberWidth } from './rownumbers';
   import { scrollTopFor, type FlashCellsOptions, type GridApi, type ScrollAlign, type ViewportRange } from './api';
   import { buildMergePlan, combinedFlex, type MergePlan, type SpanRun } from './merge';
   import { GRID_STATE_VERSION, reconcileState, type GridState } from './state';
@@ -90,6 +91,7 @@
     onViewportChange,
     flashMotion = 'fade',
     columnHover = false,
+    rowNumbers = false,
     loading = false,
     rowMenu,
     detail,
@@ -251,6 +253,10 @@
     /** Highlight the column under the pointer (body and header) — handy on a
         wide board. One overlay for the whole column, not a class per cell. */
     columnHover?: boolean;
+    /** A leading row-number column (1, 2, 3… in view order; data rows only), as
+        in a spreadsheet. Its cells are row headers, so screen readers announce
+        the number with each row. */
+    rowNumbers?: boolean;
     /** Show a loading overlay over the grid (for consumer-driven async work in
         in-memory mode; source mode shows skeleton rows automatically). */
     loading?: boolean;
@@ -478,11 +484,15 @@
   let expVersion = $state(0);
   const expandable = $derived(!!detail && !source);
 
-  // Leading fixed columns: expand toggle (if any) then checkbox (if any).
+  // Leading fixed columns: row number (if any), expand toggle (if any), then
+  // checkbox (if any).
+  const numOffset = $derived(rowNumbers ? 1 : 0);
   const selOffset = $derived(rowSelection ? 1 : 0);
   const expOffset = $derived(expandable ? 1 : 0);
-  const leadCols = $derived(selOffset + expOffset); // count, for aria indices
-  const leadPx = $derived(selOffset * SEL_W + expOffset * EXP_W); // px, for sticky offsets
+  // Read lazily: rowCount is declared further down, with the row model.
+  const numW = $derived.by(() => (rowNumbers ? rowNumberWidth(rowCount) : 0));
+  const leadCols = $derived(numOffset + selOffset + expOffset); // count, for aria indices
+  const leadPx = $derived(numW + selOffset * SEL_W + expOffset * EXP_W); // px, for sticky offsets
 
   function isExpanded(id: string | number): boolean {
     expVersion; // track
@@ -761,12 +771,19 @@
   function selCellStyle(header: boolean): string {
     let s = `flex:0 0 ${SEL_W}px;width:${SEL_W}px;`;
     if (hScroll)
-      s += `position:sticky;left:${expOffset * EXP_W}px;z-index:${header ? 6 : 2};background:var(--bo-${header ? 'header-bg' : 'bg'});`;
+      s += `position:sticky;left:${numW + expOffset * EXP_W}px;z-index:${header ? 6 : 2};background:var(--bo-${header ? 'header-bg' : 'bg'});`;
     return s;
   }
-  // The leading expand-toggle column (master-detail), sticky at the far left.
+  // The leading expand-toggle column (master-detail), sticky past the row numbers.
   function expandCellStyle(header: boolean): string {
     let s = `flex:0 0 ${EXP_W}px;width:${EXP_W}px;`;
+    if (hScroll)
+      s += `position:sticky;left:${numW}px;z-index:${header ? 6 : 2};background:var(--bo-${header ? 'header-bg' : 'bg'});`;
+    return s;
+  }
+  // The leading row-number column (`rowNumbers`), sticky at the far left.
+  function numCellStyle(header: boolean): string {
+    let s = `flex:0 0 ${numW}px;width:${numW}px;`;
     if (hScroll)
       s += `position:sticky;left:0;z-index:${header ? 6 : 2};background:var(--bo-${header ? 'header-bg' : 'bg'});`;
     return s;
@@ -1220,6 +1237,13 @@
 
   // Unified row count: from the source total or the flattened in-memory list.
   const rowCount = $derived(source ? (controller?.total ?? 0) : flat.length);
+  // Row numbers count data rows in view order (group headers get none); a
+  // source's rows are all data, numbered by position.
+  const ordinals = $derived(rowNumbers && !source ? dataOrdinals(flat) : null);
+  const rowNumberAt = (vr: number): string => {
+    const n = ordinals ? ordinals[vr] : vr + 1;
+    return n ? String(n) : '';
+  };
 
   const maxR = $derived(rowCount - 1);
   const maxC = $derived(cols.length - 1);
@@ -2196,6 +2220,7 @@
   {/if}
   {#if headerGroups}
     <div class="head-groups" aria-hidden="true" bind:this={groupHeadEl} style={headRowStyle}>
+      {#if rowNumbers}<span class="numcell" style={numCellStyle(true)}></span>{/if}
       {#if expandable}<span class="expandcell" style={expandCellStyle(true)}></span>{/if}
       {#if rowSelection}<span class="selcell" style={selCellStyle(true)}></span>{/if}
       {#each headerGroups as g, gi (gi)}
@@ -2214,13 +2239,18 @@
     onpointerover={hasTooltips ? onTipOver : undefined}
     onpointerout={hasTooltips ? onTipOut : undefined}
   >
+    {#if rowNumbers}
+      <span class="numcell selhead" role="columnheader" aria-colindex={1} style={numCellStyle(true)}
+        ><span class="bo-sr-only">{L.rowNumber}</span></span
+      >
+    {/if}
     {#if expandable}
-      <span class="expandcell selhead" role="columnheader" aria-colindex={1} style={expandCellStyle(true)}
+      <span class="expandcell selhead" role="columnheader" aria-colindex={1 + numOffset} style={expandCellStyle(true)}
         ><span class="bo-sr-only">{L.detailColumn}</span></span
       >
     {/if}
     {#if rowSelection}
-      <span class="selcell selhead" role="columnheader" aria-colindex={1 + expOffset} style={selCellStyle(true)}>
+      <span class="selcell selhead" role="columnheader" aria-colindex={1 + numOffset + expOffset} style={selCellStyle(true)}>
         <input
           type="checkbox"
           class="rowcheck"
@@ -2353,6 +2383,7 @@
 
   {#if filterRow && !source}
     <div class="filter-row" role="row" bind:this={filterRowEl} style={headRowStyle}>
+      {#if rowNumbers}<span class="numcell" style={numCellStyle(false)}></span>{/if}
       {#if expandable}<span class="expandcell" style={expandCellStyle(false)}></span>{/if}
       {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
       {#each cols as col, ci (ci)}
@@ -2390,6 +2421,7 @@
       <div class="pinned-top">
         {#each pinnedRows as prow, pi (getRowId(prow))}
           <div class="row pinrow {rowClass?.(prow) ?? ''}" role="row" aria-hidden="true" style="height:{baseH}px;{rowWidthStyle}">
+            {#if rowNumbers}<span class="numcell" style={numCellStyle(false)}></span>{/if}
             {#if expandable}<span class="expandcell" style={expandCellStyle(false)}></span>{/if}
             {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
             {#each cols as col, ci (ci)}
@@ -2439,12 +2471,14 @@
       {#each renderItems as item (rowSlots ? item.vr % rowSlots : item.vr)}
         {#if item.kind === 'group'}
           <div class="grouprow" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
+            {#if rowNumbers}<span class="numcell" aria-hidden="true" style={numCellStyle(false)}></span>{/if}
             {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
             {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
             <GroupRow version={dataVersion} group={item.group} columns={cols} onToggle={lazyGrouped ? toggleLazyGroup : toggleGroup} rowIndex={item.vr + 2} />
           </div>
         {:else if item.kind === 'skeleton'}
           <div class="row skeleton" role="row" aria-rowindex={item.vr + 2} aria-hidden="true" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
+            {#if rowNumbers}<span class="numcell" style={numCellStyle(false)}></span>{/if}
             {#if expandable}<span class="expandcell" style={expandCellStyle(false)}></span>{/if}
             {#if rowSelection}<span class="selcell" style={selCellStyle(false)}></span>{/if}
             {#each cols as col, ci (ci)}
@@ -2453,6 +2487,7 @@
           </div>
         {:else if item.kind === 'treeloading'}
           <div class="row treeloading" role="row" aria-rowindex={item.vr + 2} aria-live="polite" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
+            {#if rowNumbers}<span class="numcell" aria-hidden="true" style={numCellStyle(false)}></span>{/if}
             {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
             {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
             <span class="tree-loading-cell" style="padding-left:{(item.depth ?? 0) * 16 + 24}px">
@@ -2463,6 +2498,7 @@
           <!-- Row activation is keyboard-accessible at the grid level: Enter on the focused cell fires onRowClick (focus is via aria-activedescendant). -->
           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
           <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:rowactive={selectedRowId != null && getRowId(item.row) === selectedRowId} class:clickable={!!onRowClick} class:droptarget={reorderable && dropRowVr === item.vr && dragRowVr !== item.vr} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : undefined} aria-level={treeData ? (item.depth ?? 0) + 1 : undefined} aria-expanded={treeData && item.hasChildren ? isExpanded(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{expandable ? baseH : hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)} oncontextmenu={(e) => openRowMenu(item.row, e)} ondragover={reorderable ? (e) => { if (dragRowVr < 0) return; e.preventDefault(); dropRowVr = item.vr; } : undefined} ondrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(); } : undefined}>
+            {#if rowNumbers}<span class="numcell" role="rowheader" aria-colindex={1} style={numCellStyle(false)}>{rowNumberAt(item.vr)}</span>{/if}
             {#if expandable}
               <span class="expandcell" style={expandCellStyle(false)}>
                 <button
@@ -2573,6 +2609,7 @@
     </div>
     {#if footerCells}
       <div class="footer" role="row" style={hScroll ? `width:${layout.totalWidth + leadPx}px;` : ''}>
+        {#if rowNumbers}<span class="numcell" aria-hidden="true" style={numCellStyle(false)}></span>{/if}
         {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
         {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
         {#each cols as col, ci (ci)}
@@ -3258,6 +3295,21 @@
     background: var(--bo-row-a);
     border-bottom: 0.5px solid var(--bo-border);
     box-shadow: inset 0 1px 0 var(--bo-border);
+  }
+
+  /* Leading row-number column: dim, right-aligned figures, like a sheet's. */
+  .numcell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 0 0 auto;
+    padding-right: 8px;
+    font-family: var(--bo-mono);
+    font-size: 0.85em;
+    font-variant-numeric: tabular-nums;
+    color: var(--bo-text-dim);
+    user-select: none;
+    box-shadow: inset -0.5px 0 0 var(--bo-border);
   }
 
   /* Leading checkbox column (row selection). */

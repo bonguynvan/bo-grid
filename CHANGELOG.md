@@ -59,6 +59,16 @@ All notable changes to this project are documented here. Format follows
 
 ### Added
 
+- **`rowNumbers`** — a leading row-number column, as in a spreadsheet.
+  - Data rows are numbered 1, 2, 3… in view order, so the numbers follow sort
+    and filter. Group headers get none.
+  - The column is sized to the widest number and sticky when the grid scrolls
+    sideways, alongside the expand and checkbox columns. It sits first, and
+    those shift right.
+  - Its cells are `role="rowheader"`, so screen readers announce the number
+    with each row. The header is named by the new `rowNumber` label ("Row").
+  - The Sheet demo turns it on.
+
 - **`columnHover`** — highlights the column under the pointer, body and
   header, which helps on a wide board.
   - It is one overlay for the whole column, not a class on each of its cells,

@@ -796,6 +796,19 @@ select-all header checkbox is disabled (unloaded ids can't be enumerated).
 Selection keys off `row.id` by default; pass `getRowId` for string/UUID/composite
 keys (`getRowId={(r) => r.uuid}`).
 
+## Row numbers
+
+`rowNumbers` adds a leading row-number column, as in a spreadsheet. Data rows
+are numbered 1, 2, 3… in view order, so the numbers follow sorting and
+filtering. Group headers get no number. The column is sticky when the grid
+scrolls sideways, and sized to the widest number. Its cells are row headers,
+so a screen reader announces the row's number with each cell. The header
+reads "Row" (the `rowNumber` label).
+
+```svelte
+<Grid {rows} {columns} rowNumbers height={640} />
+```
+
 ## Grouping
 
 Pass `groupBy` (column keys) to group rows — single or nested. Groups are
