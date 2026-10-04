@@ -59,6 +59,18 @@ All notable changes to this project are documented here. Format follows
 
 ### Added
 
+- **`columnHover`** — highlights the column under the pointer, body and
+  header, which helps on a wide board.
+  - It is one overlay for the whole column, not a class on each of its cells,
+    measured off the hovered cell. It fits flex, fixed, spanned and pinned
+    columns: a pinned column's wash covers its pinned cells, and horizontal
+    scrolling drops it.
+  - Mouse and pen only.
+  - The colour is the new theme token `colHover`, which defaults to the text
+    colour at 6%.
+  - The Price board demo turns it on.
+  - Nothing runs per frame while the pointer is away.
+
 - **`api.flashCells({ rows?, columns?, dir?, ms? })`** — flash cells on demand
   (a block trade, an order filling, an alert) with the tick animation, whether
   or not their values changed. Every rendered row and every column by default;

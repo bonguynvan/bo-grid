@@ -9,6 +9,8 @@ export interface GridTheme {
   rowA?: string;
   rowB?: string;
   rowHover?: string;
+  /** Wash over the hovered column (`columnHover`). Defaults to the text colour at 6%. */
+  colHover?: string;
   text?: string;
   textDim?: string;
   border?: string;
@@ -38,6 +40,7 @@ const VARS: Record<keyof GridTheme, string> = {
   rowA: '--bo-grid-row-a',
   rowB: '--bo-grid-row-b',
   rowHover: '--bo-grid-row-hover',
+  colHover: '--bo-grid-col-hover',
   text: '--bo-grid-text',
   textDim: '--bo-grid-text-dim',
   border: '--bo-grid-border',

@@ -410,7 +410,7 @@
   {#if result}<span class="pb-stat">{result}</span>{/if}
 </div>
 <div class="gridwrap" bind:this={host}>
-  <Grid rows={rows as unknown as GridRow[]} {columns} height={gridHeight} theme={ui.grid} ariaLabel="Price board" {sort} {flashMotion} onSortChange={(s) => (sort = s)} onReady={(a) => (api = a)} onViewportChange={subs.update} />
+  <Grid rows={rows as unknown as GridRow[]} {columns} height={gridHeight} theme={ui.grid} ariaLabel="Price board" {sort} {flashMotion} columnHover onSortChange={(s) => (sort = s)} onReady={(a) => (api = a)} onViewportChange={subs.update} />
 </div>
 
 <style>

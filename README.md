@@ -964,6 +964,15 @@ always render**. See the **Wide** example.
 <Grid {rows} {columns} virtualizeColumns height={520} />
 ```
 
+On a wide board, **`columnHover`** highlights the column under the pointer,
+body and header, so a value is easy to follow down its column. It draws one
+overlay for the whole column rather than restyling each cell, and pinned columns
+are covered too. The colour is the theme token `colHover`.
+
+```svelte
+<Grid {rows} {columns} columnHover height={520} />
+```
+
 ## Column reorder
 
 Pass `onRowReorder(from, to)` to enable **drag-to-reorder rows** via a handle in

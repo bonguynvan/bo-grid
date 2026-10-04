@@ -89,6 +89,7 @@
     onReady,
     onViewportChange,
     flashMotion = 'fade',
+    columnHover = false,
     loading = false,
     rowMenu,
     detail,
@@ -247,6 +248,9 @@
         tint holds for the flash window, then drops — no CSS animation, so a busy
         board restyles and repaints a flashing cell twice instead of every frame. */
     flashMotion?: 'fade' | 'hold';
+    /** Highlight the column under the pointer (body and header) — handy on a
+        wide board. One overlay for the whole column, not a class per cell. */
+    columnHover?: boolean;
     /** Show a loading overlay over the grid (for consumer-driven async work in
         in-memory mode; source mode shows skeleton rows automatically). */
     loading?: boolean;
@@ -1508,6 +1512,7 @@
   function onScroll(e: Event) {
     const el = e.currentTarget as HTMLElement;
     scrollTop = el.scrollTop;
+    if (hoverBox?.pinned && el.scrollLeft !== scrollLeft) clearColHover();
     if (hScroll) scrollLeft = el.scrollLeft; // drives column virtualization
     if (hScroll && headEl) headEl.scrollLeft = el.scrollLeft; // keep header in sync
     if (hScroll && filterRowEl) filterRowEl.scrollLeft = el.scrollLeft; // and the filter row
@@ -1533,6 +1538,40 @@
     const to = e.relatedTarget as HTMLElement | null;
     if (to?.closest?.('[data-bo-tip]')) return; // moved within the same tipped cell/header
     if (tip) tip = null;
+  }
+
+  // Column hover (`columnHover`): one overlay over the hovered column, not a
+  // class on each of its cells, plus a class on its header. It is measured off
+  // the hovered cell, so flex, fixed, spanned and pinned columns all fit. A
+  // pinned column's overlay sits over its pinned cells; horizontal scrolling
+  // drops it, since those cells stay put while the body moves under them.
+  let hoverCol = $state(-1);
+  let hoverBox = $state<{ left: number; width: number; pinned: boolean } | null>(null);
+  let spacerEl: HTMLDivElement | undefined = $state();
+  function onColHoverOver(e: PointerEvent) {
+    if (e.pointerType === 'touch' || !spacerEl) return;
+    const cell = (e.target as HTMLElement | null)?.closest?.('.row [role=gridcell]') as HTMLElement | null;
+    if (!cell) return;
+    const ci = Number(cell.getAttribute('aria-colindex')) - 1 - leadCols;
+    if (!(ci >= 0 && ci < cols.length)) return;
+    const r = cell.getBoundingClientRect();
+    const left = r.left - spacerEl.getBoundingClientRect().left;
+    if (ci === hoverCol && hoverBox?.left === left && hoverBox.width === r.width) return;
+    hoverCol = ci;
+    hoverBox = { left, width: r.width, pinned: pinned && !!layout.info[ci]?.pinned };
+  }
+  function clearColHover() {
+    hoverCol = -1;
+    hoverBox = null;
+  }
+  // Columns that move or resize leave a measured overlay behind.
+  $effect(() => {
+    void layout;
+    untrack(clearColHover);
+  });
+  function onViewportOver(e: PointerEvent) {
+    if (hasTooltips) onTipOver(e);
+    if (columnHover) onColHoverOver(e);
   }
 
   function toggleGroup(path: string) {
@@ -2201,6 +2240,7 @@
            not the sort arrows and menu labels inside it. -->
       <div
         class="h {col.headerClass ?? ''}"
+        class:colhover={hoverCol === ci}
         class:right={isNumeric(col) || col.align === 'right'}
         class:sortable={isSortable(col)}
         class:dragging={ci === dragSrc}
@@ -2342,8 +2382,9 @@
     bind:clientWidth={viewW}
     bind:clientHeight={viewH}
     onscroll={onScroll}
-    onpointerover={hasTooltips ? onTipOver : undefined}
+    onpointerover={hasTooltips || columnHover ? onViewportOver : undefined}
     onpointerout={hasTooltips ? onTipOut : undefined}
+    onpointerleave={columnHover ? clearColHover : undefined}
   >
     {#if pinnedRows.length > 0}
       <div class="pinned-top">
@@ -2393,7 +2434,8 @@
         {/each}
       </div>
     {/if}
-    <div class="spacer" style="height:{total}px;{hScroll ? `width:${layout.totalWidth + leadPx}px;` : ''}">
+    <div class="spacer" bind:this={spacerEl} style="height:{total}px;{hScroll ? `width:${layout.totalWidth + leadPx}px;` : ''}">
+      {#if hoverBox}<div class="colhover" class:pin={hoverBox.pinned} aria-hidden="true" style="left:{hoverBox.left}px;width:{hoverBox.width}px"></div>{/if}
       {#each renderItems as item (rowSlots ? item.vr % rowSlots : item.vr)}
         {#if item.kind === 'group'}
           <div class="grouprow" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
@@ -2614,6 +2656,7 @@
     --bo-row-a: var(--bo-grid-row-a, #131313);
     --bo-row-b: var(--bo-grid-row-b, #0f0f0f);
     --bo-row-hover: var(--bo-grid-row-hover, #1f1f24);
+    --bo-col-hover: var(--bo-grid-col-hover, color-mix(in srgb, var(--bo-text) 6%, transparent));
     --bo-text: var(--bo-grid-text, #e5e5e5);
     --bo-text-dim: var(--bo-grid-text-dim, #8a8a8a);
     --bo-border: var(--bo-grid-border, rgba(255, 255, 255, 0.06));
@@ -3072,6 +3115,23 @@
     position: relative;
     width: 100%;
     min-width: 100%;
+  }
+  /* columnHover: one wash over the hovered column, above the rows and under
+     pinned cells (z 2), sticky group rows (4) and pinned top rows (5). */
+  .colhover {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: var(--bo-col-hover);
+  }
+  /* A pinned column's wash lies over its own pinned cells. */
+  .colhover.pin {
+    z-index: 3;
+  }
+  .h.colhover {
+    background-image: linear-gradient(var(--bo-col-hover), var(--bo-col-hover));
   }
 
   .sticky {

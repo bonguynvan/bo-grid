@@ -78,6 +78,8 @@ interface GridProps {
   theme?: 'dark' | 'light' | GridTheme;  // default 'dark' — see §3.1
   resizable?: boolean;                 // drag-to-resize columns, default true
   virtualizeColumns?: boolean;         // 100+ column grids, default false
+  columnHover?: boolean;               // wash the column under the pointer (body + header), default false
+  flashMotion?: 'fade' | 'hold';       // 'hold' = static tint, far cheaper on a busy board; default 'fade'
 
   // Selection
   cellSelection?: boolean;             // range-select highlight, default true
@@ -182,6 +184,7 @@ interface GridApi {
   applyState(state: unknown): boolean;     // reconciled against current columns; false for a foreign version
   refresh(): void;                         // re-run filter+sort on current values (live values never re-sort by themselves) — e.g. every 1s for top movers
   patchRows(patches: Iterable<[rowId, Partial<Row>]>): number;  // BUSY FEEDS: rows may be plain objects ($state.raw); writes in place, repaints only rendered cells whose field changed (+ row-aware ones). format/cellClass/tooltip: declare `(value, row)` ONLY if the fn reads other row fields
+  flashCells(opts?: { rows?: rowId[]; columns?: string[]; dir?: 'up' | 'down'; ms?: number }): number;  // flash on-screen cells on demand (a fill, an alert), changed or not; returns rows flashed
 }
 ```
 Row keys are whatever `getRowId` returns (default `row.id`). For a busy feed

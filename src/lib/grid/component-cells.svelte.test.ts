@@ -1,39 +1,19 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest';
-import { mount, unmount, flushSync, createRawSnippet } from 'svelte';
-import Grid from './Grid.svelte';
+import { flushSync, createRawSnippet } from 'svelte';
 import type { ColumnDef, GridRow } from './column';
-import type { GridApi } from './api';
 import MountCounter, { mounts } from './test-fixtures/MountCounter.svelte';
+import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid';
 
-// jsdom has no ResizeObserver (the grid measures its viewport with one).
-globalThis.ResizeObserver ??= class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-} as unknown as typeof ResizeObserver;
-
-let cleanup: (() => void) | null = null;
+let grid: MountedGrid | null = null;
 afterEach(() => {
-  cleanup?.();
-  cleanup = null;
+  grid?.destroy();
+  grid = null;
 });
 
 function render(columns: ColumnDef[], extra: Record<string, unknown> = {}) {
-  const rows: GridRow[] = [
-    { id: 1, sym: 'AAA', px: 10 },
-    { id: 2, sym: 'BBB', px: 20 },
-  ];
-  let api: GridApi | undefined;
-  const target = document.createElement('div');
-  document.body.appendChild(target);
-  const grid = mount(Grid, { target, props: { rows, columns, height: 200, onReady: (a: GridApi) => (api = a), ...extra } });
-  flushSync();
-  cleanup = () => {
-    unmount(grid);
-    target.remove();
-  };
-  return { rows, target, api: () => api! };
+  grid = mountGrid({ columns, ...extra });
+  return grid;
 }
 
 describe('component cells under api.patchRows', () => {
