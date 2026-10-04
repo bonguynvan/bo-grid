@@ -30,6 +30,11 @@ All notable changes to this project are documented here. Format follows
 
 ### Fixed
 
+- **The focused cell scrolls into view sideways too.** Arrow keys, Home/End
+  and the API's `focusCell` only scrolled vertically, so focus could move to a
+  column off screen in a horizontally scrolling grid. The column is now
+  brought clear of the pinned columns on either side.
+
 - **Pinned rows sit above the body instead of on top of it.** The shared row
   rule positioned them absolutely, so the pinned area was 0 px tall.
   - The first data row hid under the pinned rows.
@@ -84,6 +89,18 @@ All notable changes to this project are documented here. Format follows
   pressed on a header.
 
 ### Added
+
+- **`findBar`** — Ctrl/⌘+F in the grid opens a find bar.
+  - It matches the cells' displayed (formatted) text, ignoring case, and shows
+    "3 of 12".
+  - Enter / Shift+Enter step through the matches, focusing and scrolling to
+    each. Escape closes the bar and returns focus to the grid.
+  - `api.openFind(query?)` opens it from code.
+  - Matches are scanned once per query and view, never per tick: ~15 ms
+    across the Price board's 1,000 symbols × 24 columns. The scan covers
+    in-memory rows, up to 10,000 matches.
+  - Off by default, as it takes Ctrl+F from the browser while the grid has
+    focus. The Price board demo turns it on.
 
 - **`rowPinning`** — users pin rows above the scroll from the row menu
   (right-click: "Pin to top", then "Unpin"), for the symbols they watch on a
