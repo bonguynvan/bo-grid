@@ -106,6 +106,20 @@ All notable changes to this project are documented here. Format follows
 
 ### Added
 
+- **`fitColumns`** — every column scales with the grid, in proportion to its
+  `width`. Before, only `flex` columns took up a change in width: a grid
+  whose one flex column came first widened that column alone, while the
+  rest slid right.
+  - Each column's share is bounded by `minWidth` / `maxWidth`. Without a
+    `minWidth`, the floor is 64 px, or the column's own width if smaller.
+  - The grid scrolls sideways only once the floors no longer fit.
+  - Widths are computed in whole pixels that add up to the viewport, so the
+    header, header groups, body and footer line up in every mode, pinned
+    columns included.
+  - Dragging a column edge still follows the pointer. The columns before it
+    keep their widths, and the ones after it share the difference.
+  - The Sheet demo turns it on.
+
 - **`findBar`** — Ctrl/⌘+F in the grid opens a find bar.
   - It matches the cells' displayed (formatted) text, ignoring case, and shows
     "3 of 12".
