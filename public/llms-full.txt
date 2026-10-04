@@ -125,6 +125,7 @@ interface GridProps {
   pinnedRows?: GridRow[];              // rows pinned above the scroll
   rowPinning?: boolean;                // users pin rows from the row menu (right-click), default false
   findBar?: boolean;                   // Ctrl/Cmd+F in the grid opens a find bar (displayed text, Enter/Shift+Enter), default false
+  fitColumns?: boolean;                // every column scales with the grid in proportion to its width (min/maxWidth bounds), default false
   onRowPinChange?: (ids: rowId[]) => void;
   emptyMessage?: string;               // default labels.noRows
   loading?: boolean;

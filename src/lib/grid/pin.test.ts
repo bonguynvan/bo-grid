@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ColumnDef } from './column';
-import { arrangePinned } from './pin';
+import { arrangePinned, fitWidths } from './pin';
 
 const cols: ColumnDef[] = [
   { type: 'text', key: 'name', header: 'Name', width: 120 },
@@ -133,5 +133,47 @@ describe('arrangePinned — fill', () => {
     expect(r.info[0].width).toBe(300);
     expect(r.info[2].right).toBe(0);
     expect(r.info[1].right).toBe(60);
+  });
+});
+
+describe('fitWidths (fitColumns)', () => {
+  const plain = (n: number, extra: Partial<ColumnDef>[] = []): ColumnDef[] =>
+    Array.from({ length: n }, (_, i) => ({ type: 'number', key: `c${i}`, header: `C${i}`, ...(extra[i] ?? {}) }) as ColumnDef);
+
+  it('grows every column in proportion to its base width', () => {
+    expect(fitWidths(plain(3), [100, 50, 50], [64, 50, 50], 400)).toEqual([200, 100, 100]);
+  });
+
+  it('shrinks every column in proportion while they stay above their floors', () => {
+    expect(fitWidths(plain(3), [200, 100, 100], [64, 64, 64], 300)).toEqual([150, 75, 75]);
+  });
+
+  it('holds a column at its floor and shares the rest in proportion', () => {
+    expect(fitWidths(plain(3), [200, 100, 100], [64, 90, 64], 240)).toEqual([86, 90, 64]);
+  });
+
+  it('caps a column at its maxWidth and hands the rest to the others', () => {
+    expect(fitWidths(plain(2, [{ maxWidth: 120 }]), [100, 100], [50, 50], 400)).toEqual([120, 280]);
+  });
+
+  it('falls back to the floors when even they do not fit (the grid scrolls)', () => {
+    expect(fitWidths(plain(2), [200, 200], [80, 80], 100)).toEqual([80, 80]);
+  });
+
+  it('lands exactly on the available width in whole pixels', () => {
+    const out = fitWidths(plain(3), [100, 100, 100], [10, 10, 10], 401);
+    expect(out.reduce((a, b) => a + b, 0)).toBe(401);
+    expect(out.every(Number.isInteger)).toBe(true);
+  });
+
+  it('is what arrangePinned uses when given a floor, pinned columns included', () => {
+    const c: ColumnDef[] = [
+      { type: 'text', key: 'sym', header: 'Sym', width: 60, pinned: true },
+      { type: 'number', key: 'px', header: 'Px', width: 120 },
+      { type: 'number', key: 'vol', header: 'Vol', width: 60 },
+    ];
+    const r = arrangePinned(c, 480, (col) => col.minWidth ?? 40);
+    expect(r.info.map((i) => i.width)).toEqual([120, 240, 120]);
+    expect(r.totalWidth).toBe(480);
   });
 });

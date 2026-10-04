@@ -446,6 +446,18 @@ an epoch-ms value as relative time; `currency` localizes via `Intl.NumberFormat`
 
 Sizing: `width` (px) or `flex` (grow weight). See `ColumnDef` for per-type options.
 
+By default only `flex` columns take up a change in the grid's width; `width`
+columns stay put. So a grid whose only flex column is the first one widens
+that column alone when it grows. For every column to scale together, turn on
+**`fitColumns`**. Each column then gets a share of the width in proportion to
+its `width`, with `minWidth` / `maxWidth` as bounds. Without a `minWidth`,
+a column shrinks to 64 px at most (or stays at its own width, if that is
+smaller). The grid scrolls sideways only once those floors no longer fit.
+
+```svelte
+<Grid {rows} {columns} fitColumns />
+```
+
 ### Custom cells
 
 Use `type: 'custom'` and pass a `cell` snippet to render anything — badges,
@@ -1039,8 +1051,10 @@ remember the user's order across reloads (saved to `localStorage`):
 
 Drag the grip on a header's right edge to resize a column; **double-click** the
 grip to reset it to its default width. Resizing a fit-to-width (`flex`) column
-pins it to the dragged width and lets its neighbours absorb the difference. The
-same `persistKey` remembers widths across reloads.
+pins it to the dragged width and lets its neighbours absorb the difference.
+Under `fitColumns` the edge still follows the pointer. The columns before it
+keep their widths, and the ones after it share the difference in proportion.
+The same `persistKey` remembers widths across reloads.
 
 Bound a column's draggable range with `minWidth` / `maxWidth`. Resizing is on by
 default. Turn it off for the whole grid with `resizable={false}`, or per column

@@ -7,7 +7,7 @@
   import { untrack } from 'svelte';
   import type { Snippet } from 'svelte';
   import type { ColumnDef, GridRow, SortState, SortDir, CellEditEvent, CellTypeDef } from './column';
-  import { colStyle, baseWidth, isNumeric, isSortable, isEditable, sortRows, formatCell, cellValue } from './column';
+  import { colStyle, baseWidth, MIN_FLEX_W, isNumeric, isSortable, isEditable, sortRows, formatCell, cellValue } from './column';
   import { arrangePinned } from './pin';
   import { columnWindow, columnOffsets } from './colvirt';
   import { uniformHeights, variableHeights } from './rowheight';
@@ -94,6 +94,7 @@
     rowNumbers = false,
     rowPinning = false,
     findBar = false,
+    fitColumns = false,
     onRowPinChange,
     loading = false,
     rowMenu,
@@ -271,6 +272,13 @@
         default, as it takes Ctrl+F from the browser while the grid has focus.
         In-memory rows only. */
     findBar?: boolean;
+    /** Scale every column with the grid, in proportion to its `width`, instead
+        of only `flex` columns taking up the change: the grid stays responsive
+        without hand-tuned flex weights. A column never gets narrower than its
+        `minWidth` (64 px, or its own width if smaller, without one) nor wider
+        than its `maxWidth`; when the floors no longer fit, the grid scrolls
+        sideways. Dragging a column edge still follows the pointer. */
+    fitColumns?: boolean;
     /** Called with the pinned row ids (in pin order) whenever they change. */
     onRowPinChange?: (ids: (string | number)[]) => void;
     /** Show a loading overlay over the grid (for consumer-driven async work in
@@ -648,15 +656,26 @@
   // columns (which would otherwise squeeze to nothing). The threshold is the
   // same base width the fixed-width layout starts from, so crossing it never
   // makes columns jump.
-  const overflowing = $derived(viewW > 0 && pinnedSized.reduce((a, c) => a + baseWidth(c), leadPx) > viewW);
-  const fixedWidths = $derived(virtualizeColumns || overflowing || pinnedSized.some((c) => !!c.pinned));
-  const layout = $derived(arrangePinned(pinnedSized, fixedWidths && viewW ? viewW - leadPx : 0));
+  // `fitColumns` sizes every column in JS (fitWidths) and shrinks them to
+  // their floors before scrolling, so its threshold is the floors' sum.
+  const fitFloor = (c: ColumnDef): number => c.minWidth ?? Math.min(baseWidth(c), MIN_FLEX_W);
+  const overflowing = $derived(
+    viewW > 0 && pinnedSized.reduce((a, c) => a + (fitColumns ? fitFloor(c) : baseWidth(c)), leadPx) > viewW,
+  );
+  const fixedWidths = $derived(fitColumns || virtualizeColumns || overflowing || pinnedSized.some((c) => !!c.pinned));
+  const layout = $derived(
+    arrangePinned(pinnedSized, fixedWidths && viewW ? viewW - leadPx : 0, fitColumns ? fitFloor : undefined),
+  );
   const cols = $derived(layout.columns);
   const pinned = $derived(layout.anyPinned);
   // Fixed-width horizontal-scroll mode: when columns are pinned OR column
   // virtualization is on. Drives the same layout (explicit widths, overflow-x,
   // scroll-synced header) that pinning already uses.
   const hScroll = $derived(pinned || virtualizeColumns || overflowing);
+  // Cells take the layout's pixel widths whenever it has computed them: in
+  // horizontal-scroll mode, and under `fitColumns` (which never scrolls until
+  // its floors no longer fit).
+  const explicitWidths = $derived(hScroll || (fitColumns && viewW > 0));
   // Header rows scroll with the body in fixed-width mode, driven by the body's
   // scrollLeft. They need slack past their content to always reach it: Chrome
   // caps an overflow:hidden element's scroll range without subtracting its
@@ -734,14 +753,14 @@
     return `position:sticky;left:${inf.left + leadPx}px;`;
   }
   function headStyle(ci: number): string {
-    if (!hScroll) return colStyle(cols[ci]);
+    if (!explicitWidths) return colStyle(cols[ci]);
     const inf = layout.info[ci];
     let s = `flex:0 0 ${inf.width}px;width:${inf.width}px;`;
     if (inf.pinned) s += `${pinStick(ci, true)}z-index:5;background:var(--bo-header-bg);`;
     return s;
   }
   function cellWidthStyle(ci: number, header = false): string {
-    if (!hScroll) return colStyle(cols[ci]);
+    if (!explicitWidths) return colStyle(cols[ci]);
     const inf = layout.info[ci];
     let s = `flex:0 0 ${inf.width}px;width:${inf.width}px;`;
     if (inf.pinned) s += `${pinStick(ci, header)}z-index:2;background:var(--bo-bg);`;
@@ -1048,7 +1067,16 @@
     return col.pinned === true ? 'left' : col.pinned || false;
   }
 
-  let resize: { key: string; startX: number; startW: number; min?: number; max?: number } | null = null;
+  let resize: {
+    key: string;
+    startX: number;
+    startW: number;
+    min?: number;
+    max?: number;
+    /** fitColumns: every column's rendered width and floor at drag start, in
+        display order, and which one is being dragged. */
+    fit?: { keys: string[]; widths: number[]; floors: number[]; at: number };
+  } | null = null;
   let justResized = false;
 
   function startResize(ci: number, e: PointerEvent) {
@@ -1058,13 +1086,43 @@
     const headCell = (e.currentTarget as HTMLElement).closest('.h') as HTMLElement | null;
     const startW = headCell ? headCell.getBoundingClientRect().width : layout.info[ci].width;
     resize = { key: cols[ci].key, startX: e.clientX, startW, min: cols[ci].minWidth, max: cols[ci].maxWidth };
+    if (fitColumns && viewW > 0) {
+      resize.fit = {
+        keys: cols.map((c) => c.key),
+        widths: layout.info.map((i) => i.width),
+        floors: cols.map(fitFloor),
+        at: ci,
+      };
+    }
     window.addEventListener('pointermove', onResizeMove);
     window.addEventListener('pointerup', onResizeUp);
   }
   function onResizeMove(e: PointerEvent) {
     if (!resize) return;
     const w = clampWidth(resize.startW + (e.clientX - resize.startX), resize.min, resize.max);
-    widths = { ...widths, [resize.key]: w };
+    widths = resize.fit ? { ...widths, ...fitResize(resize.fit, w) } : { ...widths, [resize.key]: w };
+  }
+  // Under fitColumns the widths always add up to the viewport, so dragging one
+  // edge is a trade: the columns before it keep their widths, the dragged one
+  // takes the pointer, and the ones after it share the difference in
+  // proportion (never below their floors). The last column trades with the
+  // ones before it instead. Every width is written back, so the layout renders
+  // exactly these and the edge stays under the pointer.
+  function fitResize(f: { keys: string[]; widths: number[]; floors: number[]; at: number }, want: number): WidthMap {
+    const n = f.keys.length;
+    const side = f.at < n - 1 ? 'after' : 'before';
+    const absorb = f.widths.flatMap((_, j) => ((side === 'after' ? j > f.at : j < f.at) ? [j] : []));
+    const room = f.widths.reduce((a, w, j) => a + (absorb.includes(j) || j === f.at ? w : 0), 0);
+    const minAbsorb = absorb.reduce((a, j) => a + f.floors[j], 0);
+    const R = Math.max(f.floors[f.at], Math.min(want, room - minAbsorb));
+    const share = absorb.reduce((a, j) => a + f.widths[j], 0);
+    const out: WidthMap = {};
+    f.keys.forEach((k, j) => {
+      if (j === f.at) out[k] = R;
+      else if (absorb.includes(j)) out[k] = Math.max(f.floors[j], Math.round((f.widths[j] * (room - R)) / share));
+      else out[k] = f.widths[j];
+    });
+    return out;
   }
   function onResizeUp() {
     if (!resize) return;
@@ -1564,8 +1622,8 @@
       c1: ci + w - 1,
       span,
       colspan: w > 1 ? w : undefined,
-      flex: !hScroll && w > 1 ? combinedFlex(cols.slice(ci, ci + w)) : undefined,
-      px: hScroll ? spanWidthPx(ci, w) : undefined,
+      flex: !explicitWidths && w > 1 ? combinedFlex(cols.slice(ci, ci + w)) : undefined,
+      px: explicitWidths ? spanWidthPx(ci, w) : undefined,
     };
   }
   function rectSelected(r0: number, r1: number, c0: number, c1: number): boolean {
@@ -2588,7 +2646,7 @@
                 pinned={pinned && layout.info[ci].pinned}
                 pinSide={layout.info[ci].side ?? 'left'}
                 pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right + bodyPinFix : layout.info[ci].left + leadPx}
-                width={hScroll ? layout.info[ci].width : undefined}
+                width={explicitWidths ? layout.info[ci].width : undefined}
               />
             {/each}
           </div>
@@ -2709,7 +2767,7 @@
                   pinned={pinned && layout.info[ci].pinned}
                   pinSide={layout.info[ci].side ?? 'left'}
                   pinOffset={layout.info[ci].side === 'right' ? layout.info[ci].right + bodyPinFix : layout.info[ci].left + leadPx}
-                  width={hScroll ? (m?.px ?? layout.info[ci].width) : undefined}
+                  width={explicitWidths ? (m?.px ?? layout.info[ci].width) : undefined}
                   alt={item.vr % 2 === 1}
                   editing={editing?.r === item.vr && editing?.c === ci}
                   seed={editing?.r === item.vr && editing?.c === ci ? editSeed : null}

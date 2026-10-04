@@ -63,12 +63,66 @@ export function fillWidths(cols: readonly ColumnDef[], base: readonly number[], 
 }
 
 /**
+ * `fitColumns`: scale every column with `available`, in proportion to its base
+ * width, clamped to [its floor, its `maxWidth`]. A column that hits a bound
+ * stays there and the others share what is left, as CSS flex does. Whole
+ * pixels that add up to `available`; when even the floors do not fit, the
+ * floors (and the grid scrolls).
+ */
+export function fitWidths(
+  cols: readonly ColumnDef[],
+  base: readonly number[],
+  floors: readonly number[],
+  available: number,
+): number[] {
+  const n = cols.length;
+  const target = Math.floor(available);
+  const cap = (i: number): number => Math.max(floors[i], cols[i].maxWidth ?? Infinity);
+  if (floors.reduce((a, b) => a + b, 0) >= target) return floors.slice();
+  const out = new Array<number>(n).fill(0);
+  const frozen = new Array<boolean>(n).fill(false);
+  let shares: number[] = [];
+  for (;;) {
+    const open = cols.flatMap((_, i) => (frozen[i] ? [] : [i]));
+    const left = target - out.reduce((a, w, i) => a + (frozen[i] ? w : 0), 0);
+    const weight = open.reduce((a, i) => a + base[i], 0);
+    if (open.length === 0 || weight <= 0) break;
+    shares = out.map((_, i) => (frozen[i] ? out[i] : (left * base[i]) / weight));
+    // Freeze the columns a share pushes out of bounds, then share again.
+    let moved = false;
+    for (const i of open) {
+      const bound = shares[i] < floors[i] ? floors[i] : shares[i] > cap(i) ? cap(i) : null;
+      if (bound != null) {
+        out[i] = bound;
+        frozen[i] = true;
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+  // Whole pixels: round the open shares down, then hand out the remainder.
+  const result = shares.length ? shares.map((w, i) => (frozen[i] ? out[i] : Math.floor(w))) : out.slice();
+  let rest = target - result.reduce((a, b) => a + b, 0);
+  for (let i = 0; rest > 0 && i < n; i++) {
+    if (frozen[i]) continue;
+    result[i] += 1;
+    rest -= 1;
+  }
+  return result;
+}
+
+/**
  * Arrange columns for pinning: left-pinned columns move to the front, right-
  * pinned to the end, each with a cumulative sticky offset from its edge. When
  * nothing is pinned, column order is untouched and the grid stays fit-to-width.
- * With `available` (fixed-width mode), flex columns grow to fill it.
+ * With `available` (fixed-width mode), flex columns grow to fill it — or, with
+ * `fitFloor` (`fitColumns`), every column scales to fit it (`fitWidths`).
  */
-export function arrangePinned(cols: readonly ColumnDef[], available = 0): PinLayout {
+export function arrangePinned(
+  cols: readonly ColumnDef[],
+  available = 0,
+  fitFloor?: (col: ColumnDef) => number,
+): PinLayout {
   const left = cols.filter((c) => sideOf(c) === 'left');
   const right = cols.filter((c) => sideOf(c) === 'right');
   const mid = cols.filter((c) => sideOf(c) === null);
@@ -76,7 +130,12 @@ export function arrangePinned(cols: readonly ColumnDef[], available = 0): PinLay
   const anyPinned = left.length > 0 || right.length > 0;
 
   const base = columns.map(baseWidth);
-  const widths = available > 0 ? fillWidths(columns, base, available) : base;
+  const widths =
+    available <= 0
+      ? base
+      : fitFloor
+        ? fitWidths(columns, base, columns.map(fitFloor), available)
+        : fillWidths(columns, base, available);
   const totalWidth = widths.reduce((a, b) => a + b, 0);
   const nLeft = left.length;
   const nRight = right.length;
