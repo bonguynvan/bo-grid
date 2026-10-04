@@ -458,6 +458,21 @@ smaller). The grid scrolls sideways only once those floors no longer fit.
 <Grid {rows} {columns} fitColumns />
 ```
 
+Values that grow, such as a price gaining a digit or a running volume total,
+can outgrow their column and end in "…". Set **`autoWidth: true`** on such a
+column and it widens to fit the values on screen.
+- It is checked at most every 500 ms. The values are measured with a canvas,
+  so the check never forces a layout on a live board.
+- It only grows, so values flickering wider and narrower don't make it jump.
+  `maxWidth` caps it.
+- A width the user dragged or autosized takes over.
+- On the Price board, the growing "Tổng KL" column uses it, at no measurable
+  cost per frame.
+
+```ts
+{ type: 'volume', key: 'totalVol', header: 'Total vol', width: 76, autoWidth: true }
+```
+
 ### Custom cells
 
 Use `type: 'custom'` and pass a `cell` snippet to render anything — badges,

@@ -147,6 +147,11 @@ export interface ColBase {
   component?: Component<CellTypeProps>;
   /** Set false to disable drag-to-resize on this column (default on). */
   resizable?: boolean;
+  /** Widen the column when a value on screen no longer fits (a price gaining a
+      digit, a running total), checked at most every 500 ms. It only grows, so
+      values flickering wider and narrower don't make it jump; `maxWidth` caps
+      it, and a width the user dragged or autosized takes over. */
+  autoWidth?: boolean;
   /** Parent header label. Consecutive columns sharing a `group` render under a
       spanning header. Best with fixed-width columns. */
   group?: string;
@@ -451,7 +456,7 @@ export function compareBySorts(
 }
 
 export function colStyle(col: ColumnDef): string {
-  if (col.flex) return `flex:${col.flex} 1 0;min-width:0;`;
+  if (col.flex) return `flex:${col.flex} 1 0;min-width:${col.minWidth ?? 0}px;${col.maxWidth ? `max-width:${col.maxWidth}px;` : ''}`;
   return `flex:0 0 ${col.width ?? 96}px;`;
 }
 

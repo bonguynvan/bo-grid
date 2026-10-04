@@ -34,3 +34,41 @@ export function applyWidths(cols: readonly ColumnDef[], widths: WidthMap): Colum
   });
   return changed ? out : (cols as ColumnDef[]);
 }
+
+/**
+ * `autoWidth`: raise columns to the content widths measured on screen. A fixed
+ * column grows to the measured width (never below its own), a flex column's
+ * floor rises and it keeps flexing; both stop at `maxWidth`. Columns the user
+ * sized (`overrides`) and columns without `autoWidth` pass through by
+ * reference, and so does the list when nothing changes.
+ */
+export function applyAutoWidths(
+  cols: readonly ColumnDef[],
+  measured: Readonly<Record<string, number>>,
+  overrides: WidthMap,
+): ColumnDef[] {
+  let changed = false;
+  const out = cols.map((c) => {
+    const m = measured[c.key];
+    if (!c.autoWidth || m == null || overrides[c.key] != null) return c;
+    const need = Math.min(m, c.maxWidth ?? Infinity);
+    const floor = Math.max(c.minWidth ?? 0, need);
+    if (c.flex) {
+      if (floor === (c.minWidth ?? 0)) return c;
+      changed = true;
+      return { ...c, minWidth: floor } as ColumnDef;
+    }
+    const width = Math.max(c.width ?? 96, need);
+    if (width === c.width && floor === c.minWidth) return c;
+    changed = true;
+    return { ...c, width, minWidth: floor } as ColumnDef;
+  });
+  return changed ? out : (cols as ColumnDef[]);
+}
+
+/** The width that fits every text: the widest, measured, plus padding. */
+export function contentWidth(texts: Iterable<string>, measure: (text: string) => number, pad: number): number {
+  let max = 0;
+  for (const t of texts) max = Math.max(max, measure(t));
+  return Math.ceil(max) + pad;
+}

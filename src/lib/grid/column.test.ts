@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  colStyle,
   formatCell,
   tooltipText,
   isNumeric,
@@ -299,5 +300,18 @@ describe('toneColor', () => {
     expect(toneColor('info')).toBe('var(--bo-sel-border)');
     expect(toneColor('neutral')).toBe('var(--bo-text-dim)');
     expect(toneColor(undefined)).toBe('var(--bo-text-dim)');
+  });
+});
+
+describe('colStyle', () => {
+  it('flex columns keep their minWidth and maxWidth in fit-to-width mode', () => {
+    expect(colStyle({ type: 'text', key: 'a', header: 'A', flex: 2, minWidth: 120, maxWidth: 300 })).toBe(
+      'flex:2 1 0;min-width:120px;max-width:300px;',
+    );
+    expect(colStyle({ type: 'text', key: 'a', header: 'A', flex: 1 })).toBe('flex:1 1 0;min-width:0px;');
+  });
+
+  it('fixed columns take their width', () => {
+    expect(colStyle({ type: 'number', key: 'a', header: 'A', width: 70 })).toBe('flex:0 0 70px;');
   });
 });
