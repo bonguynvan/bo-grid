@@ -18,6 +18,9 @@ the keyboard model, and the conformance notes from the 0.15 audit.
   it). Enter or Space sorts, Shift adds a sort key. The master-detail expand
   column's header is named by the `detailColumn` label. axe-core reports no
   violations on the demo's headers.
+- The row-number column (`rowNumbers`) is made of `role="rowheader"` cells, so
+  a screen reader announces the row's number as focus moves along it. Its
+  header is named by the `rowNumber` label.
 - Tree data uses the treegrid semantics: `aria-level`, `aria-expanded`, and
   `ArrowRight`/`ArrowLeft` to expand/collapse.
 - Floating menus are `role="menu"` / `role="menuitem"`; the filter and columns

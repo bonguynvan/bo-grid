@@ -169,6 +169,7 @@
     persistKey="demo-sheet"
     height={620}
     rowSelection
+    rowNumbers
     getRowId={(r) => `emp-${r.id}`}
     selectedRowId={activeRow}
     onRowClick={(r) => (activeRow = `emp-${r.id}`)}
