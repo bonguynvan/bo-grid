@@ -30,6 +30,11 @@ All notable changes to this project are documented here. Format follows
 
 ### Fixed
 
+- **Flex columns keep their `minWidth` and `maxWidth` in fit-to-width
+  mode.** They were laid out with `min-width: 0` and no maximum, so a flex
+  column could squeeze below its `minWidth` when other flex columns had more
+  weight.
+
 - **`bo-grid/trading`'s tone colours meet WCAG AA.** The single default
   palette sat between dark and light, failing on both: the ceiling tone was
   3.85:1 on dark themes, and yellow and cyan were near-unreadable on white.
@@ -105,6 +110,17 @@ All notable changes to this project are documented here. Format follows
   pressed on a header.
 
 ### Added
+
+- **`autoWidth` column option** — the column widens when a value on screen
+  no longer fits, such as a price gaining a digit or a running volume total.
+  Without it, those values end in "…".
+  - It is checked at most every 500 ms. The values are measured with a canvas,
+    with no DOM reads, so the check never forces a layout.
+  - It only grows, so values flickering wider and narrower don't make it jump.
+    `maxWidth` caps it.
+  - A width the user dragged or autosized takes over.
+  - The Price board's "Tổng KL" column uses it. Live board A/B at 30,000
+    events/s: 12.61 vs 12.46 ms per frame.
 
 - **`fitColumns`** — every column scales with the grid, in proportion to its
   `width`. Before, only `flex` columns took up a change in width: a grid

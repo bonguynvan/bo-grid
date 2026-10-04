@@ -242,6 +242,7 @@ interface ColBase {
   editor?: Component<{ value; row; column; seed: string | null; commit(value: unknown): void; cancel(): void }>;  // custom in-cell editor (needs editable: true); makes display types editable
   parse?: (raw: string, row: GridRow) => unknown;  // typed/pasted text → stored value; undefined/NaN rejects
   resizable?: boolean;
+  autoWidth?: boolean;         // widen when an on-screen value no longer fits (grow-only, checked every 500 ms; maxWidth caps)
   group?: string;              // spanning header group label
   filter?: false | 'text' | 'number' | 'date' | 'set' | string;   // string = name of a registered filterTypes entry
 

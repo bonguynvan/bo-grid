@@ -19,7 +19,7 @@
   import { moveIndex } from './reorder';
   import { FlashTracker, FlashClock, type CellFlash } from './flash';
   import { parseClipboard, isSingleCell } from './clipboard';
-  import { applyWidths, clampWidth, isResizable, type WidthMap } from './sizing';
+  import { applyWidths, applyAutoWidths, clampWidth, contentWidth, isResizable, type WidthMap } from './sizing';
   import {
     passesFilters,
     isFilterActive,
@@ -617,7 +617,10 @@
   );
   // Apply any resize overrides (turns the dragged column fixed-width), then
   // pin-arrange. Both are no-ops by default, so the grid stays fit-to-width.
-  const sized = $derived(applyWidths(visible, widths));
+  // autoWidth: content widths measured on screen (grow-only, not persisted),
+  // layered under the user's own widths.
+  let autoMeasured = $state<Record<string, number>>({});
+  const sized = $derived(applyAutoWidths(applyWidths(visible, widths), autoMeasured, widths));
   // Runtime pin overrides (column menu) layered on top of static `col.pinned`.
   let pinOverrides = $state<Record<string, 'left' | 'right' | false>>({});
   const pinnedSized = $derived(
@@ -1997,6 +2000,69 @@
     selRowsVersion;
     return view.filter((r) => selectedRows.has(getRowId(r)));
   }
+
+  // ---- Auto width (`autoWidth` columns) ---------------------------------------
+  // Every 500 ms, the formatted values on screen are measured with a canvas —
+  // no DOM reads, so no forced layout on a live board — and a column whose
+  // values no longer fit grows to them. Fonts and padding are read once per
+  // column and theme.
+  const AUTO_WIDTH_MS = 500;
+  let measureCtx: CanvasRenderingContext2D | null | undefined;
+  const cellMetrics = new Map<string, { font: string; pad: number }>();
+  $effect(() => {
+    void themeStyle;
+    cellMetrics.clear();
+  });
+  function metricsFor(col: ColumnDef, ci: number): { font: string; pad: number } | null {
+    const hit = cellMetrics.get(col.key);
+    if (hit) return hit;
+    const cell = viewportEl?.querySelector<HTMLElement>(`.spacer > .row > [aria-colindex="${ci + 1 + leadCols}"]`);
+    if (!cell) return null;
+    const text = cell.querySelector<HTMLElement>('.bo-cell-text, strong, .bo-cf-val') ?? cell;
+    const cs = getComputedStyle(cell);
+    const ts = getComputedStyle(text);
+    // From the longhands: Chrome returns an empty `font` shorthand for text with
+    // tabular figures (font-variant-numeric), which every numeric cell has.
+    const font = `${ts.fontStyle} ${ts.fontWeight} ${ts.fontSize} ${ts.fontFamily}`;
+    // +2 px: sub-pixel text and the ellipsis threshold.
+    const m = { font, pad: (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) + 2 };
+    cellMetrics.set(col.key, m);
+    return m;
+  }
+  function measureText(text: string, font: string): number {
+    if (measureCtx === undefined) measureCtx = document.createElement('canvas').getContext('2d');
+    if (measureCtx && typeof measureCtx.measureText === 'function') {
+      measureCtx.font = font;
+      const w = measureCtx.measureText(text)?.width;
+      if (typeof w === 'number') return w;
+    }
+    return text.length * 7.5; // no canvas (e.g. a DOM without one): a coarse estimate
+  }
+  function measureAutoWidths(): void {
+    if (!viewportEl || document.visibilityState === 'hidden') return;
+    const data = renderItems.flatMap((it) => (it.kind === 'data' ? [it.row] : []));
+    if (data.length === 0) return;
+    let next: Record<string, number> | null = null;
+    cols.forEach((col, ci) => {
+      if (!col.autoWidth || widths[col.key] != null) return;
+      const m = metricsFor(col, ci);
+      if (!m) return;
+      const need = contentWidth(
+        data.map((row) => formatCell(col, cellValue(col, row), row)),
+        (t) => measureText(t, m.font),
+        m.pad,
+      );
+      // The width it has now: the layout's when it computes widths, else its own.
+      const cur = explicitWidths ? layout.info[ci].width : col.flex ? (col.minWidth ?? 0) : (col.width ?? 96);
+      if (need > cur && need > (autoMeasured[col.key] ?? 0)) (next ??= { ...autoMeasured })[col.key] = need;
+    });
+    if (next) autoMeasured = next;
+  }
+  $effect(() => {
+    if (!columns.some((c) => c.autoWidth)) return;
+    const timer = setInterval(measureAutoWidths, AUTO_WIDTH_MS);
+    return () => clearInterval(timer);
+  });
 
   function autosizeColumns(keys?: string[]): void {
     const wanted = keys ? new Set(keys) : null;
