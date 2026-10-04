@@ -62,6 +62,34 @@ describe('themeVars', () => {
     }
   });
 
+  it('badges keep their text at WCAG AA (4.5:1) on their tinted pill, in every preset', () => {
+    // Mirrors the badge CSS: pill = tone at 15% over the row; text = tone mixed
+    // 60 / 40 with the theme text colour (color-mix in srgb).
+    const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const mix = (a: string, b: string, wa: number) =>
+      '#' + rgb(a).map((v, i) => Math.round(v * wa + rgb(b)[i] * (1 - wa)).toString(16).padStart(2, '0')).join('');
+    const lum = (hex: string) => {
+      const [r, g, b] = rgb(hex).map((v) => v / 255);
+      const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+      return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    };
+    const contrast = (a: string, b: string) => {
+      const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    };
+    const hex6 = (v?: string) => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
+    for (const [name, t] of Object.entries(themePresets)) {
+      for (const tone of ['up', 'down', 'amber', 'selBorder'] as const) {
+        for (const row of ['rowA', 'rowB', 'rowHover'] as const) {
+          if (!hex6(t[tone]) || !hex6(t[row]) || !hex6(t.text)) continue;
+          const pill = mix(t[tone]!, t[row]!, 0.15);
+          const fg = mix(t[tone]!, t.text!, 0.6);
+          expect(contrast(fg, pill), `${name}: ${tone} badge on ${row}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    }
+  });
+
   it('serializes layout/density tokens (radius / fontSize / cellPad)', () => {
     expect(themeVars({ radius: '14px', fontSize: '12px', cellPad: '12px' })).toBe(
       '--bo-grid-radius:14px;--bo-grid-font-size:12px;--bo-grid-cell-pad:12px;',

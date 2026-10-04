@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { resolveTone, toneColor, defaultToneColors } from './tone';
+import { resolveTone, toneColor, defaultToneColors, darkToneColors, lightToneColors, type ToneColors } from './tone';
+import { themePresets } from '../grid/theme';
 
 describe('resolveTone', () => {
   const bands = { ref: 100, ceiling: 107, floor: 93 };
@@ -58,5 +59,43 @@ describe('toneColor', () => {
   it('honours a partial colour override without needing the full map', () => {
     expect(toneColor('ceiling', { ceiling: '#fff' })).toBe('#fff');
     expect(toneColor('up', { ceiling: '#fff' })).toBe(defaultToneColors.up);
+  });
+});
+
+describe('tone palettes', () => {
+  const lum = (hex: string) => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+    const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  };
+  const contrast = (a: string, b: string) => {
+    const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+  const surfaces = (names: (keyof typeof themePresets)[]) =>
+    names.flatMap((n) => (['bg', 'headerBg', 'rowA', 'rowB', 'rowHover'] as const).map((k) => [n, k, themePresets[n][k]!] as const));
+  const check = (palette: ToneColors, names: (keyof typeof themePresets)[]) => {
+    for (const [tone, color] of Object.entries(palette)) {
+      for (const [name, key, bg] of surfaces(names)) {
+        expect(contrast(color, bg), `${tone} ${color} on ${name}.${key} ${bg}`).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  };
+
+  it('darkToneColors reach WCAG AA (4.5:1) on every surface of the dark presets', () => {
+    check(darkToneColors, ['dark', 'high-contrast-dark', 'midnight', 'terminal', 'tradecanvas']);
+  });
+
+  it('lightToneColors reach WCAG AA (4.5:1) on every surface of the light presets', () => {
+    check(lightToneColors, ['light', 'high-contrast-light', 'tradecanvas-light']);
+  });
+
+  it('defaults to the dark palette, the grid’s default theme', () => {
+    expect(defaultToneColors).toEqual(darkToneColors);
+    expect(toneColor('ceiling')).toBe(darkToneColors.ceiling);
+  });
+
+  it('takes a whole palette as the override', () => {
+    expect(toneColor('floor', lightToneColors)).toBe(lightToneColors.floor);
   });
 });

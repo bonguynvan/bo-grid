@@ -9,7 +9,7 @@
 export { vnTickSize, roundToTick, vnBandPercent, vnBands } from './bands';
 export type { Exchange, ToneBands } from './bands';
 
-export { resolveTone, toneColor, defaultToneColors } from './tone';
+export { resolveTone, toneColor, defaultToneColors, darkToneColors, lightToneColors } from './tone';
 export type { Tone, ToneColors } from './tone';
 
 export { decimalsForTick, fmtTradingPrice } from './format';

@@ -697,20 +697,23 @@
     border-radius: 999px;
     white-space: nowrap;
   }
+  /* Badge text is its tone mixed 60 / 40 with the theme text colour: darker on
+     light themes, lighter on dark ones, so it clears 4.5:1 on its own tinted
+     pill in every preset (theme.test.ts) while keeping its hue. */
   .bo-badge-up {
-    color: var(--bo-up);
+    color: color-mix(in srgb, var(--bo-up) 60%, var(--bo-text));
     background: color-mix(in srgb, var(--bo-up) 15%, transparent);
   }
   .bo-badge-down {
-    color: var(--bo-down);
+    color: color-mix(in srgb, var(--bo-down) 60%, var(--bo-text));
     background: color-mix(in srgb, var(--bo-down) 15%, transparent);
   }
   .bo-badge-amber {
-    color: var(--bo-amber);
+    color: color-mix(in srgb, var(--bo-amber) 60%, var(--bo-text));
     background: color-mix(in srgb, var(--bo-amber) 15%, transparent);
   }
   .bo-badge-info {
-    color: var(--bo-sel-border);
+    color: color-mix(in srgb, var(--bo-sel-border) 60%, var(--bo-text));
     background: color-mix(in srgb, var(--bo-sel-border) 15%, transparent);
   }
   .bo-badge-neutral {

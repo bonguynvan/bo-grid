@@ -398,7 +398,7 @@ VN/TH terminals use — NOT plain up/down):
 const bands = vnBands(row.ref, 'HOSE');   // 'HOSE' | 'HNX' | 'UPCOM', default 'HOSE'
                                             // → { ref, ceiling, floor } — tick-rounded (ceiling DOWN, floor UP)
 const tone = resolveTone(row.price, bands);   // 'ceiling' | 'floor' | 'ref' | 'up' | 'down'
-const color = toneColor(tone);                 // default palette; pass a partial override object
+const color = toneColor(tone);                 // darkToneColors by default; toneColor(tone, lightToneColors) on light themes; or a partial override
 ```
 `vnTickSize(price, exchange?)` — HOSE steps 10 → 50 → 100 VND by price tier;
 HNX/UPCOM flat 100 VND. `roundToTick(price, tick, 'down'|'up'|'nearest')`.

@@ -102,15 +102,16 @@ The loading overlay is an `aria-live="polite"` region with `aria-busy`.
 - **Headers are individually tabbable** (each a focusable column header) rather than a single
   roving tab stop — fully keyboard-operable, just more tab stops on very wide
   grids. Use `Alt`+`↓` for per-column actions to avoid tabbing.
-- axe-core on every grid in the demo reports no ARIA-structure violations. Two
-  findings remain, both understood:
-  - `scrollable-region-focusable` on the body's scroll container. It is not
-    a tab stop of its own by design. The grid is the single tab stop, and
-    the arrow keys, Page Up / Down and Home / End move the active cell and
-    scroll it into view.
-  - Colour contrast of `bo-grid/trading`'s default ceiling tone (`#c026d3`) on
-    dark themes (3.85:1). Pass your own colours to `toneColor` until the
-    defaults gain a dark-theme palette.
+- axe-core on every grid in the demo reports no ARIA-structure or colour
+  violations. One finding remains: `scrollable-region-focusable` on the body's
+  scroll container, which by design is not a tab stop of its own. The grid is
+  the single tab stop, and the arrow keys, Page Up / Down and Home / End move
+  the active cell and scroll it into view.
+- Badge text is mixed toward the theme's text colour, so it clears 4.5:1 on
+  its tinted pill in every built-in preset.
+- `bo-grid/trading`'s price-limit tones come as two palettes,
+  `darkToneColors` (the default) and `lightToneColors`. Each keeps every tone
+  at 4.5:1 or better on the grid's presets for its side.
 - A formal screen-reader pass (NVDA / VoiceOver) is recommended for any specific
   deployment; this audit is code-level.
 

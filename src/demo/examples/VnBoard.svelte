@@ -6,6 +6,8 @@
     vnTickSize,
     resolveTone,
     toneColor,
+    darkToneColors,
+    lightToneColors,
     fmtTradingPrice,
     sessionStateAt,
     sessionLabel,
@@ -14,6 +16,9 @@
     type Tone,
   } from '../../lib/trading';
   import { ui } from '../theme.svelte';
+
+  // Tone colours follow the page theme: each palette reads at AA on its own.
+  const tones = $derived(ui.theme === 'light' ? lightToneColors : darkToneColors);
 
   // A HOSE-style board: price-LIMIT colouring (purple ceiling / cyan floor /
   // yellow reference / green up / red down — not just up/down), tick-aware VND
@@ -129,14 +134,14 @@
   {#if column.key === 'ref'}
     <span class="num">{fmtTradingPrice(r.ref, vnTickSize(r.ref, r.exchange))}</span>
   {:else if column.key === 'ceiling'}
-    <span class="num" style:color={toneColor('ceiling')}>{fmtTradingPrice(bands.ceiling ?? r.ref, vnTickSize(r.ref, r.exchange))}</span>
+    <span class="num" style:color={toneColor('ceiling', tones)}>{fmtTradingPrice(bands.ceiling ?? r.ref, vnTickSize(r.ref, r.exchange))}</span>
   {:else if column.key === 'floor'}
-    <span class="num" style:color={toneColor('floor')}>{fmtTradingPrice(bands.floor ?? r.ref, vnTickSize(r.ref, r.exchange))}</span>
+    <span class="num" style:color={toneColor('floor', tones)}>{fmtTradingPrice(bands.floor ?? r.ref, vnTickSize(r.ref, r.exchange))}</span>
   {:else if column.key === 'price'}
-    <span class="num" style:color={toneColor(t)}>{fmtTradingPrice(r.price, vnTickSize(r.price, r.exchange))}</span>
+    <span class="num" style:color={toneColor(t, tones)}>{fmtTradingPrice(r.price, vnTickSize(r.price, r.exchange))}</span>
   {:else if column.key === 'changePct'}
     {@const pct = ((r.price - r.ref) / r.ref) * 100}
-    <span class="num" style:color={toneColor(t)}>{pct > 0 ? '+' : ''}{pct.toFixed(2)}%</span>
+    <span class="num" style:color={toneColor(t, tones)}>{pct > 0 ? '+' : ''}{pct.toFixed(2)}%</span>
   {/if}
 {/snippet}
 
@@ -148,11 +153,11 @@
     <span class="dot"></span>{live ? 'Live' : 'Paused'}
   </button>
   <div class="legend">
-    <span><i style:background={toneColor('ceiling')}></i>Ceiling</span>
-    <span><i style:background={toneColor('floor')}></i>Floor</span>
-    <span><i style:background={toneColor('ref')}></i>Reference</span>
-    <span><i style:background={toneColor('up')}></i>Up</span>
-    <span><i style:background={toneColor('down')}></i>Down</span>
+    <span><i style:background={toneColor('ceiling', tones)}></i>Ceiling</span>
+    <span><i style:background={toneColor('floor', tones)}></i>Floor</span>
+    <span><i style:background={toneColor('ref', tones)}></i>Reference</span>
+    <span><i style:background={toneColor('up', tones)}></i>Up</span>
+    <span><i style:background={toneColor('down', tones)}></i>Down</span>
   </div>
 </div>
 

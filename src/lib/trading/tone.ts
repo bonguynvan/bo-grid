@@ -46,19 +46,34 @@ export interface ToneColors {
   down: string;
 }
 
-/** The VN/TH terminal convention: purple ceiling, cyan floor, yellow reference,
-    green up, red down. Override per deployment — these are a starting palette,
-    not a standard. */
-export const defaultToneColors: ToneColors = {
-  ceiling: '#c026d3',
-  floor: '#06b6d4',
-  ref: '#eab308',
-  up: '#16a34a',
-  down: '#dc2626',
+/** The VN/TH terminal convention — purple ceiling, cyan floor, yellow
+    reference, green up, red down — for dark screens: every colour reads at
+    WCAG AA (4.5:1) or better on the grid's dark presets. */
+export const darkToneColors: ToneColors = {
+  ceiling: '#e879f9',
+  floor: '#22d3ee',
+  ref: '#facc15',
+  up: '#4ade80',
+  down: '#f87171',
 };
 
-/** Resolve a tone to a CSS colour, with an optional partial override (only the
-    tones you want to change from `defaultToneColors`). */
+/** The same convention for light screens, at WCAG AA (4.5:1) or better on the
+    grid's light presets. Pass it to `toneColor` on a light theme. */
+export const lightToneColors: ToneColors = {
+  ceiling: '#a21caf',
+  floor: '#155e75',
+  ref: '#854d0e',
+  up: '#166534',
+  down: '#b91c1c',
+};
+
+/** The palette `toneColor` uses when given no other: the dark one, as the
+    grid's default theme is dark. A starting palette, not a standard —
+    override per deployment. */
+export const defaultToneColors: ToneColors = darkToneColors;
+
+/** Resolve a tone to a CSS colour, with an optional override: a whole palette
+    (`lightToneColors`) or only the tones you want to change. */
 export function toneColor(tone: Tone, colors?: Partial<ToneColors>): string {
   return colors?.[tone] ?? defaultToneColors[tone];
 }
