@@ -1373,6 +1373,25 @@ const bigRows = document.querySelectorAll('.bo-grid .row:not(.skeleton)').length
 if (bigHeight < 1_000_000) fail(`1M-rows scroll height too small for the dataset (${bigHeight}px)`);
 if (bigRows === 0) fail('1M-rows example loaded no windowed rows');
 
+// Code view: an example's switch shows its own source (lazy-loaded) and keeps
+// the preview mounted, hidden, so it comes back as it was.
+{
+  const section = document.querySelector('#ex-bigdata');
+  const [previewBtn, codeBtn] = section.querySelectorAll('.lp-ex-switch button');
+  codeBtn.click();
+  let code = '';
+  for (let i = 0; i < 80 && !code; i++) {
+    await wait(25);
+    code = section.querySelector('.lp-ex-code pre')?.textContent ?? '';
+  }
+  if (!code.includes('<Grid')) fail('Code view did not show the example source');
+  if (!section.querySelector('.lp-ex-body').hidden) fail('Code view left the preview showing');
+  previewBtn.click();
+  await wait(20);
+  if (section.querySelector('.lp-ex-body').hidden || section.querySelector('.lp-ex-code')) fail('Preview did not come back from the code view');
+  if (!section.querySelector('.bo-grid .row')) fail('The preview grid did not survive the code view');
+}
+
 console.log(
   `✓ smoke: grid mounted — ${rowCount} rows, ${canvases} sparklines; ` +
     `multi-sort 2 keys; selection ${selCount} cells + agg bar; grouping ${groupHeaders} headers, ` +
@@ -1381,6 +1400,6 @@ console.log(
     `${stickyHeaders} pinned columns (+right); pivot ${pivotHeaders.length} cols; ` +
     `gallery: portfolio ${portfolioRows} rows/${portfolioGroups} groups + header-groups + ctx-menu + ${cfBars} data-bars/${cfIcons} icons/${cfScale} scale + computed-col, sheet ${sheetRows} rows (light) + select-edit + row-select + col-hide + col-filter + empty-msg + master-detail + cell-class + pagination, ` +
     `orderbook ${obAsk}↑/${obBid}↓ + ${obDepth} depth bars + ${obDirected} derived flashes, vnboard ${vnRows} rows + ${vnSession.textContent?.trim()} session (bo-grid/trading), ladder ${ladderRowsInitial}/120 visible + lock/page/recenter ok, timesales ${tsRows} trades (capped, newest-first), correlation ${heatCells} heat cells/${corrPinned} pinned, blotter ${blotRuns.length} runs/${blotCovers} covers/${blotColSpans} col-spans, leaderboard ${lbBars} bars/${lbPodium} podium/${lbPinned} pinned, wide ${wideHeaders} cols/${widePinned} pinned (col-virt), themes 8 presets (midnight→terminal), csv ${csvRows}→${csvAfter} rows + json ${csvJson} + auto ${csvAuto} (csv/tsv/json/auto import), print ${printGridRows} virt/${printPreviewRows} all-rows, tree ${treeRootsCount}→${treeAfter} on expand +kbd-collapse, lazytree ${lazyRootsCount}→${lazyAfter} async-load, servergroups ${sgGroups} groups→${sgRowsAfter} rows on expand, tasks row-reorder ok, bigdata ${bigRows} windowed rows over ${bigHeight.toLocaleString()}px; ` +
-    `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok`,
+    `keyboard Home/End/Ctrl+Home ok; loading overlay ok; a11y rowcount/activedescendant ok; code view ok`,
 );
 process.exit(0);

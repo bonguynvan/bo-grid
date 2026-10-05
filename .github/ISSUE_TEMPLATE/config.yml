@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Guide and API reference
+    url: https://bonguynvan.github.io/bo-grid/api.html
+    about: Every prop, column option and export, with the guide linked from the README.
+  - name: Security issue
+    url: https://github.com/bonguynvan/bo-grid/security/advisories/new
+    about: Please report vulnerabilities privately, not as an issue.

@@ -3,111 +3,30 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
-## [Unreleased]
+## [2.2.0] — 2026-10-05
 
-### Performance
+**Built for the busy board.** Flashes that cost a fraction of a fade
+(`flashMotion: 'hold'`), on-demand flashes (`api.flashCells`), the size of a
+move (`showChange`), streaming only the symbols on screen
+(`onViewportChange`), users pinning the rows they watch (`rowPinning`), finding
+a symbol with Ctrl/⌘+F (`findBar`), columns that scale with the grid
+(`fitColumns`) and widen as their values grow (`autoWidth`), plus row numbers
+and column hover. The grid's ARIA structure and colours now pass axe-core, and
+component cells update in place.
 
-- **`component` cells and the `cell` snippet update in place under
-  `api.patchRows`.** They used to be rebuilt on every patch of their row.
-  Each patch now hands them a fresh view of the row: a forwarding proxy, so
-  no copy, with the same fields and a new identity. Their markup and
-  `$derived` values re-run while their DOM, focus and local state survive.
-  Price board with one component column, 30,000 events/s, motion allowed:
-  ~18.9 → ~14.8 ms of main-thread work per frame (script 5.3 → 3.7 ms), and
-  dropped frames in 3 s fell from ~20 to ~7. A component that read `row`
-  once at mount should read it reactively.
+### Upgrading from 2.1
 
-- **`flashMotion: 'hold'` — flashes for busy boards at 3–4× less
-  main-thread work.** The default `'fade'` is a CSS animation, restyled and
-  repainted on every frame it runs; on a busy feed most visible cells are
-  always mid-fade. A held flash is a static tint for the flash window. It is
-  restyled and repainted when it starts and when the grid's clock drops it,
-  and a repeat tick during the hold writes nothing. Price board, motion
-  allowed, main thread per frame: ~30 → ~9 ms at 10,000 events/s and ~40 →
-  ~12 ms at 30,000, with no dropped frames (within ~1 ms of no flash).
-  Legacy `flash: true` keeps its fade, and reduced motion still shows no
-  flash. The Price board demo holds by default and has a Flash switch.
+No API was removed. Behaviour that changed:
 
-### Fixed
-
-- **Flex columns keep their `minWidth` and `maxWidth` in fit-to-width
-  mode.** They were laid out with `min-width: 0` and no maximum, so a flex
-  column could squeeze below its `minWidth` when other flex columns had more
-  weight.
-
-- **`bo-grid/trading`'s tone colours meet WCAG AA.** The single default
-  palette sat between dark and light, failing on both: the ceiling tone was
-  3.85:1 on dark themes, and yellow and cyan were near-unreadable on white.
-  - It is now two palettes, `darkToneColors` and `lightToneColors`, each at
-    4.5:1 or better on every surface of the grid's presets for its side.
-  - `defaultToneColors` (what `toneColor` falls back to) is the dark one,
-    matching the grid's default theme, so the defaults are brighter than
-    before. Pass `lightToneColors` on a light theme.
-  - The VN board demo follows the page theme.
-- **Badges meet WCAG AA in every preset.** A badge's text was its tone
-  colour on a pill tinted with the same tone, which went as low as 3.4:1
-  (amber on the light preset).
-  - The text is now the tone mixed 60 / 40 with the theme's text colour. That
-    makes it darker on light themes and lighter on dark ones, while keeping
-    its hue: 4.9:1 or better everywhere, checked per preset in `theme.test.ts`.
-  - axe on the demo, both page themes: no colour-contrast violations left.
-- **The focused cell scrolls into view sideways too.** Arrow keys, Home/End
-  and the API's `focusCell` only scrolled vertically, so focus could move to a
-  column off screen in a horizontally scrolling grid. The column is now
-  brought clear of the pinned columns on either side.
-
-- **Pinned rows sit above the body instead of on top of it.** The shared row
-  rule positioned them absolutely, so the pinned area was 0 px tall.
-  - The first data row hid under the pinned rows.
-  - Body text showed through their translucent background.
-  - Several pinned rows would overlap one another.
-
-  They now stack in flow and the body starts below them. Virtualization,
-  keep-in-view and sticky group headers count the pinned area.
-- **Pinned rows repaint under `api.patchRows`.** Their cells did not follow
-  the per-row and per-field versions that patched rows repaint by.
-
-- **The grid's ARIA structure passes axe-core.** Across every grid in the
-  demo, 34 `aria-required-children`, 9 `aria-conditional-attr` and 1
-  `aria-hidden-focus` violations went to none.
-  - Every control in a row now sits in a `gridcell`: the expand and checkbox
-    columns, the filter row's inputs, the footer's totals, and a group row's
-    toggle and subtotals.
-  - A grid with tree data is a `treegrid`, where `aria-level` and
-    `aria-expanded` belong.
-  - The sticky group header copied over the scroll keeps its toggle out of
-    the tab order.
-- **Space and Enter typed in the quick filter no longer tick or edit the
-  focused row.** The toolbar was inside the element that handles the grid's
-  keys, so its keystrokes reached the grid's shortcuts.
-- **Group subtotals meet 4.5:1 contrast.** They had used the dim text colour
-  (4.2:1 on the group row in the TradeCanvas theme).
-- **Benchmarks of the live board were measured without flash animation.**
-  Headless Chrome inherits the operating system's reduced-motion setting,
-  and under it the grid plays no flash. BENCHMARKS.md's live-frame figures
-  and its "flash style makes no difference" finding came from such runs.
-  The section is re-measured with motion allowed and says how to check.
-
-
-- **Flex columns no longer overflow in fixed-width mode.** With pinned
-  columns, column virtualization or too little room, a flex column without a
-  `width` started at a 160 px default and could only grow, so a narrow grid
-  scrolled sideways for nothing (a 300 px watchlist with a pinned symbol
-  column overflowed by 46 px). It now starts at its `minWidth` (64 without
-  one) and grows to fill; the switch to horizontal scrolling uses the same
-  base, so crossing it no longer makes columns jump. A grid whose columns
-  truly do not fit still scrolls by exactly the missing width.
-- **Column headers have an accessible name and a valid role.** Headers were
-  `<button role="columnheader">` — a role a button may not take — and took
-  their name from everything inside them, empty when the header text was.
-  They are now focusable `role="columnheader"` elements named by the header
-  text (the column key when empty), sorting on Enter or Space; the expand
-  column's header is named by the new `detailColumn` label. axe-core: from
-  199 `aria-allowed-role` and 1 `empty-table-header` violations on the demo's
-  headers to none.
-- **Enter / Space on a header only sorts**: the grid's own Enter / Space
-  (edit the focused cell, tick the focused row) no longer runs for a key
-  pressed on a header.
+- `role="grid"`, its focus, `aria-*` attributes and keys moved from the
+  `.bo-grid` box to an inner element. Query `[role="grid"]` inside `.bo-grid`
+  in tests that read those off the box.
+- `bo-grid/trading`'s default tone colours (`defaultToneColors`) are the new
+  dark palette, brighter than before. Pass `lightToneColors` on a light theme.
+- Under `api.patchRows`, `component` cells and the `cell` snippet receive a
+  fresh view of the row on each patch instead of being rebuilt. Read `row`
+  reactively, not once at mount.
+- Flex columns now honour `minWidth` / `maxWidth` in fit-to-width mode.
 
 ### Added
 
@@ -226,6 +145,124 @@ All notable changes to this project are documented here. Format follows
 - **The demo site and API page have a favicon**: the bo-grid mark (a grid with
   one flashing cell) on an ink tile, as SVG with a 32 px PNG fallback and an
   apple-touch-icon. Site-only; nothing is added to the npm package.
+
+- **Every example on the demo site has a Preview / Code switch.** Code shows
+  the example's own Svelte source, highlighted, with Copy and a GitHub link.
+  The source loads on first open, so the page stays light, and the preview
+  stays mounted (hidden), so a live board keeps running.
+
+- **The README and demo site describe bo-grid on its own terms**, without
+  comparisons to other grids; the full feature guide moved to
+  [docs/guide.md](./docs/guide.md).
+
+### Performance
+
+- **`component` cells and the `cell` snippet update in place under
+  `api.patchRows`.** They used to be rebuilt on every patch of their row.
+  Each patch now hands them a fresh view of the row: a forwarding proxy, so
+  no copy, with the same fields and a new identity. Their markup and
+  `$derived` values re-run while their DOM, focus and local state survive.
+  Price board with one component column, 30,000 events/s, motion allowed:
+  ~18.9 → ~14.8 ms of main-thread work per frame (script 5.3 → 3.7 ms), and
+  dropped frames in 3 s fell from ~20 to ~7. A component that read `row`
+  once at mount should read it reactively.
+
+- **`flashMotion: 'hold'` — flashes for busy boards at 3–4× less
+  main-thread work.** The default `'fade'` is a CSS animation, restyled and
+  repainted on every frame it runs; on a busy feed most visible cells are
+  always mid-fade. A held flash is a static tint for the flash window. It is
+  restyled and repainted when it starts and when the grid's clock drops it,
+  and a repeat tick during the hold writes nothing. Price board, motion
+  allowed, main thread per frame: ~30 → ~9 ms at 10,000 events/s and ~40 →
+  ~12 ms at 30,000, with no dropped frames (within ~1 ms of no flash).
+  Legacy `flash: true` keeps its fade, and reduced motion still shows no
+  flash. The Price board demo holds by default and has a Flash switch.
+
+### Fixed
+
+- **Flex columns keep their `minWidth` and `maxWidth` in fit-to-width
+  mode.** They were laid out with `min-width: 0` and no maximum, so a flex
+  column could squeeze below its `minWidth` when other flex columns had more
+  weight.
+
+- **`bo-grid/trading`'s tone colours meet WCAG AA.** The single default
+  palette sat between dark and light, failing on both: the ceiling tone was
+  3.85:1 on dark themes, and yellow and cyan were near-unreadable on white.
+  - It is now two palettes, `darkToneColors` and `lightToneColors`, each at
+    4.5:1 or better on every surface of the grid's presets for its side.
+  - `defaultToneColors` (what `toneColor` falls back to) is the dark one,
+    matching the grid's default theme, so the defaults are brighter than
+    before. Pass `lightToneColors` on a light theme.
+  - The VN board demo follows the page theme.
+
+- **Badges meet WCAG AA in every preset.** A badge's text was its tone
+  colour on a pill tinted with the same tone, which went as low as 3.4:1
+  (amber on the light preset).
+  - The text is now the tone mixed 60 / 40 with the theme's text colour. That
+    makes it darker on light themes and lighter on dark ones, while keeping
+    its hue: 4.9:1 or better everywhere, checked per preset in `theme.test.ts`.
+  - axe on the demo, both page themes: no colour-contrast violations left.
+
+- **The focused cell scrolls into view sideways too.** Arrow keys, Home/End
+  and the API's `focusCell` only scrolled vertically, so focus could move to a
+  column off screen in a horizontally scrolling grid. The column is now
+  brought clear of the pinned columns on either side.
+
+- **Pinned rows sit above the body instead of on top of it.** The shared row
+  rule positioned them absolutely, so the pinned area was 0 px tall: the first
+  data row hid under the pinned rows, body text showed through their
+  translucent background, and several pinned rows would overlap one another.
+  They now stack in flow and the body starts below them; virtualization,
+  keep-in-view and sticky group headers count the pinned area.
+
+- **Pinned rows repaint under `api.patchRows`.** Their cells did not follow
+  the per-row and per-field versions that patched rows repaint by.
+
+- **The grid's ARIA structure passes axe-core.** Across every grid in the
+  demo, 34 `aria-required-children`, 9 `aria-conditional-attr` and 1
+  `aria-hidden-focus` violations went to none.
+  - Every control in a row now sits in a `gridcell`: the expand and checkbox
+    columns, the filter row's inputs, the footer's totals, and a group row's
+    toggle and subtotals.
+  - A grid with tree data is a `treegrid`, where `aria-level` and
+    `aria-expanded` belong.
+  - The sticky group header copied over the scroll keeps its toggle out of
+    the tab order.
+
+- **Space and Enter typed in the quick filter no longer tick or edit the
+  focused row.** The toolbar was inside the element that handles the grid's
+  keys, so its keystrokes reached the grid's shortcuts.
+
+- **Group subtotals meet 4.5:1 contrast.** They had used the dim text colour
+  (4.2:1 on the group row in the TradeCanvas theme).
+
+- **Benchmarks of the live board were measured without flash animation.**
+  Headless Chrome inherits the operating system's reduced-motion setting,
+  and under it the grid plays no flash. BENCHMARKS.md's live-frame figures
+  and its "flash style makes no difference" finding came from such runs.
+  The section is re-measured with motion allowed and says how to check.
+
+- **Flex columns no longer overflow in fixed-width mode.** With pinned
+  columns, column virtualization or too little room, a flex column without a
+  `width` started at a 160 px default and could only grow, so a narrow grid
+  scrolled sideways for nothing (a 300 px watchlist with a pinned symbol
+  column overflowed by 46 px). It now starts at its `minWidth` (64 without
+  one) and grows to fill; the switch to horizontal scrolling uses the same
+  base, so crossing it no longer makes columns jump. A grid whose columns
+  truly do not fit still scrolls by exactly the missing width.
+
+- **Column headers have an accessible name and a valid role.** Headers were
+  `<button role="columnheader">` — a role a button may not take — and took
+  their name from everything inside them, empty when the header text was.
+  They are now focusable `role="columnheader"` elements named by the header
+  text (the column key when empty), sorting on Enter or Space; the expand
+  column's header is named by the new `detailColumn` label. axe-core: from
+  199 `aria-allowed-role` and 1 `empty-table-header` violations on the demo's
+  headers to none.
+
+- **Enter / Space on a header only sorts**: the grid's own Enter / Space
+  (edit the focused cell, tick the focused row) no longer runs for a key
+  pressed on a header.
 
 ## [2.1.0] — 2026-10-03
 
@@ -1171,6 +1208,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 [0.23.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.23.0
 [0.22.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.22.0
 [0.21.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.21.0
+[2.2.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v2.2.0
 [0.20.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.20.0
 [0.19.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.19.0
 [0.18.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.18.0

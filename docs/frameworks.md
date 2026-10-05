@@ -208,7 +208,7 @@ const columns = [
 ];
 ```
 
-See the "Market conventions" section in [README.md](../README.md) for the full
+See the "Market conventions" section in the [guide](./guide.md#market-conventions--bo-gridtrading) for the full
 API and the **VN board** demo for a worked example.
 
 ## Notes

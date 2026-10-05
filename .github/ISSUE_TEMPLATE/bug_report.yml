@@ -1,0 +1,43 @@
+name: Bug report
+description: Something in bo-grid doesn't work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for the report. A small reproduction (a column config and a few rows) helps most.
+  - type: input
+    id: version
+    attributes:
+      label: bo-grid version
+      placeholder: "2.2.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: setup
+    attributes:
+      label: How you use it
+      options:
+        - Svelte 5 component
+        - SvelteKit (SSR)
+        - "<bo-grid> custom element (React, Vue, Angular or plain JS)"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Columns, rows and props, or a link to a fork of one of the examples.
+      render: svelte
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      placeholder: Chrome 140 on Windows 11
