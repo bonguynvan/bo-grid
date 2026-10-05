@@ -3,7 +3,7 @@
 // helpers render ALL (already filtered/sorted) rows to a standalone HTML table —
 // dependency-free, and they reuse the column formatters so output matches the grid.
 import type { ColumnDef, GridRow } from './column';
-import { formatCell, cellValue, isNumeric } from './column';
+import { formatCell, cellValue, alignOf } from './column';
 
 const ESC: Record<string, string> = {
   '&': '&amp;',
@@ -19,12 +19,13 @@ export function escapeHTML(s: string): string {
 
 /**
  * Render rows to a semantic `<table>` HTML string (formatted via the column
- * formatters; numeric columns right-aligned; sparkline/custom columns skipped).
+ * formatters; aligned like the grid, numbers right unless `align` says otherwise;
+ * sparkline/custom columns skipped).
  * Values are HTML-escaped. Pure; unit-tested. Embed it, or use `printTable`.
  */
 export function toHTMLTable(rows: readonly GridRow[], columns: readonly ColumnDef[]): string {
   const cols = columns.filter((c) => c.type !== 'sparkline' && c.type !== 'custom');
-  const align = (c: ColumnDef): string => (isNumeric(c) ? ' style="text-align:right"' : '');
+  const align = (c: ColumnDef): string => (alignOf(c) === 'right' ? ' style="text-align:right"' : '');
   const head = cols.map((c) => `<th${align(c)}>${escapeHTML(c.header)}</th>`).join('');
   const body = rows
     .map(

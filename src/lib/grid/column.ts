@@ -46,6 +46,9 @@ export interface ColBase {
   maxWidth?: number;
   /** flex-grow weight; column stretches to fill remaining space. */
   flex?: number;
+  /** Which side the header, cells and footer sit on. Defaults to right for
+      number types and left for the rest; set it to line a custom column's
+      values up under its title. */
   align?: Align;
   /** Extra class(es) for this column's data cells — a static string, or a
       function of the cell value/row for conditional styling. Target via
@@ -477,6 +480,12 @@ export function isNumeric(col: ColumnDef): boolean {
   // Non-numeric (text-aligned / structured) types; everything else is a number.
   if (!col.type) return false;
   return !['text', 'sparkline', 'custom', 'tags', 'badge', 'boolean', 'avatar', 'link'].includes(col.type);
+}
+
+/** The side a column's header, cells and footer sit on: `align` when set,
+    otherwise right for numbers and left for everything else. */
+export function alignOf(col: ColumnDef): Align {
+  return col.align ?? (isNumeric(col) ? 'right' : 'left');
 }
 
 export function candlesOf(row: GridRow, key: string): Candle[] {

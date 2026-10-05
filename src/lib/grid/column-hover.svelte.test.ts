@@ -22,7 +22,7 @@ function hover(el: Element, pointerType = 'mouse') {
   el.dispatchEvent(e);
   flushSync();
 }
-const overlay = () => grid!.target.querySelector('.viewport .colhover');
+const overlay = () => grid!.target.querySelector('.viewport .colwash');
 const headerOf = (colindex: number) => grid!.target.querySelector(`.head [role=columnheader][aria-colindex="${colindex}"]`);
 const cellOf = (colindex: number) => grid!.target.querySelector(`.viewport .row [aria-colindex="${colindex}"]`)!;
 
@@ -31,9 +31,13 @@ describe('columnHover', () => {
     grid = mountGrid({ columns, columnHover: true });
     expect(overlay()).toBeNull();
     hover(cellOf(2));
-    expect(grid.target.querySelectorAll('.viewport .colhover')).toHaveLength(1);
+    expect(grid.target.querySelectorAll('.viewport .colwash')).toHaveLength(1);
     expect(headerOf(2)?.classList.contains('colhover')).toBe(true);
     expect(headerOf(1)?.classList.contains('colhover')).toBe(false);
+    // The overlay is absolutely positioned and ignores the pointer. Its class
+    // must stay off the header, or the header leaves the row and can't sort.
+    expect(headerOf(2)?.classList.contains('colwash')).toBe(false);
+    expect(overlay()?.classList.contains('colhover')).toBe(false);
     hover(cellOf(1));
     expect(headerOf(1)?.classList.contains('colhover')).toBe(true);
     expect(headerOf(2)?.classList.contains('colhover')).toBe(false);

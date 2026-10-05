@@ -7,7 +7,7 @@
   import { untrack } from 'svelte';
   import type { Snippet } from 'svelte';
   import type { ColumnDef, GridRow, SortState, SortDir, CellEditEvent, CellTypeDef } from './column';
-  import { colStyle, baseWidth, MIN_FLEX_W, isNumeric, isSortable, isEditable, sortRows, formatCell, cellValue } from './column';
+  import { colStyle, baseWidth, MIN_FLEX_W, isNumeric, alignOf, isSortable, isEditable, sortRows, formatCell, cellValue } from './column';
   import { arrangePinned } from './pin';
   import { columnWindow, columnOffsets } from './colvirt';
   import { uniformHeights, variableHeights } from './rowheight';
@@ -2539,7 +2539,7 @@
       <div
         class="h {col.headerClass ?? ''}"
         class:colhover={hoverCol === ci}
-        class:right={isNumeric(col) || col.align === 'right'}
+        class:right={alignOf(col) === 'right'}
         class:sortable={isSortable(col)}
         class:dragging={ci === dragSrc}
         class:dragover={ci === dragOver && ci !== dragSrc}
@@ -2738,7 +2738,7 @@
       </div>
     {/if}
     <div class="spacer" bind:this={spacerEl} style="height:{total}px;{hScroll ? `width:${layout.totalWidth + leadPx}px;` : ''}">
-      {#if hoverBox}<div class="colhover" class:pin={hoverBox.pinned} aria-hidden="true" style="left:{hoverBox.left}px;width:{hoverBox.width}px"></div>{/if}
+      {#if hoverBox}<div class="colwash" class:pin={hoverBox.pinned} aria-hidden="true" style="left:{hoverBox.left}px;width:{hoverBox.width}px"></div>{/if}
       {#each renderItems as item (rowSlots ? item.vr % rowSlots : item.vr)}
         {#if item.kind === 'group'}
           <div class="grouprow" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
@@ -2884,7 +2884,7 @@
         {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
         {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
         {#each cols as col, ci (ci)}
-          <span class="fcell" role="gridcell" aria-colindex={ci + 1 + leadCols} class:right={isNumeric(col)} style={cellWidthStyle(ci)}>
+          <span class="fcell" role="gridcell" aria-colindex={ci + 1 + leadCols} class:right={alignOf(col) === 'right'} style={cellWidthStyle(ci)}>
             {ci === 0 && !footerCells[ci] ? L.total : footerCells[ci]}
           </span>
         {/each}
@@ -3433,8 +3433,10 @@
     min-width: 100%;
   }
   /* columnHover: one wash over the hovered column, above the rows and under
-     pinned cells (z 2), sticky group rows (4) and pinned top rows (5). */
-  .colhover {
+     pinned cells (z 2), sticky group rows (4) and pinned top rows (5). Its own
+     class: the header's mark (.colhover) must not pick up this absolute,
+     pointer-transparent box, or the header leaves its row. */
+  .colwash {
     position: absolute;
     top: 0;
     bottom: 0;
@@ -3443,7 +3445,7 @@
     background: var(--bo-col-hover);
   }
   /* A pinned column's wash lies over its own pinned cells. */
-  .colhover.pin {
+  .colwash.pin {
     z-index: 3;
   }
   .h.colhover {

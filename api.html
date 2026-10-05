@@ -291,7 +291,7 @@ npm i xlsx             <span class="tok-com"># optional, only for exportXLSX()</
           <tr><td>width</td><td><span class="type">number</span></td><td>Fixed width (px).</td></tr>
           <tr><td>minWidth / maxWidth</td><td><span class="type">number</span></td><td>Clamp the column width while drag-resizing.</td></tr>
           <tr><td>flex</td><td><span class="type">number</span></td><td>flex-grow weight; column fills remaining space.</td></tr>
-          <tr><td>align</td><td><span class="type">'left' | 'right'</span></td><td>Header/text alignment.</td></tr>
+          <tr><td>align</td><td><span class="type">'left' | 'right'</span></td><td>The side the header, cells and footer sit on. Defaults to right for number types and left for the rest.</td></tr>
           <tr><td>cellClass</td><td><span class="type">string | (value, row) =&gt; string</span></td><td>Extra class(es) on the column's cells (static or conditional). Target via <code>:global</code>.</td></tr>
           <tr><td>headerClass</td><td><span class="type">string</span></td><td>Extra class(es) on the column header.</td></tr>
           <tr><td>flash</td><td><span class="type">'auto' | 'change' | boolean</span></td><td>Flash the cell on a value change. <code>'auto'</code> (alias <code>'up-down'</code>): the grid derives it <em>per cell</em> — green up, red down, nothing to maintain. <code>'change'</code>: neutral flash on any change. <code>true</code>: legacy row-driven mode via <code>flashSeq</code>/<code>flashDir</code>.</td></tr>
