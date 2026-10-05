@@ -29,7 +29,8 @@ Facts an AI assistant must get right before generating code against bo-grid
 ## Docs
 
 - [Full API reference (llms-full.txt)](https://bonguynvan.github.io/bo-grid/llms-full.txt): every `ColumnDef` type, every `<Grid>` prop, every subpath's exports, with runnable snippets — the file to paste into an AI's context for accurate code generation.
-- [README](https://raw.githubusercontent.com/bonguynvan/bo-grid/main/README.md): human usage guide, one example per feature.
+- [Guide](https://raw.githubusercontent.com/bonguynvan/bo-grid/main/docs/guide.md): human usage guide, one example per feature.
+- [README](https://raw.githubusercontent.com/bonguynvan/bo-grid/main/README.md): overview and quick start.
 - [Live API reference](https://bonguynvan.github.io/bo-grid/api.html): the browsable HTML version of the same reference.
 - [Framework guide](https://raw.githubusercontent.com/bonguynvan/bo-grid/main/docs/frameworks.md): React/Vue/Angular/vanilla recipes via `bo-grid/element`.
 - [SvelteKit guide](https://raw.githubusercontent.com/bonguynvan/bo-grid/main/docs/sveltekit.md): SSR safety, `load`-function data, layout persistence.

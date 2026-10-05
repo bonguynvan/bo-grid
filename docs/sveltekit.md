@@ -185,4 +185,4 @@ so it's not the right choice inside SvelteKit. See
   see an optimize warning for `xlsx`, add it to `optimizeDeps.exclude` (it's a
   dynamic import) or just `npm i xlsx`.
 - See the [API reference](https://bonguynvan.github.io/bo-grid/api.html) for every
-  prop and the [README](../README.md) for feature walkthroughs.
+  prop and the [guide](./guide.md) for feature walkthroughs.

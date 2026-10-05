@@ -1,6 +1,6 @@
 {
   "name": "bo-grid",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "type": "module",
   "license": "MIT",
   "description": "Tiny, fast Svelte 5 data grid for trading screens: batched realtime cell updates, virtual scrolling, grouping, pivot, tree data and canvas sparklines, MIT licensed.",
@@ -28,7 +28,18 @@
     "order-book",
     "websocket",
     "vietnam-stock-exchange",
-    "price-limit"
+    "price-limit",
+    "data-grid",
+    "datatable",
+    "data-table",
+    "spreadsheet",
+    "pivot-table",
+    "tree-grid",
+    "svelte-component",
+    "web-component",
+    "price-board",
+    "virtualization",
+    "accessibility"
   ],
   "svelte": "./dist/index.js",
   "types": "./dist/index.d.ts",
