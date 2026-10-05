@@ -146,6 +146,11 @@ No API was removed. Behaviour that changed:
   one flashing cell) on an ink tile, as SVG with a 32 px PNG fallback and an
   apple-touch-icon. Site-only; nothing is added to the npm package.
 
+- **Every example on the demo site has a Preview / Code switch.** Code shows
+  the example's own Svelte source, highlighted, with Copy and a GitHub link.
+  The source loads on first open, so the page stays light, and the preview
+  stays mounted (hidden), so a live board keeps running.
+
 - **The README and demo site describe bo-grid on its own terms**, without
   comparisons to other grids; the full feature guide moved to
   [docs/guide.md](./docs/guide.md).

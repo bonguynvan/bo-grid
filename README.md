@@ -152,6 +152,8 @@ and build-free starters are in [examples/](./examples/).
 
 ## Documentation
 
+- **[Live demo](https://bonguynvan.github.io/bo-grid/)**: 21 grids on one
+  page. Each has a Code switch that shows its source.
 - **[Guide](./docs/guide.md)**: every feature, with examples.
 - **[API reference](https://bonguynvan.github.io/bo-grid/api.html)**: every
   prop, column option and export.
