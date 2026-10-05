@@ -218,7 +218,8 @@
       : String(value ?? ''),
   );
   // Alignment kind: numbers right-align (tabular); sparkline + text-like rich
-  // types (tags/badge/boolean/avatar) left-align.
+  // types (tags/badge/boolean/avatar) left-align. A column's `align` moves the
+  // side only (the .right / .left classes), not the number font.
   const kind = $derived(col.type === 'sparkline' ? 'spark' : isNumeric(col) ? 'num' : 'text');
   // Optional per-column cell class (static string or value/row function).
   // Everything below that may read OTHER fields of the row (cellClass/format/
@@ -407,6 +408,8 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <span
   class="c {kind} {extraClass}"
+  class:right={col.align === 'right'}
+  class:left={col.align === 'left'}
   class:dim={col.type === 'volume'}
   class:wrap={col.wrap}
   class:plain={plainText}
@@ -649,6 +652,13 @@
   }
   .text {
     gap: 6px;
+  }
+  /* A column's `align` wins over its type's side, as it does for the header. */
+  .c.right {
+    justify-content: flex-end;
+  }
+  .c.left {
+    justify-content: flex-start;
   }
 
   /* ---- Rich cell types (v0.9) — all colours from theme tokens ---- */

@@ -215,7 +215,7 @@ interface ColBase {
   colSpan?: (row: GridRow) => number;  // cell covers N columns for this row; covered cells not drawn; clamped at pin boundary; ignored with virtualizeColumns
   width?: number; minWidth?: number; maxWidth?: number;
   flex?: number;              // flex-grow weight instead of a fixed width
-  align?: 'left' | 'right';
+  align?: 'left' | 'right';   // side for header + cells + footer; default right for number types, left otherwise
   cellClass?: string | ((value: unknown, row: GridRow) => string | undefined);
   headerClass?: string;
   headerTooltip?: string; headerInfo?: boolean;

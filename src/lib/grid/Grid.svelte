@@ -7,7 +7,7 @@
   import { untrack } from 'svelte';
   import type { Snippet } from 'svelte';
   import type { ColumnDef, GridRow, SortState, SortDir, CellEditEvent, CellTypeDef } from './column';
-  import { colStyle, baseWidth, MIN_FLEX_W, isNumeric, isSortable, isEditable, sortRows, formatCell, cellValue } from './column';
+  import { colStyle, baseWidth, MIN_FLEX_W, isNumeric, alignOf, isSortable, isEditable, sortRows, formatCell, cellValue } from './column';
   import { arrangePinned } from './pin';
   import { columnWindow, columnOffsets } from './colvirt';
   import { uniformHeights, variableHeights } from './rowheight';
@@ -2539,7 +2539,7 @@
       <div
         class="h {col.headerClass ?? ''}"
         class:colhover={hoverCol === ci}
-        class:right={isNumeric(col) || col.align === 'right'}
+        class:right={alignOf(col) === 'right'}
         class:sortable={isSortable(col)}
         class:dragging={ci === dragSrc}
         class:dragover={ci === dragOver && ci !== dragSrc}
@@ -2884,7 +2884,7 @@
         {#if expandable}<span class="expandcell" aria-hidden="true" style={expandCellStyle(false)}></span>{/if}
         {#if rowSelection}<span class="selcell" aria-hidden="true" style={selCellStyle(false)}></span>{/if}
         {#each cols as col, ci (ci)}
-          <span class="fcell" role="gridcell" aria-colindex={ci + 1 + leadCols} class:right={isNumeric(col)} style={cellWidthStyle(ci)}>
+          <span class="fcell" role="gridcell" aria-colindex={ci + 1 + leadCols} class:right={alignOf(col) === 'right'} style={cellWidthStyle(ci)}>
             {ci === 0 && !footerCells[ci] ? L.total : footerCells[ci]}
           </span>
         {/each}

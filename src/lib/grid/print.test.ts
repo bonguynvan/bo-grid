@@ -39,6 +39,15 @@ describe('toHTMLTable', () => {
     expect(html).toContain('12.50'); // price formatter applied
   });
 
+  it('follows a column\'s align over its type', () => {
+    const out = toHTMLTable(rows, [
+      { type: 'text', key: 'name', header: 'Name', align: 'right' },
+      { type: 'price', key: 'price', header: 'Price', align: 'left' },
+    ]);
+    expect(out).toContain('<th style="text-align:right">Name</th>');
+    expect(out).toContain('<th>Price</th>');
+  });
+
   it('right-aligns numeric columns', () => {
     expect(html).toContain('<th style="text-align:right">Price</th>');
     expect(html).toContain('<td style="text-align:right">12.50</td>');

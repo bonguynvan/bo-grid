@@ -4,6 +4,7 @@ import {
   formatCell,
   tooltipText,
   isNumeric,
+  alignOf,
   isEditable,
   isSortable,
   baseWidth,
@@ -102,6 +103,15 @@ describe('isNumeric', () => {
     expect(isNumeric({ type: 'number', key: 'n', header: 'N' })).toBe(true);
     expect(isNumeric({ type: 'currency', key: 'c', header: 'C' })).toBe(true);
     expect(isNumeric({ type: 'relative', key: 'r', header: 'R' })).toBe(true);
+  });
+});
+
+describe('alignOf', () => {
+  it('follows the type unless the column sets align', () => {
+    expect(alignOf({ type: 'text', key: 'a', header: 'A' })).toBe('left');
+    expect(alignOf({ type: 'number', key: 'n', header: 'N' })).toBe('right');
+    expect(alignOf({ type: 'custom', key: 'x', header: 'X', align: 'right' })).toBe('right');
+    expect(alignOf({ type: 'number', key: 'n', header: 'N', align: 'left' })).toBe('left');
   });
 });
 

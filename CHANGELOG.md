@@ -27,6 +27,9 @@ No API was removed. Behaviour that changed:
   fresh view of the row on each patch instead of being rebuilt. Read `row`
   reactively, not once at mount.
 - Flex columns now honour `minWidth` / `maxWidth` in fit-to-width mode.
+- A column's `align` now moves its cells and footer as well as its header.
+  Drop an `align` you had set only for the header if the cells should stay
+  where they were.
 
 ### Added
 
@@ -179,6 +182,13 @@ No API was removed. Behaviour that changed:
   flash. The Price board demo holds by default and has a Flash switch.
 
 ### Fixed
+
+- **A column's `align` sets its cells and footer, not just its header.**
+  Cells followed the type alone, so a `custom` or `text` column with
+  `align: 'right'` had a right-aligned title over left-aligned values (the VN
+  board demo showed it). Header, cells, footer and `printTable` now agree:
+  `align` when set, otherwise right for number types and left for the rest.
+  It moves the side only. A text column set right keeps its text font.
 
 - **Flex columns keep their `minWidth` and `maxWidth` in fit-to-width
   mode.** They were laid out with `min-width: 0` and no maximum, so a flex
