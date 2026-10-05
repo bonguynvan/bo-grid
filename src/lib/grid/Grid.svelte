@@ -2738,7 +2738,7 @@
       </div>
     {/if}
     <div class="spacer" bind:this={spacerEl} style="height:{total}px;{hScroll ? `width:${layout.totalWidth + leadPx}px;` : ''}">
-      {#if hoverBox}<div class="colhover" class:pin={hoverBox.pinned} aria-hidden="true" style="left:{hoverBox.left}px;width:{hoverBox.width}px"></div>{/if}
+      {#if hoverBox}<div class="colwash" class:pin={hoverBox.pinned} aria-hidden="true" style="left:{hoverBox.left}px;width:{hoverBox.width}px"></div>{/if}
       {#each renderItems as item (rowSlots ? item.vr % rowSlots : item.vr)}
         {#if item.kind === 'group'}
           <div class="grouprow" style="top:{hm.offsetOf(item.vr)}px;height:{hm.heightOf(item.vr)}px;{rowWidthStyle}">
@@ -3433,8 +3433,10 @@
     min-width: 100%;
   }
   /* columnHover: one wash over the hovered column, above the rows and under
-     pinned cells (z 2), sticky group rows (4) and pinned top rows (5). */
-  .colhover {
+     pinned cells (z 2), sticky group rows (4) and pinned top rows (5). Its own
+     class: the header's mark (.colhover) must not pick up this absolute,
+     pointer-transparent box, or the header leaves its row. */
+  .colwash {
     position: absolute;
     top: 0;
     bottom: 0;
@@ -3443,7 +3445,7 @@
     background: var(--bo-col-hover);
   }
   /* A pinned column's wash lies over its own pinned cells. */
-  .colhover.pin {
+  .colwash.pin {
     z-index: 3;
   }
   .h.colhover {
