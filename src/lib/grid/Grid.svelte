@@ -2492,7 +2492,7 @@
       {#if expandable}<span class="expandcell" style={expandCellStyle(true)}></span>{/if}
       {#if rowSelection}<span class="selcell" style={selCellStyle(true)}></span>{/if}
       {#each headerGroups as g, gi (gi)}
-        <span class="hg" class:empty={!g.label} style="flex:0 0 {g.width}px;width:{g.width}px;">{g.label}</span>
+        <span class="hg" class:blank={!g.label} style="flex:0 0 {g.width}px;width:{g.width}px;">{g.label}</span>
       {/each}
     </div>
   {/if}
@@ -3125,7 +3125,9 @@
     overflow: hidden;
     white-space: nowrap;
   }
-  .head-groups .hg.empty {
+  /* An ungrouped column's slot. Not .empty: that is the absolutely positioned
+     "No rows" overlay, and a slot carrying it leaves the row. */
+  .head-groups .hg.blank {
     border-right: 0;
     background: transparent;
   }
