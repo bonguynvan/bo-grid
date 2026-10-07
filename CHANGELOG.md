@@ -3,6 +3,25 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [2.2.1] — 2026-10-07
+
+### Fixed
+
+- **Group labels sit over their own columns when ungrouped columns come
+  first.** The spanning header row gives each ungrouped column a blank slot
+  of its width. Those slots carried the same scoped class as the grid's
+  "No rows" overlay, which is absolutely positioned. The slots dropped out of
+  the row, and every group label moved left by the width of the leading
+  ungrouped columns. The slots now have their own class. The bug dates from
+  column groups (0.1.0). Grids that group every column were not affected.
+
+### Tests
+
+- A new test scans every component for this kind of collision: a CSS rule
+  whose class sits on two kinds of element, with nothing in the rule to tell
+  them apart. Run on the code before each fix, it finds this bug and the
+  column-hover header bug fixed just before 2.2.0.
+
 ## [2.2.0] — 2026-10-05
 
 **Built for the busy board.** Flashes that cost a fraction of a fade
@@ -1218,6 +1237,7 @@ First public release — a tiny, fast Svelte 5 data grid for fintech UIs.
 [0.23.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.23.0
 [0.22.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.22.0
 [0.21.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.21.0
+[2.2.1]: https://github.com/bonguynvan/bo-grid/releases/tag/v2.2.1
 [2.2.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v2.2.0
 [0.20.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.20.0
 [0.19.0]: https://github.com/bonguynvan/bo-grid/releases/tag/v0.19.0
