@@ -116,6 +116,37 @@ export function mergeFlash(
     much after its window. */
 export const HOLD_TICK_MS = 50;
 
+/** `flashNewRows`: the two names of a row wash's fade (Grid.svelte). A fade
+    restarts by switching to the other. */
+export const ARRIVE_FADES = ['bo-arrive', 'bo-arrive-b'] as const;
+
+/**
+ * `flashNewRows`: times the fade of a row's wash (an action on the wash
+ * element). Rows are recycled by position, so one element shows one arrived
+ * row after another; for each it is re-timed to where that row's fade is (a
+ * delay counted from when the element's fade began) rather than rebuilt. A
+ * fade that may have run to its end is not relied on to resume on a new
+ * delay: the next row starts a fresh one under the other name.
+ */
+export function arrivalFade(node: HTMLElement, first: { at: number; ms: number }) {
+  let fade = 1;
+  let began = 0;
+  let ends = -Infinity;
+  const time = (a: { at: number; ms: number }) => {
+    const now = Date.now();
+    if (now >= ends) {
+      fade = 1 - fade;
+      began = now;
+      node.style.animationName = ARRIVE_FADES[fade];
+    }
+    node.style.animationDuration = `${a.ms}ms`;
+    node.style.animationDelay = `${a.at - began}ms`;
+    ends = a.at + a.ms;
+  };
+  time(first);
+  return { update: time };
+}
+
 /** `flashMotion: 'hold'`: a flash whose window has passed by `now` is off.
     A flash with no start time (the legacy row-driven one) keeps its fade. */
 export function holdFlash(f: ShownFlash | null, now: number): ShownFlash | null {

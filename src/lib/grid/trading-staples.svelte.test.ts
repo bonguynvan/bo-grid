@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // Trading staples: staleAfter (rows whose feed went quiet dim), pauseOnHover
-// (live sort waits under the pointer) and flashNewRows (arrivals flash once).
+// (live sort waits under the pointer) and flashNewRows (an arrival's row is
+// washed once).
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushSync, mount, unmount } from 'svelte';
 import Grid from './Grid.svelte';
@@ -46,6 +47,7 @@ function setup(extra: Record<string, unknown>) {
   const viewport = target.querySelector('.viewport') as HTMLElement;
   return { props, api: () => api!, rowEl, order, viewport };
 }
+const wash = (row: HTMLElement) => row.querySelector<HTMLElement>('.arrive');
 const tick = (ms: number) => {
   vi.advanceTimersByTime(ms);
   flushSync();
@@ -229,8 +231,8 @@ describe('flashNewRows', () => {
     g.props.rows = [...g.props.rows, { id: 4, sym: 'DDD', px: 5 }];
     flushSync();
     flushSync();
-    expect(g.rowEl('DDD').querySelector('.flash')).not.toBeNull();
-    expect(g.rowEl('AAA').querySelector('.flash')).toBeNull();
+    expect(g.rowEl('DDD').querySelector('.arrive')).not.toBeNull();
+    expect(g.rowEl('AAA').querySelector('.arrive')).toBeNull();
   });
 
   it('off by default', () => {
@@ -238,7 +240,7 @@ describe('flashNewRows', () => {
     g.props.rows = [...g.props.rows, { id: 4, sym: 'DDD', px: 5 }];
     flushSync();
     flushSync();
-    expect(g.rowEl('DDD').querySelector('.flash')).toBeNull();
+    expect(g.rowEl('DDD').querySelector('.arrive')).toBeNull();
   });
 
   it('a copy of a row already there does not flash', () => {
@@ -246,7 +248,7 @@ describe('flashNewRows', () => {
     g.props.rows = g.props.rows.map((r) => (r.id === 1 ? { ...r, px: 31 } : r));
     flushSync();
     flushSync();
-    expect(g.rowEl('AAA').querySelector('.flash')).toBeNull();
+    expect(g.rowEl('AAA').querySelector('.arrive')).toBeNull();
   });
 
   it('the first rows an empty grid gets do not flash; the next ones do', () => {
@@ -254,11 +256,11 @@ describe('flashNewRows', () => {
     g.props.rows = rows();
     flushSync();
     flushSync();
-    expect(g.rowEl('AAA').querySelector('.flash')).toBeNull();
+    expect(g.rowEl('AAA').querySelector('.arrive')).toBeNull();
     g.props.rows = [...g.props.rows, { id: 4, sym: 'DDD', px: 5 }];
     flushSync();
     flushSync();
-    expect(g.rowEl('DDD').querySelector('.flash')).not.toBeNull();
+    expect(g.rowEl('DDD').querySelector('.arrive')).not.toBeNull();
   });
 
   it('an emptied grid that fills again does not flash its rows', () => {
@@ -268,7 +270,7 @@ describe('flashNewRows', () => {
     g.props.rows = rows();
     flushSync();
     flushSync();
-    expect(document.querySelector('.flash')).toBeNull();
+    expect(document.querySelector('.arrive')).toBeNull();
   });
 
   it('a row that arrives and is patched in the same tick still flashes as new', () => {
@@ -277,7 +279,7 @@ describe('flashNewRows', () => {
     g.api().patchRows([[4, { px: 6 }]]);
     flushSync();
     flushSync();
-    expect(g.rowEl('DDD').querySelectorAll('.flash').length).toBe(2);
+    expect(g.rowEl('DDD').querySelector('.arrive')).not.toBeNull();
   });
 
   it('flashes arrivals in a sorted liveSort view at once', () => {
@@ -286,7 +288,7 @@ describe('flashNewRows', () => {
     flushSync();
     flushSync();
     expect(g.order()).toEqual(['AAA', 'DDD', 'BBB', 'CCC']);
-    expect(g.rowEl('DDD').querySelector('.flash')).not.toBeNull();
+    expect(g.rowEl('DDD').querySelector('.arrive')).not.toBeNull();
   });
 
   it('on many rows, a diff and a walk both flash the arrival and not the copies', () => {
@@ -297,8 +299,8 @@ describe('flashNewRows', () => {
     g.props.rows = [{ id: 900, sym: 'NEW', px: 0 }, ...g.props.rows.map((r) => (r.id === 1 ? { ...r, px: 1.5 } : r))];
     flushSync();
     flushSync();
-    expect(g.rowEl('NEW').querySelector('.flash')).not.toBeNull();
-    expect(g.rowEl('S1').querySelector('.flash')).toBeNull();
+    expect(g.rowEl('NEW').querySelector('.arrive')).not.toBeNull();
+    expect(g.rowEl('S1').querySelector('.arrive')).toBeNull();
     expect(g.rowEl('S1').classList.contains('stale')).toBe(false);
     expect(g.rowEl('S2').classList.contains('stale')).toBe(true);
     tick(1300);
@@ -307,8 +309,8 @@ describe('flashNewRows', () => {
     g.props.rows = [{ id: 901, sym: 'NEW2', px: 0 }, ...g.props.rows.map((r) => ((r.id as number) % 2 ? { ...r } : r))];
     flushSync();
     flushSync();
-    expect(g.rowEl('NEW2').querySelector('.flash')).not.toBeNull();
-    expect(g.rowEl('S3').querySelector('.flash')).toBeNull();
+    expect(g.rowEl('NEW2').querySelector('.arrive')).not.toBeNull();
+    expect(g.rowEl('S3').querySelector('.arrive')).toBeNull();
     expect(g.rowEl('S2').classList.contains('stale')).toBe(true);
     expect(g.rowEl('S3').classList.contains('stale')).toBe(false);
   });
@@ -318,7 +320,7 @@ describe('flashNewRows', () => {
     g.props.getRowId = (r: GridRow) => `k${r.id}`;
     flushSync();
     flushSync();
-    expect(document.querySelector('.flash')).toBeNull();
+    expect(document.querySelector('.arrive')).toBeNull();
   });
 
   it('a wholesale replacement does not flash every row', () => {
@@ -327,7 +329,69 @@ describe('flashNewRows', () => {
     flushSync();
     flushSync();
     expect(g.rowEl('S0')).toBeTruthy();
-    expect(document.querySelector('.flash')).toBeNull();
+    expect(document.querySelector('.arrive')).toBeNull();
+  });
+
+  it('one wash over the row, not a flash in every cell', () => {
+    const g = setup({ flashNewRows: true });
+    g.props.rows = [...g.props.rows, { id: 4, sym: 'DDD', px: 5 }];
+    flushSync();
+    flushSync();
+    expect(g.rowEl('DDD').querySelectorAll('.arrive').length).toBe(1);
+    expect(g.rowEl('DDD').querySelector('.flash')).toBeNull();
+  });
+
+  it('the wash is gone once its window has passed', () => {
+    const g = setup({ flashNewRows: 300 });
+    g.props.rows = [...g.props.rows, { id: 4, sym: 'DDD', px: 5 }];
+    flushSync();
+    flushSync();
+    expect(wash(g.rowEl('DDD'))?.style.animationDuration).toBe('300ms');
+    tick(200);
+    expect(g.rowEl('DDD').querySelector('.arrive')).not.toBeNull();
+    tick(150);
+    expect(g.rowEl('DDD').querySelector('.arrive')).toBeNull();
+  });
+
+  it('a row that moves to another position carries on fading where it was', () => {
+    const g = setup({ flashNewRows: true, sort: [{ key: 'px', dir: 'desc' }] });
+    g.props.rows = [...g.props.rows, { id: 4, sym: 'DDD', px: 25 }];
+    flushSync();
+    flushSync();
+    tick(200);
+    // EEE sorts above DDD, so DDD moves down a position.
+    g.props.rows = [...g.props.rows, { id: 5, sym: 'EEE', px: 28 }];
+    flushSync();
+    flushSync();
+    expect(g.order()).toEqual(['AAA', 'EEE', 'DDD', 'BBB', 'CCC']);
+    // DDD's slot had no wash: a new one starts 200 ms into DDD's fade.
+    expect(wash(g.rowEl('DDD'))?.style.animationDelay).toBe('-200ms');
+    // EEE took DDD's slot, whose wash began 200 ms ago: re-timed, its fade
+    // starts from the beginning now.
+    expect(wash(g.rowEl('EEE'))?.style.animationDelay).toBe('200ms');
+    expect(g.rowEl('BBB').querySelector('.arrive')).toBeNull();
+  });
+
+  it("flashMotion 'hold' holds a static tint for the window", () => {
+    const g = setup({ flashNewRows: 300, flashMotion: 'hold' });
+    g.props.rows = [...g.props.rows, { id: 4, sym: 'DDD', px: 5 }];
+    flushSync();
+    flushSync();
+    const wash = g.rowEl('DDD').querySelector('.arrive');
+    expect(wash?.classList.contains('held')).toBe(true);
+    expect(wash?.getAttribute('style')).toBeNull();
+    tick(350);
+    expect(g.rowEl('DDD').querySelector('.arrive')).toBeNull();
+  });
+
+  it('turned off, no wash is left behind', () => {
+    const g = setup({ flashNewRows: true });
+    g.props.rows = [...g.props.rows, { id: 4, sym: 'DDD', px: 5 }];
+    flushSync();
+    flushSync();
+    g.props.flashNewRows = false;
+    flushSync();
+    expect(document.querySelector('.arrive')).toBeNull();
   });
 
   it('turned on later, it does not replay an old change', () => {
@@ -337,6 +401,6 @@ describe('flashNewRows', () => {
     g.props.flashNewRows = true;
     flushSync();
     flushSync();
-    expect(g.rowEl('DDD').querySelector('.flash')).toBeNull();
+    expect(g.rowEl('DDD').querySelector('.arrive')).toBeNull();
   });
 });

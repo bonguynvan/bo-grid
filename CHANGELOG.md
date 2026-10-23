@@ -21,7 +21,9 @@ All notable changes to this project are documented here. Format follows
   object for it in `rows`: a row that arrives, or a copy from an immutable
   update.
 - **`flashNewRows`: a row that arrives flashes once** (a new order, a new
-  fill), every cell, for 600 ms or the given ms. A copy of a row already
+  fill), for 600 ms or the given ms: one wash over the whole row, pinned
+  columns included, that fades or holds as `flashMotion` says. A row that
+  moves while it flashes carries on where it was. A copy of a row already
   there, the rows an empty grid gets (a load or a reload) and a wholesale
   replacement do not flash.
 - **`pauseOnHover` (on by default): `liveSort` waits while a mouse or pen is

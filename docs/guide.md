@@ -253,9 +253,12 @@ Two more settings for live screens:
   the same values is not news. Style it with `--bo-stale-opacity`
   (default 0.5).
 - **`flashNewRows`** flashes a row once when it arrives in `rows`, a new order
-  or a new fill (`true`: 600 ms, or a number of ms). A row arrives when its id
-  is new: a copy of a row already there does not flash, nor do the rows an
-  empty grid gets (a load or a reload), nor a wholesale replacement.
+  or a new fill (`true`: 600 ms, or a number of ms). It is one wash over the
+  whole row, pinned columns included, and it fades or holds as `flashMotion`
+  says. A row that moves while it flashes (newest first, every arrival pushes
+  the rows down) carries on where it was. A row arrives when its id is new: a
+  copy of a row already there does not flash, nor do the rows an empty grid
+  gets (a load or a reload), nor a wholesale replacement.
 
 ```svelte
 <Grid {rows} {columns} liveSort staleAfter={5000} flashNewRows onReady={(a) => (api = a)} />

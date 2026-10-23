@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { FlashTracker, FlashClock, FlashLoad, resolveFlashMode, isFresh, mergeFlash, holdFlash, type CellFlash, type ShownFlash } from './flash';
+import { FlashTracker, FlashClock, FlashLoad, resolveFlashMode, isFresh, mergeFlash, holdFlash, arrivalFade, type CellFlash, type ShownFlash } from './flash';
 
 describe('resolveFlashMode', () => {
   it('maps legacy `true` to row-driven mode', () => {
@@ -350,5 +350,44 @@ describe('FlashClock', () => {
     vi.advanceTimersByTime(1000);
     expect(onTick).not.toHaveBeenCalled();
     expect(clock.running).toBe(false);
+  });
+});
+
+describe('arrivalFade', () => {
+  afterEach(() => vi.useRealTimers());
+  const wash = () => ({ style: {} as Record<string, string> }) as unknown as HTMLElement;
+
+  it('starts a row part way into its fade when the row arrived earlier', () => {
+    vi.useFakeTimers({ now: 1000 });
+    const node = wash();
+    arrivalFade(node, { at: 800, ms: 600 });
+    expect(node.style.animationName).toBe('bo-arrive');
+    expect(node.style.animationDuration).toBe('600ms');
+    expect(node.style.animationDelay).toBe('-200ms');
+  });
+
+  it('re-times the same fade for the next row its slot shows', () => {
+    vi.useFakeTimers({ now: 1000 });
+    const node = wash();
+    const fade = arrivalFade(node, { at: 1000, ms: 600 });
+    vi.setSystemTime(1300);
+    fade.update({ at: 1250, ms: 600 });
+    // Counted from when the fade began (1000): 50 ms into this row's fade.
+    expect(node.style.animationName).toBe('bo-arrive');
+    expect(node.style.animationDelay).toBe('250ms');
+  });
+
+  it('starts a fresh fade, under the other name, once the last one could have ended', () => {
+    vi.useFakeTimers({ now: 1000 });
+    const node = wash();
+    const fade = arrivalFade(node, { at: 1000, ms: 600 });
+    vi.setSystemTime(1620);
+    fade.update({ at: 1600, ms: 600 });
+    expect(node.style.animationName).toBe('bo-arrive-b');
+    expect(node.style.animationDelay).toBe('-20ms');
+    vi.setSystemTime(2300);
+    fade.update({ at: 2290, ms: 600 });
+    expect(node.style.animationName).toBe('bo-arrive');
+    expect(node.style.animationDelay).toBe('-10ms');
   });
 });

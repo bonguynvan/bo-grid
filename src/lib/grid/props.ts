@@ -175,12 +175,15 @@ export interface GridPropsDef {
       `opacity: var(--bo-stale-opacity, 0.5)`. Off by default. */
   staleAfter?: number;
   /** Flash a row once when it arrives in `rows` (a new order, a new fill):
-      every cell, in the neutral flash colour, for this many ms (`true`: 600).
-      A row arrives when its id is new; a copy of a row already there does not
-      flash, nor do the rows an empty grid gets (a load or a reload), nor a
-      wholesale replacement (more than 64 rows, and more than an eighth of
-      them, at once). Rows on
-      screen only, as with every flash. Off by default. */
+      one wash over the whole row, pinned columns included, in the neutral
+      flash colour, for this many ms (`true`: 600). It fades, or holds as a
+      static tint, as `flashMotion` says, and is not shown under reduced
+      motion. A row that moves while it flashes (a blotter sorted newest
+      first) carries on where it was, and one scrolled into view shows the
+      rest of its flash. A row arrives when its id is new; a copy of a row
+      already there does not flash, nor do the rows an empty grid gets (a
+      load or a reload), nor a wholesale replacement (more than 64 rows, and
+      more than an eighth of them, at once). Off by default. */
   flashNewRows?: boolean | number;
   /** Highlight the column under the pointer (body and header) — handy on a
       wide board. One overlay for the whole column, not a class per cell. */

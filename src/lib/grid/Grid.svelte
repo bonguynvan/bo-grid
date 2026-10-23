@@ -15,7 +15,7 @@
   import { aggregate, type AggResult } from './aggregate';
   import { buildFlatRows, buildLazyGroupRows, activeGroupsAt, type VisualRow, type GroupNode } from './grouping';
   import { buildTreeRows } from './tree';
-  import { FlashTracker, FlashClock, FlashLoad } from './flash';
+  import { FlashTracker, FlashClock, FlashLoad, HOLD_TICK_MS, arrivalFade } from './flash';
   import { parseClipboard, copyText, pastePlan, fillExtent, fillPlan } from './clipboard';
   import { applyWidths, applyAutoWidths, clampWidth, contentWidth, fitResize, isResizable, type FitDrag } from './sizing';
   import {
@@ -1674,12 +1674,51 @@
     // beat), or a `pinnedRows` row, which no patch reaches.
     return staleNow - (lastTick.get(id) ?? staleNow) > staleAfter;
   }
-  // What the tracking last looked at; null while it is off.
+  // `flashNewRows` draws one wash over an arrived row (`.arrive`, pinned
+  // cells included) rather than a flash in every cell: one element to style
+  // where a cell flash restyles a cell per column. Rows are recycled by
+  // position, and on a blotter sorted newest first every row moves each time
+  // orders arrive, so a slot keeps its wash and re-times the fade to the row
+  // it now shows (`arrivalFade`): the row carries on fading where it was,
+  // with nothing rebuilt. A sweep drops entries once their window has passed,
+  // which is also what ends a held tint.
+  type Arrival = { at: number; ms: number; hold: boolean };
+  let arrived = $state.raw(new Map<string | number, Arrival>());
+  let sweep: ReturnType<typeof setTimeout> | undefined;
+  function markArrived(ids: (string | number)[], a: Arrival): void {
+    const next = unexpired(arrived, a.at);
+    for (const id of ids) next.set(id, a);
+    arrived = next;
+    scheduleSweep();
+  }
+  /** The entries of `from` still within their window at `now`. */
+  function unexpired(from: Map<string | number, Arrival>, now: number): Map<string | number, Arrival> {
+    const out = new Map<string | number, Arrival>();
+    for (const [id, a] of from) if (a.at + a.ms > now) out.set(id, a);
+    return out;
+  }
+  function scheduleSweep(): void {
+    if (sweep !== undefined || arrived.size === 0) return;
+    let end = Infinity;
+    for (const a of arrived.values()) end = Math.min(end, a.at + a.ms);
+    sweep = setTimeout(() => {
+      sweep = undefined;
+      const now = Date.now();
+      const next = unexpired(arrived, now);
+      if (next.size !== arrived.size) arrived = next;
+      scheduleSweep();
+    }, Math.max(HOLD_TICK_MS, end - Date.now()));
+  }
+  $effect(() => () => clearTimeout(sweep));
+  // What the tracking last looked at; null while it is off. It runs before
+  // the rows render, so a row renders once, already marked as arrived or fresh.
   let tracked: { st: RowsState; stale: boolean } | null = null;
-  $effect(() => {
+  $effect.pre(() => {
     rows;
     const ms = flashNewRows === true ? 600 : typeof flashNewRows === 'number' && flashNewRows > 0 ? flashNewRows : 0;
     const stale = staleAfter > 0;
+    // flashNewRows turned off: no wash outlives it.
+    if (!ms) untrack(() => arrived.size > 0 && (arrived = new Map()));
     // Neither is on: leave the index alone (an app that never patches may not need it).
     if (!ms && !stale) {
       if (tracked) {
@@ -1749,8 +1788,7 @@
     // reload), nor a wholesale replacement (more rows than a diff takes).
     const loaded = prev.st.rows.length === 0;
     if (ms && !loaded && arrivals.length > 0 && arrivals.length <= Math.max(64, st.rows.length >> 3)) {
-      const hold = flashMotion === 'fade' ? undefined : flashHold.holds(now);
-      live.flash({ rows: arrivals, ms }, renderedRows(), getRowId, now, hold);
+      markArrived(arrivals, { at: now, ms, hold: flashMotion !== 'fade' && flashHold.holds(now) });
     }
   }
   // `pauseOnHover`: whether a mouse or pen is over the rows, listened for only
@@ -2613,6 +2651,12 @@
                 <span class="colspacer" aria-hidden="true" style="flex:0 0 {it.w}px;width:{it.w}px;"></span>
               {/if}
             {/each}
+            {#if arrived.size > 0}
+              {@const a = arrived.get(getRowId(item.row))}
+              {#if a}
+                {#if a.hold}<span class="arrive held" aria-hidden="true"></span>{:else}<span class="arrive" aria-hidden="true" use:arrivalFade={a}></span>{/if}
+              {/if}
+            {/if}
           </div>
           {#if expandable && detail && isExpanded(getRowId(item.row))}
             <div class="row-detail" style="top:{hm.offsetOf(item.vr) + baseH}px;height:{detailHeight}px;{rowWidthStyle}">
@@ -3236,6 +3280,43 @@
   /* `staleAfter`: a row whose feed went quiet. */
   .row.stale {
     opacity: var(--bo-stale-opacity, 0.5);
+  }
+  /* `flashNewRows`: a wash over a row that just arrived, in the neutral flash
+     colour. It lies over pinned cells as a pinned column's hover wash does,
+     and under the sticky rows. Fading, or held as a static tint. */
+  .arrive {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    animation: bo-arrive 600ms linear backwards;
+  }
+  .arrive.held {
+    animation: none;
+    background: color-mix(in srgb, var(--bo-amber) 30%, transparent);
+  }
+  /* Two names for one fade: switching restarts it (flash.ts ARRIVE_FADES).
+     Global, as the wash's action sets the name. */
+  @keyframes -global-bo-arrive {
+    0% {
+      background: color-mix(in srgb, var(--bo-amber) 38%, transparent);
+    }
+    100% {
+      background: transparent;
+    }
+  }
+  @keyframes -global-bo-arrive-b {
+    0% {
+      background: color-mix(in srgb, var(--bo-amber) 38%, transparent);
+    }
+    100% {
+      background: transparent;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .arrive {
+      display: none;
+    }
   }
   .row:not(.skeleton):hover {
     background: var(--bo-row-hover);
