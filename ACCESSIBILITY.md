@@ -48,7 +48,9 @@ the keyboard model, and the conformance notes from the 0.15 audit.
 - Floating menus are `role="menu"` / `role="menuitem"`; the filter and columns
   panels are `role="dialog"` with an accessible name.
 - The focus cell is advertised via `aria-activedescendant`, so assistive tech
-  follows the active cell as it moves.
+  follows the active cell as it moves. The grid has an active cell as soon as
+  it takes focus: the last one used, or the first cell of the top row in
+  view.
 
 ## Keyboard model (2.1.1, 2.1.2)
 

@@ -88,3 +88,52 @@ describe('focus ring without cell selection', () => {
     expect(gridEl().getAttribute('aria-multiselectable')).toBe('true');
   });
 });
+
+describe('the active cell when the grid takes focus (Tab, or focus() from the app)', () => {
+  const activeText = () => document.getElementById(gridEl().getAttribute('aria-activedescendant') ?? '')?.textContent;
+
+  it('has an active cell at once, and Enter activates its row', () => {
+    const clicked: unknown[] = [];
+    grid = mountGrid({ rows, columns, cellSelection: false, onRowClick: (row: GridRow) => clicked.push(row.id) });
+    gridEl().focus();
+    flushSync();
+    expect(activeText()).toContain('AAA');
+    press('Enter');
+    expect(clicked).toEqual([1]);
+  });
+
+  it('comes back to the last active cell', () => {
+    grid = mountGrid({ rows, columns, cellSelection: false });
+    gridEl().focus();
+    press('ArrowDown');
+    press('ArrowRight');
+    gridEl().blur();
+    gridEl().focus();
+    flushSync();
+    expect(activeText()).toContain('20');
+  });
+
+  it('starts from the clicked cell on a click, not the top row, and scrolls nothing', () => {
+    const clicked: unknown[] = [];
+    grid = mountGrid({ rows, columns, cellSelection: false, onRowClick: (row: GridRow) => clicked.push(row.id) });
+    const cell = gridEl().querySelectorAll('[role=row] [role=gridcell]')[4] as HTMLElement; // CCC · sym
+    const focusOptions: (FocusOptions | undefined)[] = [];
+    const focus = gridEl().focus.bind(gridEl());
+    gridEl().focus = (o?: FocusOptions) => (focusOptions.push(o), focus(o));
+    cell.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0 }));
+    flushSync();
+    // A focus that scrolled a clipping ancestor would move the row out from
+    // under the pointer, and the click would miss it.
+    expect(focusOptions).toEqual([{ preventScroll: true }]);
+    expect(activeText()).toContain('CCC');
+    press('Enter');
+    expect(clicked).toEqual([3]);
+  });
+
+  it('has none in an empty grid', () => {
+    grid = mountGrid({ rows: [], columns, cellSelection: false });
+    gridEl().focus();
+    flushSync();
+    expect(gridEl().hasAttribute('aria-activedescendant')).toBe(false);
+  });
+});
