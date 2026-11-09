@@ -149,6 +149,15 @@ export interface GridPropsDef {
       @example
       <Grid {rows} {columns} height={480} onSortChange={(sort) => save('sort', sort)} /> */
   onSortChange?: (sort: SortState[]) => void;
+  /** The app sorts the rows itself: the headers show `sort` (arrows,
+      `aria-sort`) and a click calls `onSortChange` as usual, but the grid
+      keeps the rows in the order they come in. Pass rows already in that
+      order. `liveSort` then follows only the filters. With a `source`, the
+      source sorts.
+      @default false
+      @example
+      <Grid rows={sorted} {columns} height={480} manualSort {sort} onSortChange={(next) => (sort = next)} /> */
+  manualSort?: boolean;
   /** Controlled column filters (keyed by column key). When set, the grid
       reflects these and reports changes via `onFilterChange` instead of holding
       its own. Omit for uncontrolled filtering.

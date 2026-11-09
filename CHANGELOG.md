@@ -7,6 +7,12 @@ All notable changes to this project are documented here. Format follows
 
 ### Added
 
+- **`manualSort`: the app orders the rows, the grid shows the sort.** The
+  headers show `sort` (arrows and `aria-sort`) and a click calls
+  `onSortChange` as usual, but the grid keeps the rows in the order they come
+  in, for an app with its own sorting rules. It is the in-memory counterpart
+  of a `source`, which already sorts for the grid.
+
 - **`sortEmpty` on a column: where empty values go when it sorts.** Empty
   values (`null`, `undefined`, `''`, `NaN`) stay at one end whether the
   column is sorted up or down: `'last'` (the default) or `'first'`. A column

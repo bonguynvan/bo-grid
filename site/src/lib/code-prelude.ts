@@ -71,6 +71,7 @@ export interface Free {
   nextRows: GridRow[];
   orders: GridRow[];
   shown: GridRow[];
+  sorted: GridRow[];
   benchmark: GridRow;
   levels: GridRow[];
   trades: Trade[];
@@ -112,6 +113,7 @@ export interface Free {
   apply: (batch: Array<readonly [string, Partial<Quote>]>) => void;
   // App actions an example calls
   save: (...values: unknown[]) => void;
+  sortMarkets: (rows: GridRow[], sort: SortState[]) => GridRow[];
   buy: (row: GridRow) => void;
   cancel: (row: GridRow) => void;
   cancelAll: () => void;

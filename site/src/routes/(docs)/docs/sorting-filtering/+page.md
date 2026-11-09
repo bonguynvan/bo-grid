@@ -36,6 +36,18 @@ Sorting is uncontrolled by default. To set an initial sort, persist it or sync i
 <Grid {rows} {columns} height={480} {sort} onSortChange={(s) => (sort = s)} />
 ```
 
+When your app has its own sorting rules, add `manualSort`. The headers still show `sort` and a click still calls `onSortChange`, but the grid keeps the rows in the order you pass them, so sort them yourself:
+
+```svelte
+<script lang="ts">
+  import { Grid, type SortState } from 'bo-grid';
+  let sort = $state<SortState[]>([{ key: 'volume', dir: 'desc' }]);
+  const sorted = $derived(sortMarkets(rows, sort)); // your rules
+</script>
+
+<Grid rows={sorted} {columns} height={480} manualSort {sort} onSortChange={(s) => (sort = s)} />
+```
+
 ### Sorting live data
 
 A sort is a snapshot: when values change in place (a price feed), rows keep their position, so a live board never reshuffles under the reader. Call `api.refresh()` when the order should catch up. With `api.patchRows`, `liveSort` keeps it current instead: rows whose sorted or filtered field changed are merged back into place at most every 500 ms (or the interval you give). See [Live updates](../realtime/).
@@ -108,7 +120,7 @@ With a `source`, the grid sends the sort, the `filter` text and the column filte
 
 ## Reference
 
-<Props names={['sort', 'onSortChange', 'filter', 'quickFilter', 'filterRow', 'filterMenu', 'columnFilters', 'onFilterChange', 'liveSort']} />
+<Props names={['sort', 'onSortChange', 'manualSort', 'filter', 'quickFilter', 'filterRow', 'filterMenu', 'columnFilters', 'onFilterChange', 'liveSort']} />
 
 <Props of="column" names={['sortable', 'compare', 'sortEmpty', 'filter']} />
 
