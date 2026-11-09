@@ -5,6 +5,7 @@
 export const BOOLEAN_PROPS: ReadonlySet<string> = new Set([
   'resizable',
   'cellSelection',
+  'manualSort',
   'rowSelection',
   'columnMenu',
   'columnsPanel',

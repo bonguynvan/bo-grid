@@ -84,6 +84,7 @@
     hotkeys,
     sort,
     onSortChange,
+    manualSort = false,
     columnFilters,
     onFilterChange,
     footer = false,
@@ -149,6 +150,10 @@
   // Controlled by the `sort` prop when provided, else internal state.
   let internalSorts = $state<SortState[]>([]);
   const sorts = $derived(sort ?? internalSorts);
+  // What the rows are sorted by here: nothing with manualSort, where the rows
+  // arrive in order and the sort only marks the headers.
+  const NO_SORT: SortState[] = [];
+  const viewSorts = $derived(manualSort ? NO_SORT : sorts);
   function setSorts(next: SortState[]): void {
     if (sort === undefined) internalSorts = next; // uncontrolled: own the state
     // A plain copy: state proxies cannot be cloned (posted to a worker, stored).
@@ -967,7 +972,7 @@
     const base = rows;
     const allCols = columns;
     const pass = rowFilter;
-    const s = sorts;
+    const s = viewSorts;
     const idOf = getRowId;
     const tick = viewTick;
     const live = liveSort;
@@ -1017,7 +1022,7 @@
     if (!liveMs || source) return undefined;
     if (filter.trim() || quickText.trim()) return null;
     const keys = new Set<string>();
-    for (const s of sorts) {
+    for (const s of viewSorts) {
       if (colByKey.get(s.key)?.value) return null;
       keys.add(s.key);
     }
