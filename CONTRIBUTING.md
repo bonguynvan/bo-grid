@@ -95,8 +95,10 @@ CHANGELOG section. A pre-release version (`2.4.0-beta.1`) goes to the `next`
 dist-tag. A version already on npm is skipped, so merging other pull requests
 publishes nothing.
 
-The workflow needs the `NPM_TOKEN` repository secret. `pnpm release` still
-publishes by hand from a clean `main`.
+The workflow publishes through npm trusted publishing: on npmjs.com, bo-grid's
+trusted publisher is this repository's `release.yml` (GitHub Actions), with
+"Allow npm publish" on, so no npm token is stored in the repository.
+`pnpm release` still publishes by hand from a clean `main`.
 
 ### Preview packages
 

@@ -8,10 +8,13 @@ name: release
 # release with that version's CHANGELOG section. A version with a
 # pre-release suffix (2.4.0-beta.1) goes to the `next` dist-tag, not `latest`.
 #
-# Needs the NPM_TOKEN repository secret: an npm token allowed to publish
-# bo-grid (a granular access token, or an automation token). Without it the
-# run warns and publishes nothing; once it is set, run this workflow by hand
-# (Actions > release > Run workflow) to release a version already on main.
+# It publishes through npm trusted publishing (OIDC): npm, on npmjs.com, has
+# this repository's release.yml as a trusted publisher for bo-grid, and the
+# job's id-token proves the run is that workflow, so no npm token is stored.
+# Provenance comes with it. That takes npm 11.5.1 or later on Node 22.14 or
+# later. While the NPM_TOKEN secret is still set, npm falls back to it if
+# OIDC is not set up. To release a version already on main again, run this
+# workflow by hand (Actions > release > Run workflow).
 
 on:
   workflow_run:
@@ -42,8 +45,6 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - id: check
-        env:
-          HAS_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
         run: |
           name=$(node -p "require('./package.json').name")
           version=$(node -p "require('./package.json').version")
@@ -52,9 +53,6 @@ jobs:
           case "$version" in *-*) echo "dist-tag=next" ;; *) echo "dist-tag=latest" ;; esac >> "$GITHUB_OUTPUT"
           if [ -n "$(npm view "$name@$version" version 2>/dev/null)" ]; then
             echo "$name@$version is already on npm: nothing to release."
-            echo "release=false" >> "$GITHUB_OUTPUT"
-          elif [ "$HAS_TOKEN" != "true" ]; then
-            echo "::warning::$name@$version is not on npm, but the NPM_TOKEN secret is not set. Add it under Settings > Secrets and variables > Actions, then run this workflow by hand."
             echo "release=false" >> "$GITHUB_OUTPUT"
           else
             echo "Releasing $name@$version."
@@ -67,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # the tag and the GitHub release
-      id-token: write # npm provenance
+      id-token: write # npm trusted publishing (OIDC) and provenance
     env:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
@@ -79,13 +77,17 @@ jobs:
           version: 10
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22.x' # 22.14 or later for trusted publishing
           cache: pnpm
           registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile
       # Before publishing: a version with no CHANGELOG section stops here.
       - run: node scripts/release-notes.mjs "$VERSION" > "$RUNNER_TEMP/notes.md"
-      # prepublishOnly builds dist/ (pnpm package).
+      # Trusted publishing needs npm 11.5.1 or later; Node 22 ships npm 10.
+      - run: npm install --global npm@^11.5.1 && npm --version
+      # prepublishOnly builds dist/ (pnpm package). npm tries OIDC first, then
+      # the token while the NPM_TOKEN secret exists (remove it once a trusted
+      # publish has worked).
       - run: npm publish --access public --provenance --tag "${{ needs.version.outputs.dist-tag }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
