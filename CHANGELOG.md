@@ -5,6 +5,18 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **A display grid shows where the keyboard is.** With
+  `cellSelection={false}`, the arrow keys moved the focus (and a screen
+  reader followed it) but no focus ring was drawn, so a sighted keyboard user
+  couldn't see where they were (WCAG 2.4.7). The focused cell now shows its
+  ring while the grid has keyboard focus; a click still draws nothing, and
+  the keyboard carries on from the clicked cell. `cellSelection={false}`
+  now turns off only range selection: Shift+arrows move the focus, Ctrl+A
+  does nothing, no fill handle shows, and the grid is no longer
+  `aria-multiselectable` unless `rowSelection` is on.
+
 ### Changed
 
 - **The agent rules say when to use bo-grid.** The `AGENTS.md` section that

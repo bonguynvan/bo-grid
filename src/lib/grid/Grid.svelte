@@ -162,6 +162,11 @@
 
   const sel = new Selection();
   let dragging = $state(false);
+  // Without cell selection the focus ring shows only for the keyboard (as
+  // :focus-visible would): a click on a display grid draws nothing.
+  let keyboardFocus = $state(false);
+  let gridHasFocus = $state(false);
+  const showFocus = $derived(cellSelection || (keyboardFocus && gridHasFocus));
   // Fill handle: drag the selection's corner to copy its value(s) across.
   let filling = $state(false);
   let fillTo = $state<{ r: number; c: number } | null>(null);
@@ -1748,8 +1753,10 @@
 
   function onCellDown(r: number, c: number, e: PointerEvent) {
     if (e.button !== 0) return;
-    // Display grid: skip range selection but let onclick (row/cell click) fire.
-    if (!cellSelection) return;
+    keyboardFocus = false;
+    // Display grid: no range selection, and onclick (row/cell click) still
+    // fires; the keyboard carries on from the clicked cell.
+    if (!cellSelection) return void sel.start(r, c);
     e.preventDefault();
     gridEl?.focus();
     if (e.shiftKey) sel.extendTo(r, c);
@@ -2426,9 +2433,12 @@
   }
 
   function onKeydown(e: KeyboardEvent) {
+    keyboardFocus = true;
     if (runHotkey(e)) return;
     const a = keyAction(e, keyState());
     if (!a) return;
+    // Without cell selection the keyboard moves the focus but selects no range.
+    if (!cellSelection && a.kind === 'selectAll') return;
     if (a.kind !== 'clear') e.preventDefault();
     switch (a.kind) {
       case 'edit':
@@ -2483,9 +2493,9 @@
         return;
       }
       case 'focus':
-        return focusTo(a.r, a.c, a.extend);
+        return focusTo(a.r, a.c, a.extend && cellSelection);
       case 'move':
-        sel.move(a.dr, a.dc, a.extend, maxR, maxC);
+        sel.move(a.dr, a.dc, a.extend && cellSelection, maxR, maxC);
         scrollFocusIntoView();
     }
   }
@@ -2556,10 +2566,12 @@
     aria-label={ariaLabel}
     aria-rowcount={rowCount + 1}
     aria-colcount={cols.length + leadCols}
-    aria-multiselectable="true"
+    aria-multiselectable={cellSelection || rowSelection ? 'true' : undefined}
     aria-activedescendant={activeId}
     bind:this={gridEl}
     onkeydown={onKeydown}
+    onfocus={() => (gridHasFocus = true)}
+    onblur={() => (gridHasFocus = false)}
   >
   {#if headerGroups}
     <div class="head-groups" aria-hidden="true" bind:this={groupHeadEl} style={headRowStyle} onscroll={onHeadRowScroll}>
@@ -2913,7 +2925,7 @@
                   flashHold={flashMotion === 'fade' ? null : flashHold}
                   cellFlash={live.cellFlash(getRowId(item.row))}
                   selected={cellSelection && (m ? rectSelected(m.r0, m.r1, ci, m.c1) : sel.contains(item.vr, ci))}
-                  focused={cellSelection && (m ? rectFocused(m.r0, m.r1, ci, m.c1) : sel.isFocus(item.vr, ci))}
+                  focused={showFocus && (m ? rectFocused(m.r0, m.r1, ci, m.c1) : sel.isFocus(item.vr, ci))}
                   span={m?.span}
                   colspan={m?.colspan}
                   flexStyle={m?.flex}
@@ -2925,7 +2937,7 @@
                   alt={item.vr % 2 === 1}
                   editing={editing?.r === item.vr && editing?.c === ci}
                   seed={editing?.r === item.vr && editing?.c === ci ? editSeed : null}
-                  fillCorner={fillHandle && !!sel.bounds && item.vr === sel.bounds.r1 && ci === sel.bounds.c1}
+                  fillCorner={fillHandle && cellSelection && !!sel.bounds && item.vr === sel.bounds.r1 && ci === sel.bounds.c1}
                   fillpreview={inFillPreview(item.vr, ci)}
                   cfRange={col.dataBar || col.colorScale ? cfRanges[col.key] : null}
                   {onFillStart}
