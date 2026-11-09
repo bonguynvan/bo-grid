@@ -5,6 +5,15 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- **`sortEmpty` on a column: where empty values go when it sorts.** Empty
+  values (`null`, `undefined`, `''`, `NaN`) stay at one end whether the
+  column is sorted up or down: `'last'` (the default) or `'first'`. A column
+  `compare` never sees them, so it only has to order real values. `false`
+  sorts them through `compare` like any value, as before. Set it for every
+  column with `defaultColumn`.
+
 ### Fixed
 
 - **A display grid shows where the keyboard is.** With
@@ -18,6 +27,12 @@ All notable changes to this project are documented here. Format follows
   `aria-multiselectable` unless `rowSelection` is on.
 
 ### Changed
+
+- **Empty values sort last in both directions.** Before, a missing figure
+  sorted as an empty string: first going up, last going down, so a column of
+  open interest with gaps put its gaps on top half the time. Set
+  `sortEmpty: false` on a column (or in `defaultColumn`) for the old order.
+  `NaN` no longer upsets a number sort.
 
 - **The agent rules say when to use bo-grid.** The `AGENTS.md` section that
   `npx bo-grid init` writes, the snippets in `docs/ai/` and the bo-grid
