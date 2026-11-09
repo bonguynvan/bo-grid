@@ -5,6 +5,18 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+## [3.2.2] — 2026-11-09
+
+**Published through npm trusted publishing.** The library is the same as
+3.2.1.
+
+### Changed
+
+- **Releases are published through npm trusted publishing (OIDC).** The
+  release workflow proves to npm that it is this repository's `release.yml`,
+  so publishing needs no npm token. Every version still carries provenance, which
+  you can check with `npm audit signatures`.
+
 ## [3.2.1] — 2026-11-09
 
 **A patch for display grids.** With `cellSelection={false}`, the focus ring
