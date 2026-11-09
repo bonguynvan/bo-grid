@@ -1761,9 +1761,14 @@
     keyboardFocus = false;
     // Keep the focus on the grid, not on the clicked cell (which takes focus
     // by default, tabindex -1): keys and the focus ring follow the grid's
-    // active cell. The click event still fires.
+    // active cell. The click event still fires. The clicked cell is in sight,
+    // so the focus scrolls nothing: focus() would otherwise scroll a clipping
+    // ancestor to show the whole grid, moving the row out from under the
+    // pointer before the click lands.
     e.preventDefault();
-    gridEl?.focus();
+    focusingByPointer = true;
+    gridEl?.focus({ preventScroll: true });
+    focusingByPointer = false;
     // Display grid: no range selection, and onclick (row/cell click) still
     // fires; the keyboard carries on from the clicked cell.
     if (!cellSelection) return void sel.start(r, c);
@@ -2440,6 +2445,26 @@
     return true;
   }
 
+  // The grid takes focus by Tab or from the app (not a click on a cell, which
+  // sets the active cell itself). It gets an active cell straight away, the
+  // last one used or the first cell of the top row in view, so Enter, Space
+  // and the screen reader have a cell before any arrow key. The ring shows
+  // when the browser would show a focus ring here (:focus-visible).
+  let focusingByPointer = false;
+  function matchesFocusVisible(el: HTMLElement | undefined): boolean {
+    try {
+      return !!el?.matches(':focus-visible');
+    } catch {
+      return false; // an engine without the selector (jsdom)
+    }
+  }
+  function onGridFocus(e: FocusEvent): void {
+    gridHasFocus = true;
+    if (focusingByPointer || e.target !== gridEl) return;
+    keyboardFocus = matchesFocusVisible(gridEl);
+    if (!sel.focus && maxR >= 0 && maxC >= 0) focusTo(hm.indexAt(scrollTop), 0, false);
+  }
+
   function onKeydown(e: KeyboardEvent) {
     keyboardFocus = true;
     if (runHotkey(e)) return;
@@ -2578,7 +2603,7 @@
     aria-activedescendant={activeId}
     bind:this={gridEl}
     onkeydown={onKeydown}
-    onfocus={() => (gridHasFocus = true)}
+    onfocus={onGridFocus}
     onblur={() => (gridHasFocus = false)}
   >
   {#if headerGroups}

@@ -26,7 +26,7 @@ Set `ariaLabel` so the grid has an accessible name ("Watchlist", "Open orders"):
 
 - The grid is `role="grid"` (`role="treegrid"` with tree data), with `aria-rowcount` and `aria-colcount` giving the full size, not the rendered window, and `aria-multiselectable` while range selection is on. It holds only rows; the toolbar, pager and menus sit beside it.
 - Rows are `role="row"` with `aria-rowindex`, and `aria-selected` when rows can be selected (`rowSelection` or `selectedRowId`, below). Cells are `role="gridcell"` with `aria-colindex`, and `aria-selected` while `cellSelection` is on. Headers are `role="columnheader"` with `aria-sort`.
-- The focused cell is announced through `aria-activedescendant`, so assistive technology follows it as it moves.
+- The focused cell is announced through `aria-activedescendant`, so assistive technology follows it as it moves. The grid has one as soon as it takes focus (the last cell used, or the first cell of the top row in view), so Enter and Space work straight after Tab.
 - Tree rows carry `aria-level` and `aria-expanded`; the row-number column, and a column with `rowHeader`, are made of row headers.
 - Sparkline cells have a text label; copies of rows drawn for sticky headers or while loading are `aria-hidden`; the selection's totals bar and the find bar's match count are live regions.
 
