@@ -161,10 +161,13 @@ function reinstallBase() {
 }
 
 /** The installed packages, and every file of bo-grid with its size and time:
-    a run that changes them is caught. */
+    a run that changes them is caught. A build's own caches don't count: Vite
+    bundles its config into .vite-temp and caches dependencies in .vite. */
 function fingerprint(dir) {
   const nm = join(dir, 'node_modules');
-  const hash = createHash('sha1').update(readdirSync(nm).sort().join('\n'));
+  const caches = new Set(['.vite', '.vite-temp', '.cache']);
+  const names = readdirSync(nm).filter((n) => !caches.has(n));
+  const hash = createHash('sha1').update(names.sort().join('\n'));
   const walk = (d) => {
     for (const e of readdirSync(d, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
       const p = join(d, e.name);
