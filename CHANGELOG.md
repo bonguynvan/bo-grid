@@ -5,6 +5,26 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+## [3.3.1] — 2026-11-09
+
+**Keyboard and click fixes for focus.** Enter works straight after Tab, and
+the first click on a grid in a clipped container reaches its row.
+
+### Fixed
+
+- **A grid that takes focus has an active cell straight away.** Before, a
+  grid reached by Tab (or focused by the app) had none until an arrow key was
+  pressed: Enter did not call `onRowClick`, Space did not tick a row, and a
+  screen reader was given no cell. It now takes the last active cell, or the
+  first cell of the top row in view. A display grid
+  (`cellSelection={false}`) shows its focus ring there when the browser
+  would show one for keyboard focus; a click still draws none.
+- **The first click on a grid in a clipped container reaches the row.** A
+  click focuses the grid without scrolling now. Before, the focus scrolled
+  any ancestor that clips the grid (`overflow: hidden` included) to show the
+  whole grid, which moved the row out from under the pointer, so the first
+  click on an unfocused grid could miss `onRowClick`.
+
 ## [3.3.0] — 2026-11-09
 
 **Row and header state for screen readers.** The `selectedRowId` row is no
