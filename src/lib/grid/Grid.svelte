@@ -1864,7 +1864,7 @@
   function autosizeColumn(col: ColumnDef): void {
     const CHAR_PX = 7.5;
     const PAD = 32; // cell padding + room for the header icons
-    let maxLen = col.header.length;
+    let maxLen = col.headerHidden ? 0 : col.header.length;
     if (!source) {
       for (const row of view.slice(0, 500)) {
         const s = formatCell(col, cellValue(col, row), row);
@@ -2682,7 +2682,7 @@
           dragOver = -1;
         }}
       >
-        <span class="label">{col.header}</span>
+        <span class="label" class:bo-sr-only={col.headerHidden}>{col.header}</span>
         {#if col.headerTooltip && col.headerInfo}
           <span class="hinfo" aria-hidden="true">i</span>
         {/if}
@@ -2875,7 +2875,7 @@
         {:else}
           <!-- Row activation is keyboard-accessible at the grid level: Enter on the focused cell fires onRowClick (focus is via aria-activedescendant). -->
           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:stale={staleAfter > 0 && isStale(item.row)} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:rowactive={selectedRowId != null && getRowId(item.row) === selectedRowId} class:clickable={!!onRowClick} class:droptarget={reorderable && dropRowVr === item.vr && dragRowVr !== item.vr} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : undefined} aria-level={treeData ? (item.depth ?? 0) + 1 : undefined} aria-expanded={treeData && item.hasChildren ? isExpanded(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{expandable ? baseH : hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)} oncontextmenu={(e) => openRowMenu(item.row, e)} ondragover={reorderable ? (e) => { if (dragRowVr < 0) return; e.preventDefault(); dropRowVr = item.vr; } : undefined} ondrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(); } : undefined}>
+          <div class="row {rowClass?.(item.row) ?? ''}" class:alt={item.vr % 2 === 1} class:stale={staleAfter > 0 && isStale(item.row)} class:rowsel={rowSelection && isRowSelected(getRowId(item.row))} class:rowactive={selectedRowId != null && getRowId(item.row) === selectedRowId} class:clickable={!!onRowClick} class:droptarget={reorderable && dropRowVr === item.vr && dragRowVr !== item.vr} role="row" tabindex="-1" aria-rowindex={item.vr + 2} aria-selected={rowSelection ? isRowSelected(getRowId(item.row)) : selectedRowId != null ? getRowId(item.row) === selectedRowId : undefined} aria-current={rowSelection && selectedRowId != null && getRowId(item.row) === selectedRowId ? 'true' : undefined} aria-level={treeData ? (item.depth ?? 0) + 1 : undefined} aria-expanded={treeData && item.hasChildren ? isExpanded(getRowId(item.row)) : undefined} style="top:{hm.offsetOf(item.vr)}px;height:{expandable ? baseH : hm.heightOf(item.vr)}px;{rowWidthStyle}" onclick={(e) => onRowClick?.(item.row, e)} oncontextmenu={(e) => openRowMenu(item.row, e)} ondragover={reorderable ? (e) => { if (dragRowVr < 0) return; e.preventDefault(); dropRowVr = item.vr; } : undefined} ondrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(); } : undefined}>
             {#if rowNumbers}<span class="numcell" role="rowheader" aria-colindex={1} style={numCellStyle(false)}>{rowNumberAt(item.vr)}</span>{/if}
             {#if expandable}
               <span class="expandcell" role="gridcell" aria-colindex={1 + numOffset} style={expandCellStyle(false)}>
@@ -2932,7 +2932,7 @@
                   {flashTracker}
                   flashHold={flashMotion === 'fade' ? null : flashHold}
                   cellFlash={live.cellFlash(getRowId(item.row))}
-                  selected={cellSelection && (m ? rectSelected(m.r0, m.r1, ci, m.c1) : sel.contains(item.vr, ci))}
+                  selected={cellSelection ? (m ? rectSelected(m.r0, m.r1, ci, m.c1) : sel.contains(item.vr, ci)) : undefined}
                   focused={showFocus && (m ? rectFocused(m.r0, m.r1, ci, m.c1) : sel.isFocus(item.vr, ci))}
                   span={m?.span}
                   colspan={m?.colspan}

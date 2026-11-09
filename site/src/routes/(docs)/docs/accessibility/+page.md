@@ -25,7 +25,7 @@ Set `ariaLabel` so the grid has an accessible name ("Watchlist", "Open orders"):
 ## Roles and states
 
 - The grid is `role="grid"` (`role="treegrid"` with tree data), with `aria-rowcount` and `aria-colcount` giving the full size, not the rendered window, and `aria-multiselectable` while range selection is on. It holds only rows; the toolbar, pager and menus sit beside it.
-- Rows are `role="row"` with `aria-rowindex`; cells are `role="gridcell"` with `aria-colindex` and `aria-selected`. Headers are `role="columnheader"` with `aria-sort`.
+- Rows are `role="row"` with `aria-rowindex`, and `aria-selected` when rows can be selected (`rowSelection` or `selectedRowId`, below). Cells are `role="gridcell"` with `aria-colindex`, and `aria-selected` while `cellSelection` is on. Headers are `role="columnheader"` with `aria-sort`.
 - The focused cell is announced through `aria-activedescendant`, so assistive technology follows it as it moves.
 - Tree rows carry `aria-level` and `aria-expanded`; the row-number column, and a column with `rowHeader`, are made of row headers.
 - Sparkline cells have a text label; copies of rows drawn for sticky headers or while loading are `aria-hidden`; the selection's totals bar and the find bar's match count are live regions.
@@ -36,6 +36,18 @@ Mark the column that names a row (a symbol, a market) with `rowHeader: true`. It
 
 ```ts
 { type: 'text', key: 'symbol', header: 'Symbol', pinned: 'left', rowHeader: true }
+```
+
+## Say which row is selected
+
+The row `selectedRowId` marks (the one whose details the page shows) is not only a colour: it has `aria-selected="true"` and the other rows `"false"`, so a screen reader says it is selected. With `rowSelection` on, `aria-selected` follows the checkboxes instead, and the `selectedRowId` row has `aria-current="true"`.
+
+## Hide a header from sight
+
+A column of row actions (edit or delete buttons) needs no visible title, but its header still needs a name. Give it a `header` and `headerHidden: true`: the text is hidden from sight and kept for screen readers, and the column menu and the columns panel still show it.
+
+```ts
+{ type: 'text', key: 'edit', header: 'Edit', headerHidden: true, width: 40, sortable: false }
 ```
 
 ## Keyboard
@@ -53,6 +65,6 @@ The full audit (keyboard map, roles, measured contrast ratios and conformance no
 
 ## Reference
 
-<Props names={['ariaLabel', 'labels', 'hotkeys']} />
+<Props names={['ariaLabel', 'selectedRowId', 'labels', 'hotkeys']} />
 
-<Props of="column" names={['rowHeader']} />
+<Props of="column" names={['rowHeader', 'headerHidden']} />

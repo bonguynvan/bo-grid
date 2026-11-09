@@ -34,7 +34,7 @@
     row,
     r,
     c,
-    selected = false,
+    selected,
     focused = false,
     pinned = false,
     pinSide = 'left',

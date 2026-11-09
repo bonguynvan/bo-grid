@@ -117,6 +117,9 @@ export interface GridPropsDef {
   /** Controlled "active row" highlight (keyed by `getRowId`) — for
       master-detail / list-detail where one row is selected. Independent of the
       checkbox `rowSelection` and the cell range selection. `null` = none.
+      A screen reader hears it too: the row has `aria-selected="true"` and
+      the other rows `"false"`. With `rowSelection` on, `aria-selected`
+      follows the checkboxes, and this row has `aria-current="true"`.
       @default null */
   selectedRowId?: string | number | null;
   /** Called when a data row is activated by click or Enter (open a detail

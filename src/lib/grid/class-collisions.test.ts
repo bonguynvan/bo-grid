@@ -11,7 +11,9 @@ import { describe, it, expect } from 'vitest';
 // Shared on purpose: every element carrying these is meant to match.
 const SHARED: Record<string, string[]> = {
   'Cell.svelte': ['bo-edit'], // the input and the select editor
-  'Grid.svelte': ['selhead'], // the lead header cells (numbers, expand, select)
+  // The lead header cells (numbers, expand, select); text for screen readers
+  // only (the lead headers' names, a headerHidden column's label).
+  'Grid.svelte': ['selhead', 'bo-sr-only'],
 };
 
 // Every component under src/lib, as source text.
