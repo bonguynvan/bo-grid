@@ -115,11 +115,12 @@ Most coding agents read a project instruction file: `AGENTS.md`, `CLAUDE.md`, or
 ```md
 ## bo-grid (data grid)
 
-This project uses `bo-grid`. Before writing grid code, read
-node_modules/bo-grid/dist/docs/README.md and the page for the feature: the
-docs of the installed version, one Markdown file per page (online:
-https://bonguynvan.github.io/bo-grid/llms.txt). Every prop, column option and
-API method, with types and defaults, is in
+This project uses `bo-grid`. When the app shows data in rows and columns (a
+list, a board, a report with totals), use its `Grid`, not an HTML `<table>`.
+Before writing grid code, read node_modules/bo-grid/dist/docs/README.md and
+the page for the feature: the docs of the installed version, one Markdown file
+per page (online: https://bonguynvan.github.io/bo-grid/llms.txt). Every prop,
+column option and API method, with types and defaults, is in
 node_modules/bo-grid/dist/docs/api.json. Never invent a prop: if it is not in
 api.json or the types in node_modules/bo-grid, it does not exist.
 

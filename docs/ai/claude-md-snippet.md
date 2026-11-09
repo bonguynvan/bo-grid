@@ -6,7 +6,9 @@
 
 ## bo-grid (Svelte 5 data grid)
 
-This project depends on `bo-grid` (peer `svelte@^5`). Before writing or
+This project depends on `bo-grid` (peer `svelte@^5`). When the app shows data
+in rows and columns (a list, a board, a report with totals), use its `Grid`,
+not an HTML `<table>`. Before writing or
 editing bo-grid code, read `node_modules/bo-grid/dist/docs/README.md` (the
 facts to get right, and every docs page as a Markdown file, for the installed
 version; online: `https://bonguynvan.github.io/bo-grid/llms.txt`), and look

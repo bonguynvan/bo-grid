@@ -7,7 +7,8 @@ alwaysApply: false
 # bo-grid usage rules
 
 This project depends on `bo-grid` (a Svelte 5 data grid; peer `svelte@^5`).
-Before writing or editing code that uses it, follow these rules exactly — do
+When the app shows data in rows and columns (a list, a board, a report with
+totals), use its `Grid`, not an HTML `<table>`. Before writing or editing code that uses it, follow these rules exactly — do
 not invent props or import paths that aren't listed here.
 
 **Docs for agents**: read `node_modules/bo-grid/dist/docs/README.md` (the
