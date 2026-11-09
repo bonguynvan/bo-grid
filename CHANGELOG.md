@@ -7,6 +7,12 @@ All notable changes to this project are documented here. Format follows
 
 ### Added
 
+- **`rowHeader` on a column: its cells name their row.** They render as row
+  headers (`role="rowheader"`), so a screen reader moving along a row to a
+  price also says which symbol it is. Focus, selection and the keys work as
+  in any cell. Give it to the column that names the row, usually the pinned
+  first one.
+
 - **`manualSort`: the app orders the rows, the grid shows the sort.** The
   headers show `sort` (arrows and `aria-sort`) and a click calls
   `onSortChange` as usual, but the grid keeps the rows in the order they come

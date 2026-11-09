@@ -32,6 +32,9 @@ the keyboard model, and the conformance notes from the 0.15 audit.
 - The row-number column (`rowNumbers`) is made of `role="rowheader"` cells, so
   a screen reader announces the row's number as focus moves along it. Its
   header is named by the `rowNumber` label.
+- A column with `rowHeader: true` (a symbol, a market) is made of
+  `role="rowheader"` cells too, so a screen reader names the row as focus
+  moves to its figures. Its cells keep focus, selection and the keys.
 - Tree data uses the treegrid semantics: `aria-level`, `aria-expanded`, and
   `ArrowRight`/`ArrowLeft` to expand/collapse.
 - Floating menus are `role="menu"` / `role="menuitem"`; the filter and columns

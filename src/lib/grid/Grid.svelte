@@ -1706,7 +1706,7 @@
   let spacerEl: HTMLDivElement | undefined = $state();
   function onColHoverOver(e: PointerEvent) {
     if (e.pointerType === 'touch' || !spacerEl) return;
-    const cell = (e.target as HTMLElement | null)?.closest?.('.row [role=gridcell]') as HTMLElement | null;
+    const cell = (e.target as HTMLElement | null)?.closest?.('.row [role=gridcell], .row [role=rowheader]') as HTMLElement | null;
     if (!cell) return;
     const ci = Number(cell.getAttribute('aria-colindex')) - 1 - leadCols;
     if (!(ci >= 0 && ci < cols.length)) return;
