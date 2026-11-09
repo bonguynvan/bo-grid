@@ -55,7 +55,8 @@ no agent):
 - **The runs share one `node_modules`** through a link (a junction on
   Windows). The agent may not install, remove or edit packages, and after each
   run the evals check that the install is unchanged: a run that changed it is
-  marked errored, and the install is rebuilt. To delete old runs, delete the
+  marked errored, and the install is rebuilt. The caches a build writes there
+  on its own (Vite's `.vite` and `.vite-temp`) don't count. To delete old runs, delete the
   `runs/` folder with a tool that does not follow links (`rm -rf` or Node's
   `fs.rm`), never with Windows PowerShell 5.1's `Remove-Item -Recurse`, which
   can delete the shared install through the link.

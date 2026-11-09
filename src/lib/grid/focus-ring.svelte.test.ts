@@ -55,9 +55,13 @@ describe('focus ring without cell selection', () => {
   it('draws nothing for a click, then carries on from the clicked cell', () => {
     grid = mountGrid({ rows, columns, cellSelection: false });
     const cell = gridEl().querySelectorAll('[role=row] [role=gridcell]')[4] as HTMLElement; // CCC · px
-    cell.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
-    gridEl().focus();
+    const down = new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0 });
+    cell.dispatchEvent(down);
     flushSync();
+    // The grid keeps the focus: the cell (tabindex -1) must not take it, or
+    // the keys would leave the ring behind on it.
+    expect(down.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(gridEl());
     expect(focusedCells()).toEqual([]);
     press('ArrowLeft');
     expect(focusedCells()).toHaveLength(1);

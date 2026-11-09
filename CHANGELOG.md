@@ -5,6 +5,15 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **A click on a display grid keeps the focus on the grid.** With
+  `cellSelection={false}`, a click gave the browser focus to the clicked
+  cell instead of the grid, so the arrow keys moved the grid's active cell
+  without its ring, and the browser's own outline stayed on the clicked
+  cell. The click now keeps the focus on the grid, as it does with cell
+  selection on; the click event still fires.
+
 ## [3.2.0] — 2026-11-09
 
 **Grids that sort by your rules, and read better to a screen reader.**

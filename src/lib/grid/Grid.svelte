@@ -1759,11 +1759,14 @@
   function onCellDown(r: number, c: number, e: PointerEvent) {
     if (e.button !== 0) return;
     keyboardFocus = false;
+    // Keep the focus on the grid, not on the clicked cell (which takes focus
+    // by default, tabindex -1): keys and the focus ring follow the grid's
+    // active cell. The click event still fires.
+    e.preventDefault();
+    gridEl?.focus();
     // Display grid: no range selection, and onclick (row/cell click) still
     // fires; the keyboard carries on from the clicked cell.
     if (!cellSelection) return void sel.start(r, c);
-    e.preventDefault();
-    gridEl?.focus();
     if (e.shiftKey) sel.extendTo(r, c);
     else sel.start(r, c);
     dragging = true;
