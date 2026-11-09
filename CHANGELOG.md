@@ -5,6 +5,11 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+## [3.2.1] — 2026-11-09
+
+**A patch for display grids.** With `cellSelection={false}`, the focus ring
+from 3.2.0 now follows the keyboard after a click too.
+
 ### Fixed
 
 - **A click on a display grid keeps the focus on the grid.** With
