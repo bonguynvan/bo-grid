@@ -5,6 +5,15 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+## [3.2.0] — 2026-11-09
+
+**Grids that sort by your rules, and read better to a screen reader.**
+Empty values stay at the end of a sort whichever way it goes, an app can
+keep its own row order while the headers show the sort, and a column can
+name its rows for assistive technology. A display grid now shows where the
+keyboard is. A minor release: one default changes, where empty values sort
+(see Changed).
+
 ### Added
 
 - **`rowHeader` on a column: its cells name their row.** They render as row
@@ -26,18 +35,6 @@ All notable changes to this project are documented here. Format follows
   sorts them through `compare` like any value, as before. Set it for every
   column with `defaultColumn`.
 
-### Fixed
-
-- **A display grid shows where the keyboard is.** With
-  `cellSelection={false}`, the arrow keys moved the focus (and a screen
-  reader followed it) but no focus ring was drawn, so a sighted keyboard user
-  couldn't see where they were (WCAG 2.4.7). The focused cell now shows its
-  ring while the grid has keyboard focus; a click still draws nothing, and
-  the keyboard carries on from the clicked cell. `cellSelection={false}`
-  now turns off only range selection: Shift+arrows move the focus, Ctrl+A
-  does nothing, no fill handle shows, and the grid is no longer
-  `aria-multiselectable` unless `rowSelection` is on.
-
 ### Changed
 
 - **Empty values sort last in both directions.** Before, a missing figure
@@ -53,6 +50,18 @@ All notable changes to this project are documented here. Format follows
   `<table>`. Agents asked for "trades grouped by desk, with totals" had the
   section loaded and still wrote a table, because the request didn't sound
   like grid code. Run `npx bo-grid init` again to update the section.
+
+### Fixed
+
+- **A display grid shows where the keyboard is.** With
+  `cellSelection={false}`, the arrow keys moved the focus (and a screen
+  reader followed it) but no focus ring was drawn, so a sighted keyboard user
+  couldn't see where they were (WCAG 2.4.7). The focused cell now shows its
+  ring while the grid has keyboard focus; a click still draws nothing, and
+  the keyboard carries on from the clicked cell. `cellSelection={false}`
+  now turns off only range selection: Shift+arrows move the focus, Ctrl+A
+  does nothing, no fill handle shows, and the grid is no longer
+  `aria-multiselectable` unless `rowSelection` is on.
 
 ## [3.1.0] — 2026-10-25
 
