@@ -12,9 +12,8 @@ name: release
 # this repository's release.yml as a trusted publisher for bo-grid, and the
 # job's id-token proves the run is that workflow, so no npm token is stored.
 # Provenance comes with it. That takes npm 11.5.1 or later on Node 22.14 or
-# later. While the NPM_TOKEN secret is still set, npm falls back to it if
-# OIDC is not set up. To release a version already on main again, run this
-# workflow by hand (Actions > release > Run workflow).
+# later. To release a version already on main again, run this workflow by
+# hand (Actions > release > Run workflow).
 
 on:
   workflow_run:
@@ -85,12 +84,12 @@ jobs:
       - run: node scripts/release-notes.mjs "$VERSION" > "$RUNNER_TEMP/notes.md"
       # Trusted publishing needs npm 11.5.1 or later; Node 22 ships npm 10.
       - run: npm install --global npm@^11.5.1 && npm --version
-      # prepublishOnly builds dist/ (pnpm package). npm tries OIDC first, then
-      # the token while the NPM_TOKEN secret exists (remove it once a trusted
-      # publish has worked).
-      - run: npm publish --access public --provenance --tag "${{ needs.version.outputs.dist-tag }}"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # Build dist/ first: npm checks the package's bin before it runs
+      # prepublishOnly, and warns when dist/cli/bin.js is not there yet. The
+      # publish then skips prepublishOnly (the same pnpm package) so it builds
+      # once.
+      - run: pnpm run package
+      - run: npm publish --ignore-scripts --access public --provenance --tag "${{ needs.version.outputs.dist-tag }}"
       - name: Tag and GitHub release
         env:
           GH_TOKEN: ${{ github.token }}

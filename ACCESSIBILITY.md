@@ -25,6 +25,9 @@ the keyboard model, and the conformance notes from the 0.15 audit.
   it). Enter or Space sorts, Shift adds a sort key. The master-detail expand
   column's header is named by the `detailColumn` label. axe-core reports no
   violations on the demo's headers.
+- A column with `headerHidden: true` (a column of edit buttons) keeps its
+  header text for screen readers, visually hidden, so the column header still
+  has a name with no title shown.
 - The find bar (`findBar`) is a `role="search"` region beside the grid. Its
   input and buttons are labelled, the match count ("3 of 12") is announced
   through `aria-live`, Escape returns focus to the grid, and each match
@@ -35,6 +38,11 @@ the keyboard model, and the conformance notes from the 0.15 audit.
 - A column with `rowHeader: true` (a symbol, a market) is made of
   `role="rowheader"` cells too, so a screen reader names the row as focus
   moves to its figures. Its cells keep focus, selection and the keys.
+- The row `selectedRowId` marks has `aria-selected="true"` and the other
+  rows `"false"`, so the selection is not shown by colour alone (1.4.1).
+  With `rowSelection` on, `aria-selected` follows the checkboxes and that
+  row has `aria-current="true"`. Cells have `aria-selected` only while
+  `cellSelection` is on.
 - Tree data uses the treegrid semantics: `aria-level`, `aria-expanded`, and
   `ArrowRight`/`ArrowLeft` to expand/collapse.
 - Floating menus are `role="menu"` / `role="menuitem"`; the filter and columns

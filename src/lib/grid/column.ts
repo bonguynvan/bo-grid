@@ -25,6 +25,14 @@ export interface ColBase {
   key: string;
   /** The column's title in the header row. */
   header: string;
+  /** Hide the header text from sight but keep it for screen readers, for a
+      column whose cells explain themselves (a column of edit or delete
+      buttons). The column header still has `header` as its name, and the
+      column menu, the columns panel and copy with headers still show it.
+      @default false
+      @example
+      { type: 'text', key: 'edit', header: 'Edit', headerHidden: true, width: 40, sortable: false } */
+  headerHidden?: boolean;
   /** BCP 47 locale for this column's built-in formatting (`price`, `date`,
       `currency`, `relative`). Unset, the grid's `locale`, then `en-US`.
       @default undefined */
