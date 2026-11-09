@@ -5,6 +5,16 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **The agent rules say when to use bo-grid.** The `AGENTS.md` section that
+  `npx bo-grid init` writes, the snippets in `docs/ai/` and the bo-grid
+  skill now tell an agent to use `Grid` whenever the app shows data in rows
+  and columns (a list, a board, a report with totals), not an HTML
+  `<table>`. Agents asked for "trades grouped by desk, with totals" had the
+  section loaded and still wrote a table, because the request didn't sound
+  like grid code. Run `npx bo-grid init` again to update the section.
+
 ## [3.1.0] — 2026-10-25
 
 **One command sets a project up for coding agents.** `npx bo-grid init`

@@ -1,6 +1,6 @@
 ---
 name: bo-grid
-description: Writes and fixes code that uses bo-grid, the Svelte 5 data grid for trading screens. Use when code imports bo-grid (or bo-grid/realtime, bo-grid/trading, bo-grid/ladder, bo-grid/react, bo-grid/vue, bo-grid/element), or when asked for a table, price board, order book, blotter or live-updating grid in this project.
+description: Writes and fixes code that uses bo-grid, the Svelte 5 data grid for trading screens. Use when code imports bo-grid (or bo-grid/realtime, bo-grid/trading, bo-grid/ladder, bo-grid/react, bo-grid/vue, bo-grid/element), or when asked to show data in rows and columns in this project: a table, a list, a report with totals, a price board, order book, blotter or live-updating grid.
 ---
 
 # bo-grid
