@@ -68,7 +68,7 @@ The totals follow a live feed without rescanning every row: `api.patchRows` move
 
 ## Read-only grids and an active row
 
-For a display grid, `cellSelection={false}` drops the selection highlight and the fill handle, so clicks go straight to `onRowClick` and `onCellClick`:
+For a display grid, `cellSelection={false}` drops the selection highlight and the fill handle, so clicks go straight to `onRowClick` and `onCellClick`. The keyboard still moves through the cells and shows where it is with the focus ring; Shift+arrows and Ctrl+A select no range:
 
 ```svelte
 <Grid {rows} {columns} height={480} cellSelection={false} onRowClick={(row) => open(row)} />

@@ -62,10 +62,12 @@ export interface GridPropsDef {
       `resizable: false`.
       @default true */
   resizable?: boolean;
-  /** Highlight cells/ranges on click-drag (the blue selection fill + focus
-      ring + fill handle). Set false for a read-only/display grid where clicks
-      should pass straight through to `onRowClick`/`onCellClick` without a
-      selection highlight.
+  /** Highlight cells/ranges on click-drag (the blue selection fill + fill
+      handle). Set false for a read-only/display grid where clicks should pass
+      straight through to `onRowClick`/`onCellClick` without a selection
+      highlight. The keyboard still moves the focus, and the focused cell
+      shows its ring while the grid has keyboard focus; Shift+arrows and
+      Ctrl+A select no range.
       @default true */
   cellSelection?: boolean;
   /** Show a leading checkbox column for whole-row selection (keyed by row id,
