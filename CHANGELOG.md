@@ -5,6 +5,33 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+## [3.3.0] — 2026-11-09
+
+**Row and header state for screen readers.** The `selectedRowId` row is no
+longer shown by colour alone, and a column can hide its header from sight
+while keeping its name.
+
+### Added
+
+- **`headerHidden` on a column: the header text is hidden from sight and
+  kept for screen readers.** For a column of edit or delete buttons, which
+  needs no visible title but whose header needs a name. The column menu, the
+  columns panel and copy with headers still use `header`, and autosizing no
+  longer counts the hidden text.
+
+### Changed
+
+- **The `selectedRowId` row has `aria-selected="true"`**, and the other rows
+  `"false"`, so a screen reader says which row's details the page shows.
+  With `rowSelection` on, `aria-selected` still follows the checkboxes, and
+  the `selectedRowId` row has `aria-current="true"`.
+- **Cells have `aria-selected` only while `cellSelection` is on.** A display
+  grid's cells said "not selected" on every cell; they now say nothing about
+  a selection they cannot have.
+- **The release workflow no longer passes an npm token.** It publishes only
+  through trusted publishing, and builds `dist/` before `npm publish`, so
+  npm no longer warns that the `bo-grid` command's file is missing.
+
 ## [3.2.2] — 2026-11-09
 
 **Published through npm trusted publishing.** The library is the same as
