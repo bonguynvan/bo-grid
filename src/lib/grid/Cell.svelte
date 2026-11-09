@@ -458,7 +458,7 @@
   class:focus={focused}
   class:fillpreview={fillpreview}
   style={cellStyle()}
-  role="gridcell"
+  role={col.rowHeader ? 'rowheader' : 'gridcell'}
   tabindex="-1"
   id={cellId}
   data-bo-tip={tip}

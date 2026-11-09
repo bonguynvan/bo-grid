@@ -147,6 +147,14 @@ export interface ColBase {
       every tick.
       @default undefined */
   updateMs?: number;
+  /** This column names its row (a symbol, a market): its cells are row
+      headers (`role="rowheader"`), so a screen reader says which row a cell
+      is in as the focus moves along it. Focus, selection and the keys work as
+      in any cell. Give it to one column, usually the pinned first one.
+      @default false
+      @example
+      { type: 'text', key: 'symbol', header: 'Symbol', pinned: 'left', rowHeader: true } */
+  rowHeader?: boolean;
   /** Set false to disable header-click sorting on this column.
       @default true */
   sortable?: boolean;
