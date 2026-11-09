@@ -19,7 +19,8 @@ Click a header to sort, Shift-click another to add it to the sort, open a header
 Click a column header to sort it ascending, again for descending, and a third time to clear. **Shift-click** more headers to sort by several columns; each sorted header shows its place in the order.
 
 - Numeric columns sort by number, dates by time, text with a locale-aware collator.
-- Give a column `compare(a, b)` for a custom order (a status workflow, a rating scale).
+- Give a column `compare(a, b)` for a custom order (a status workflow, a rating scale). It is ascending: the grid applies the direction.
+- Empty values (`null`, `undefined`, `''`, `NaN`) sort last whether the column goes up or down, and `compare` never sees them. Set `sortEmpty: 'first'` to put them first, or `false` to sort them through `compare` like any value; `defaultColumn` sets it for every column.
 - Set `sortable: false` to stop a column sorting. Sparkline columns never sort.
 
 ### A sort you own
@@ -109,6 +110,6 @@ With a `source`, the grid sends the sort, the `filter` text and the column filte
 
 <Props names={['sort', 'onSortChange', 'filter', 'quickFilter', 'filterRow', 'filterMenu', 'columnFilters', 'onFilterChange', 'liveSort']} />
 
-<Props of="column" names={['sortable', 'compare', 'filter']} />
+<Props of="column" names={['sortable', 'compare', 'sortEmpty', 'filter']} />
 
 <Props of="api" names={['refresh']} />

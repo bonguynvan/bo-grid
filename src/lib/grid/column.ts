@@ -155,6 +155,15 @@ export interface ColBase {
       @example
       { type: 'badge', key: 'status', header: 'Status', compare: (a, b) => RANK[String(a)] - RANK[String(b)] } */
   compare?: (a: unknown, b: unknown) => number;
+  /** Where empty values (`null`, `undefined`, `''`, `NaN`) go when the
+      column is sorted: `'last'` or `'first'` keeps them at that end in both
+      directions, and `compare` never sees them. `false` sorts them like any
+      other value, through `compare`, so they flip with the direction. Set it
+      for every column with `defaultColumn`.
+      @default 'last'
+      @example
+      { type: 'number', key: 'openInterest', header: 'OI', sortEmpty: 'last' } */
+  sortEmpty?: 'last' | 'first' | false;
   /** When grouping is active (or with `footer`), show this aggregate of the
       column on group headers and the totals row.
       @default undefined
@@ -597,6 +606,24 @@ function rawCompare(a: unknown, b: unknown): number {
   return collate(String(a ?? ''), String(b ?? ''));
 }
 
+function isEmptyValue(v: unknown): boolean {
+  return v == null || v === '' || (typeof v === 'number' && Number.isNaN(v));
+}
+
+/** Compares two sort values in a direction (1 up, -1 down), keeping empty
+    values at the end the column's `sortEmpty` names whatever the direction. */
+function compareValues(a: unknown, b: unknown, dir: 1 | -1, col: ColumnDef | undefined): number {
+  // The common case first: two numbers, no custom compare.
+  if (!col?.compare && typeof a === 'number' && typeof b === 'number' && a === a && b === b) return (a - b) * dir;
+  const empty = col?.sortEmpty ?? 'last';
+  if (empty !== false) {
+    const ea = isEmptyValue(a);
+    const eb = isEmptyValue(b);
+    if (ea || eb) return ea === eb ? 0 : (ea ? 1 : -1) * (empty === 'last' ? 1 : -1);
+  }
+  return (col?.compare ?? rawCompare)(a, b) * dir;
+}
+
 /**
  * Sort rows by `sorts`, reading each row's sort value(s) exactly once and
  * sorting indices — n reads instead of ~2·n·log n. Matters when values come
@@ -615,11 +642,21 @@ export function sortRows<T extends GridRow>(
     const col = columns.find((c) => c.key === sort.key);
     const keys = new Array<unknown>(n);
     for (let i = 0; i < n; i++) keys[i] = col?.value ? col.value(rows[i]) : rows[i][sort.key];
-    return { keys, dir: sort.dir === 'asc' ? 1 : -1, compare: col?.compare ?? rawCompare };
+    // Where each row's value goes before any comparison: -1 empty and first,
+    // 1 empty and last, 0 sorted by value (see sortEmpty).
+    const empty = col?.sortEmpty ?? 'last';
+    const end = empty === 'first' ? -1 : 1;
+    const place = new Int8Array(n);
+    if (empty !== false) for (let i = 0; i < n; i++) if (isEmptyValue(keys[i])) place[i] = end;
+    return { keys, place, compare: col?.compare ?? rawCompare, dir: sort.dir === 'asc' ? 1 : -1 };
   });
   const order = Array.from({ length: n }, (_, i) => i);
   order.sort((i, j) => {
     for (const sp of specs) {
+      const pi = sp.place[i];
+      const pj = sp.place[j];
+      if (pi !== pj) return pi - pj;
+      if (pi !== 0) continue;
       const d = sp.compare(sp.keys[i], sp.keys[j]);
       if (d !== 0) return d * sp.dir;
     }
@@ -633,8 +670,7 @@ export function compareRows(a: GridRow, b: GridRow, sort: SortState, col?: Colum
   // authoritative sort key off the row.
   const av = col?.value ? col.value(a) : a[sort.key];
   const bv = col?.value ? col.value(b) : b[sort.key];
-  const d = col?.compare ? col.compare(av, bv) : rawCompare(av, bv);
-  return sort.dir === 'asc' ? d : -d;
+  return compareValues(av, bv, sort.dir === 'asc' ? 1 : -1, col);
 }
 
 /**

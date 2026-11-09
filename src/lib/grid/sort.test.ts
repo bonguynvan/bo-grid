@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compareBySorts, sortRows, type GridRow, type SortState } from './column';
+import { compareBySorts, sortRows, type ColumnDef, type GridRow, type SortState } from './column';
 
 const row = (over: Record<string, unknown>): GridRow =>
   ({ id: 0, flashSeq: 0, flashDir: 'up', ...over }) as GridRow;
@@ -102,5 +102,61 @@ describe('sortRows (keys read once per row)', () => {
     const copy = [...data];
     sortRows(data, [{ key: 'p', dir: 'asc' }], cols as never);
     expect(data).toEqual(copy);
+  });
+});
+
+describe('sortEmpty: empty values stay at one end in both directions', () => {
+  const rows: GridRow[] = [
+    row({ id: 1, oi: 30 }),
+    row({ id: 2, oi: null }),
+    row({ id: 3, oi: 10 }),
+    row({ id: 4 }),
+    row({ id: 5, oi: Number.NaN }),
+    row({ id: 6, oi: 20 }),
+  ];
+  const ids = (out: GridRow[]) => out.map((r) => r.id);
+  const sortBy = (dir: 'asc' | 'desc', col?: Partial<ColumnDef>) =>
+    ids(sortRows(rows, [{ key: 'oi', dir }], [{ type: 'number', key: 'oi', header: 'OI', ...col } as ColumnDef]));
+
+  it('puts null, undefined and NaN last by default, up and down', () => {
+    expect(sortBy('asc')).toEqual([3, 6, 1, 2, 4, 5]);
+    expect(sortBy('desc')).toEqual([1, 6, 3, 2, 4, 5]);
+  });
+
+  it("puts them first with 'first', up and down", () => {
+    expect(sortBy('asc', { sortEmpty: 'first' })).toEqual([2, 4, 5, 3, 6, 1]);
+    expect(sortBy('desc', { sortEmpty: 'first' })).toEqual([2, 4, 5, 1, 6, 3]);
+  });
+
+  it('keeps them out of a column compare, which stays ascending-only', () => {
+    const seen: unknown[] = [];
+    const compare = (a: unknown, b: unknown) => {
+      seen.push(a, b);
+      return (a as number) - (b as number);
+    };
+    expect(sortBy('desc', { compare })).toEqual([1, 6, 3, 2, 4, 5]);
+    expect(seen.every((v) => typeof v === 'number' && !Number.isNaN(v))).toBe(true);
+  });
+
+  it('treats an empty string as empty in a text column', () => {
+    const text: GridRow[] = [row({ id: 1, s: 'b' }), row({ id: 2, s: '' }), row({ id: 3, s: 'a' })];
+    const col: ColumnDef[] = [{ type: 'text', key: 's', header: 'S' }];
+    expect(ids(sortRows(text, [{ key: 's', dir: 'asc' }], col))).toEqual([3, 1, 2]);
+    expect(ids(sortRows(text, [{ key: 's', dir: 'desc' }], col))).toEqual([1, 3, 2]);
+  });
+
+  it('with false, sorts them like any value, so they flip with the direction', () => {
+    const low = (v: unknown) => (Number.isFinite(v) ? (v as number) : -Infinity);
+    const compare = (a: unknown, b: unknown) => (low(a) === low(b) ? 0 : low(a) - low(b));
+    expect(sortBy('asc', { sortEmpty: false, compare }).slice(0, 3)).toEqual([2, 4, 5]);
+    expect(sortBy('desc', { sortEmpty: false, compare }).slice(-3)).toEqual([2, 4, 5]);
+  });
+
+  it('compareBySorts agrees with sortRows', () => {
+    const col: ColumnDef = { type: 'number', key: 'oi', header: 'OI' };
+    for (const dir of ['asc', 'desc'] as const) {
+      const viaCompare = [...rows].sort((a, b) => compareBySorts(a, b, [{ key: 'oi', dir }], () => col) || (a.id as number) - (b.id as number));
+      expect(ids(viaCompare)).toEqual(sortBy(dir));
+    }
   });
 });
