@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { AggKind, AggResult } from './aggregate';
-  import { AGG_LABELS } from './aggregate';
+  import type { AggKind, AggResult } from './aggregate.js';
+  import { AGG_LABELS } from './aggregate.js';
 
   let { result, kinds, locale }: { result: AggResult | null; kinds: AggKind[]; locale?: string } = $props();
 

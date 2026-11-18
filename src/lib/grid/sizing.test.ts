@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { applyWidths, applyAutoWidths, clampWidth, contentWidth, frozenWidths, isResizable, MIN_COL_WIDTH } from './sizing';
-import type { ColumnDef } from './column';
+import { applyWidths, applyAutoWidths, clampWidth, contentWidth, frozenWidths, isResizable, MIN_COL_WIDTH } from './sizing.js';
+import type { ColumnDef } from './column.js';
 
 const col = (over: Partial<ColumnDef> & { key: string }): ColumnDef =>
   ({ type: 'number', header: over.key, ...over }) as ColumnDef;

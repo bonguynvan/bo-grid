@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { ColumnDef, GridRow } from './column';
-import { toCSV, rowsToMatrix, parseCSV, parseCSVMatrix, parseTSV, parseJSON, parseRows, rowsFromObjects } from './export';
+import type { ColumnDef, GridRow } from './column.js';
+import { toCSV, rowsToMatrix, parseCSV, parseCSVMatrix, parseTSV, parseJSON, parseRows, rowsFromObjects } from './export.js';
 
 const columns: ColumnDef[] = [
   { type: 'text', key: 'name', header: 'Name' },

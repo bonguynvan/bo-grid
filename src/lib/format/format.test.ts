@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fmtPrice, fmtPercent, fmtVolume, fmtDate, fmtCurrency, relativeTime } from './format';
+import { fmtPrice, fmtPercent, fmtVolume, fmtDate, fmtCurrency, relativeTime } from './format.js';
 
 describe('fmtPrice', () => {
   it('always shows two fraction digits with thousands separators', () => {

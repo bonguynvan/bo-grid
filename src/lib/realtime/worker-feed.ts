@@ -28,8 +28,8 @@
 // serveFeed takes it, so serveFeed may start after an await. Patches cross by
 // structured clone: keep them plain data. One that cannot be cloned is
 // dropped and reported, and the rest still arrive.
-import { DEFAULT_CAP, TickBuffer, defaultOnError, defaultScheduler, type Cancel, type Scheduler, type TickBufferOptions } from './ticks';
-import { boError } from '../errors';
+import { DEFAULT_CAP, TickBuffer, defaultOnError, defaultScheduler, type Cancel, type Scheduler, type TickBufferOptions } from './ticks.js';
+import { boError } from '../errors.js';
 
 /** The worker as the main thread sees it: a dedicated `Worker`. */
 export interface FeedWorker {

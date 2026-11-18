@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { flushSync } from 'svelte';
-import { createRowState, type RowState } from './rowstate.svelte';
+import { createRowState, type RowState } from './rowstate.svelte.js';
 
 let stops: (() => void)[] = [];
 afterEach(() => {

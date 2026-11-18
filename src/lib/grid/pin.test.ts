@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { ColumnDef } from './column';
-import { arrangePinned, fitWidths } from './pin';
+import type { ColumnDef } from './column.js';
+import { arrangePinned, fitWidths } from './pin.js';
 
 const cols: ColumnDef[] = [
   { type: 'text', key: 'name', header: 'Name', width: 120 },

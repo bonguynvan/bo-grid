@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { TextMeter } from './textmeter';
+import { TextMeter } from './textmeter.js';
 
 function cell(padding: string): HTMLElement {
   const el = document.createElement('div');

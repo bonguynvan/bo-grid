@@ -1,6 +1,6 @@
-import type { SortState } from './column';
-import type { AnyFilter } from './filtering';
-import type { WidthMap } from './sizing';
+import type { SortState } from './column.js';
+import type { AnyFilter } from './filtering.js';
+import type { WidthMap } from './sizing.js';
 
 /** Bumped when the shape changes incompatibly. A saved state from another
     version is dropped whole — half a layout is worse than none. */

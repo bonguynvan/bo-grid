@@ -1,7 +1,7 @@
 // Merged cells: which cells span down (spanRows) and across (colSpan).
 // Pure: the grid renders from the plan; nothing here touches the DOM.
 
-import { cellValue, type ColumnDef, type GridRow } from './column';
+import { cellValue, type ColumnDef, type GridRow } from './column.js';
 
 export interface SpanRun {
   /** First visual row of the run (inclusive). */

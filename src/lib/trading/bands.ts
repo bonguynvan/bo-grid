@@ -6,7 +6,7 @@
 // screen needs; a broker with more exact business rules should compute bands
 // server-side and pass them straight to `resolveTone` (see ./tone.ts) — nothing
 // here is required to use the tone/colour machinery.
-import { decimalsForTick } from './format';
+import { decimalsForTick } from './format.js';
 
 export type Exchange = 'HOSE' | 'HNX' | 'UPCOM';
 

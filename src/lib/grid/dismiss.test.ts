@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { dismissOnOutside } from './dismiss';
+import { dismissOnOutside } from './dismiss.js';
 
 describe('dismissOnOutside', () => {
   it('closes on a pointer press, Escape or window blur, not on other keys', () => {

@@ -2,8 +2,8 @@
 // The footer and data-bar ranges follow api.patchRows through running totals.
 import { afterEach, describe, expect, it } from 'vitest';
 import { flushSync } from 'svelte';
-import type { ColumnDef, GridRow } from './column';
-import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid';
+import type { ColumnDef, GridRow } from './column.js';
+import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid.js';
 
 const columns: ColumnDef[] = [
   { type: 'text', key: 'sym', header: 'Sym' },

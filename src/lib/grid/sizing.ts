@@ -1,4 +1,4 @@
-import type { ColumnDef } from './column';
+import type { ColumnDef } from './column.js';
 
 /** Smallest width (px) a column may be dragged to. */
 export const MIN_COL_WIDTH = 48;

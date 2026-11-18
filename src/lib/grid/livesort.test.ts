@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { ColumnDef, GridRow, SortState } from './column';
-import { sortRows } from './column';
-import { mergeChanged, rowOrder } from './livesort';
+import type { ColumnDef, GridRow, SortState } from './column.js';
+import { sortRows } from './column.js';
+import { mergeChanged, rowOrder } from './livesort.js';
 
 const columns: ColumnDef[] = [
   { type: 'text', key: 'sym', header: 'Sym' },

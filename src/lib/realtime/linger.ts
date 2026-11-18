@@ -24,7 +24,7 @@
 // again. Keys must be unique within a list. `leaving` compares the row
 // object itself, as `update` returned it. Rows still on their way out count
 // in footer totals like any other.
-import { boError } from '../errors';
+import { boError } from '../errors.js';
 
 export interface LingerOptions<R, K> {
   /** How long a row that left stays, in ms. */

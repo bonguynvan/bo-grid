@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { ColumnDef, GridRow } from './column';
+import type { ColumnDef, GridRow } from './column.js';
 import {
   matchesFilter,
   isFilterActive,
@@ -8,7 +8,7 @@ import {
   defaultFilterKind,
   emptyFilter,
   type ColumnFilter,
-} from './filtering';
+} from './filtering.js';
 
 describe('isFilterActive', () => {
   it('treats empty/unset filters as inactive', () => {

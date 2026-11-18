@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { columnWindow, columnOffsets, type ColRenderItem } from './colvirt';
+import { columnWindow, columnOffsets, type ColRenderItem } from './colvirt.js';
 
 const widths = [100, 100, 100, 100, 100, 100]; // 6 cols, total 600
 const x = columnOffsets(widths); // [0,100,200,300,400,500]

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
 import { flushSync } from 'svelte';
-import { createColumnState, type ColumnState } from './columns.svelte';
+import { createColumnState, type ColumnState } from './columns.svelte.js';
 
 let stops: (() => void)[] = [];
 afterEach(() => {

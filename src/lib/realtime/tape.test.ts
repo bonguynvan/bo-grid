@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TradeTape } from './tape';
+import { TradeTape } from './tape.js';
 
 describe('TradeTape', () => {
   it('starts empty', () => {

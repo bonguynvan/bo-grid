@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { connectFeed, serveFeed, type FeedScope, type FeedWorker, type WorkerFeed } from './worker-feed';
+import { connectFeed, serveFeed, type FeedScope, type FeedWorker, type WorkerFeed } from './worker-feed.js';
 
 /** A worker and its scope in one thread: what the main thread posts to the
     worker arrives as a message event on the scope, ports included. */

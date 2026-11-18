@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diffRows } from './rowdiff';
+import { diffRows } from './rowdiff.js';
 
 type Row = { id: number };
 const make = (n: number): Row[] => Array.from({ length: n }, (_, id) => ({ id }));

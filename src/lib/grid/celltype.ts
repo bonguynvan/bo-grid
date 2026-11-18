@@ -2,7 +2,7 @@
 // built-in columns, so everything downstream (format, sort, filter, export,
 // aggregation) only ever sees the built-in types it already understands.
 
-import type { BuiltinCellType, CellTypeDef, ColBase, ColumnDef } from './column';
+import type { BuiltinCellType, CellTypeDef, ColBase, ColumnDef } from './column.js';
 
 /** Settings applied under every column. */
 export type DefaultColumn = Omit<Partial<ColBase>, 'key' | 'header'>;

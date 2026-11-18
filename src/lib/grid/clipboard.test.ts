@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseClipboard, isSingleCell, copyText, pastePlan, fillPlan, fillExtent } from './clipboard';
+import { parseClipboard, isSingleCell, copyText, pastePlan, fillPlan, fillExtent } from './clipboard.js';
 
 describe('parseClipboard', () => {
   it('parses a rectangular TSV block', () => {

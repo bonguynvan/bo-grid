@@ -1,5 +1,5 @@
 <script module lang="ts">
-  import type { GridRow } from '../column';
+  import type { GridRow } from '../column.js';
   /** Mount count (a remount shows up here) and the row last received. */
   export const mounts: { count: number; row: GridRow | null } = { count: 0, row: null };
 </script>

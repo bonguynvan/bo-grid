@@ -6,16 +6,16 @@
 // whose type is more than a plain value. scripts/api-manifest.mjs fails the
 // build on a gap.
 import type { Snippet } from 'svelte';
-import type { AggKind } from './aggregate';
-import type { GridApi, ViewportRange } from './api';
-import type { DefaultColumn } from './celltype';
-import type { CellEditEvent, CellTypeDef, ColumnDef, GridRow, SortState } from './column';
-import type { AnyFilter, FilterTypes } from './filtering';
-import type { Hotkeys } from './hotkeys';
-import type { LazyGroup } from './grouping';
-import type { GridLabels } from './labels';
-import type { RowSource } from './source';
-import type { GridTheme } from './theme';
+import type { AggKind } from './aggregate.js';
+import type { GridApi, ViewportRange } from './api.js';
+import type { DefaultColumn } from './celltype.js';
+import type { CellEditEvent, CellTypeDef, ColumnDef, GridRow, SortState } from './column.js';
+import type { AnyFilter, FilterTypes } from './filtering.js';
+import type { Hotkeys } from './hotkeys.js';
+import type { LazyGroup } from './grouping.js';
+import type { GridLabels } from './labels.js';
+import type { RowSource } from './source.js';
+import type { GridTheme } from './theme.js';
 
 export interface GridPropsDef {
   /** The data: one plain object per row, each with a unique `id`, a number

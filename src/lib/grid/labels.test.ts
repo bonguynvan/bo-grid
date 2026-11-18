@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_LABELS, resolveLabels } from './labels';
+import { DEFAULT_LABELS, resolveLabels } from './labels.js';
 
 describe('resolveLabels', () => {
   it('returns the defaults when nothing is overridden', () => {

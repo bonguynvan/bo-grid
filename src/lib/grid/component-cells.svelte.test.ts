@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest';
 import { flushSync, createRawSnippet } from 'svelte';
-import type { ColumnDef, GridRow } from './column';
+import type { ColumnDef, GridRow } from './column.js';
 import MountCounter, { mounts } from './test-fixtures/MountCounter.svelte';
-import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid';
+import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid.js';
 
 let grid: MountedGrid | null = null;
 afterEach(() => {

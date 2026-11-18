@@ -12,7 +12,7 @@ if (!existsSync(resolve('dist/index.d.ts'))) {
 }
 
 const dts = `// Type declarations for the \`bo-grid/element\` entry (the <bo-grid> custom element).
-import type { GridProps } from './index';
+import type { GridProps } from './index.js';
 
 /** The <bo-grid> \`config\` object — every <Grid> prop. */
 export type BoGridConfig = GridProps;
@@ -36,8 +36,8 @@ writeFileSync(out, dts);
 // same Vite build.
 const react = `// Type declarations for the \`bo-grid/react\` entry.
 import type { CSSProperties, ForwardRefExoticComponent, RefAttributes } from 'react';
-import type { GridApi } from './index';
-import type { BoGridConfig } from './bo-grid.element';
+import type { GridApi } from './index.js';
+import type { BoGridConfig } from './bo-grid.element.js';
 
 /** Every <Grid> prop, plus the wrapper div's \`className\` and \`style\`. */
 export interface BoGridProps extends BoGridConfig {
@@ -52,8 +52,8 @@ writeFileSync(resolve('dist/bo-grid.react.d.ts'), react);
 
 const vue = `// Type declarations for the \`bo-grid/vue\` entry.
 import type { DefineComponent } from 'vue';
-import type { GridApi } from './index';
-import type { BoGridConfig } from './bo-grid.element';
+import type { GridApi } from './index.js';
+import type { BoGridConfig } from './bo-grid.element.js';
 
 /** The grid as a Vue component: every <Grid> prop as an attribute, every
  *  callback as an event (\`@cell-edit\` is \`onCellEdit\`); the template ref's

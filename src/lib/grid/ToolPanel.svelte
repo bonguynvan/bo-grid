@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { GridLabels } from './labels';
+  import type { GridLabels } from './labels.js';
   // Floating columns panel: toggle column visibility (and restore hidden ones).
   // Lazy-loaded by Grid; presentation-only — the parent owns the visibility set.
   let {

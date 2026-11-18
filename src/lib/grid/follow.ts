@@ -3,8 +3,8 @@
 // would otherwise slide another row under the highlight, under a hotkey, or
 // under the editor's commit. The grid looks a row up again with findRow when
 // the view changes.
-import type { GridRow } from './column';
-import type { VisualRow } from './grouping';
+import type { GridRow } from './column.js';
+import type { VisualRow } from './grouping.js';
 
 /** How far either side of its old place a row is looked for before the
     whole view: a live list moves a row a few places at a time. */

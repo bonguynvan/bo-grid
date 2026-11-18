@@ -18,9 +18,9 @@
 // changes most (those near the spread) are found by binary search and moved
 // at the cheap end of the array. Updates apply as they arrive; the reading
 // is what a frame pays for.
-import type { GridRow } from '../grid/column';
-import type { BookLevel } from '../ladder/types';
-import { boError } from '../errors';
+import type { GridRow } from '../grid/column.js';
+import type { BookLevel } from '../ladder/types.js';
+import { boError } from '../errors.js';
 
 export type { BookLevel };
 

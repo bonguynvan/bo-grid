@@ -5,13 +5,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { flushSync, mount, unmount } from 'svelte';
 import Grid from './Grid.svelte';
-import type { ColumnDef, GridRow } from './column';
-import type { GridApi } from './api';
-import './test-fixtures/mount-grid'; // jsdom stubs (ResizeObserver)
+import type { ColumnDef, GridRow } from './column.js';
+import type { GridApi } from './api.js';
+import './test-fixtures/mount-grid.js'; // jsdom stubs (ResizeObserver)
 
 const renewed = vi.hoisted(() => ({ calls: 0 }));
-vi.mock('./live.svelte', async (importOriginal) => {
-  const mod = await importOriginal<typeof import('./live.svelte')>();
+vi.mock('./live.svelte.js', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('./live.svelte.js')>();
   return {
     ...mod,
     createLiveRows: () => {

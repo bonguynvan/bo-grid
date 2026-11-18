@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { TickBuffer, createTickStream, createRowIndex, applyPatches } from './ticks';
+import { TickBuffer, createTickStream, createRowIndex, applyPatches } from './ticks.js';
 
 describe('TickBuffer', () => {
   it('coalesces repeated updates for one key into a single entry', () => {

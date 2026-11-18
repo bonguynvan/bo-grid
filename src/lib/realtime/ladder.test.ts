@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { centeredWindow } from './ladder';
+import { centeredWindow } from './ladder.js';
 
 describe('centeredWindow', () => {
   it('puts the extra row on the LOWER-INDEX side when visibleCount is even (10 = 5 below + center + 4 above)', () => {

@@ -3,8 +3,8 @@
 // row is written at once, and the other columns repaint at once.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushSync } from 'svelte';
-import type { ColumnDef } from './column';
-import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid';
+import type { ColumnDef } from './column.js';
+import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid.js';
 
 let grid: MountedGrid | null = null;
 beforeEach(() => vi.useFakeTimers({ now: 1000 }));

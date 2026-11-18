@@ -7,7 +7,7 @@
 // with `Intl.DateTimeFormat` so it's correct regardless of the viewer's local
 // time zone — a trader in New York must see Ho Chi Minh City's session, not
 // their own.
-import { dateFormat } from '../format/intl';
+import { dateFormat } from '../format/intl.js';
 
 export type SessionState = 'pre-open' | 'ato' | 'continuous' | 'break' | 'atc' | 'closed';
 

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createLinger } from './linger';
+import { createLinger } from './linger.js';
 
 interface Order {
   id: number;

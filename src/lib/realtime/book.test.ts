@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createOrderBook } from './book';
+import { createOrderBook } from './book.js';
 
 const book20 = () => {
   const book = createOrderBook();

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { moveIndex } from './reorder';
+import { moveIndex } from './reorder.js';
 
 describe('moveIndex', () => {
   it('moves an item forward', () => {

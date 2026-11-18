@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { ColumnDef, GridRow } from './column';
-import { buildMergePlan, colSpanRow, combinedFlex } from './merge';
+import type { ColumnDef, GridRow } from './column.js';
+import { buildMergePlan, colSpanRow, combinedFlex } from './merge.js';
 
 const text = (key: string, extra: Partial<ColumnDef> = {}): ColumnDef =>
   ({ type: 'text', key, header: key, ...extra }) as ColumnDef;

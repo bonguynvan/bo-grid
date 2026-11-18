@@ -1,5 +1,5 @@
-import type { ColumnDef, GridRow } from './column';
-import type { GridState } from './state';
+import type { ColumnDef, GridRow } from './column.js';
+import type { GridState } from './state.js';
 
 export type ScrollAlign = 'start' | 'center' | 'end' | 'nearest';
 

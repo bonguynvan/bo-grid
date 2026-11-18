@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { resolveTone, toneColor, defaultToneColors, darkToneColors, lightToneColors, type ToneColors } from './tone';
-import { themePresets } from '../grid/theme';
+import { resolveTone, toneColor, defaultToneColors, darkToneColors, lightToneColors, type ToneColors } from './tone.js';
+import { themePresets } from '../grid/theme.js';
 
 describe('resolveTone', () => {
   const bands = { ref: 100, ceiling: 107, floor: 93 };

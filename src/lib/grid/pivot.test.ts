@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { GridRow } from './column';
-import { pivot } from './pivot';
+import type { GridRow } from './column.js';
+import { pivot } from './pivot.js';
 
 const rows = [
   { id: 0, sector: 'Tech', exchange: 'NYSE', volume: 10 },

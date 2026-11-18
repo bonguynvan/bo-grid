@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { Candle } from '../types';
-  import { setupHiDpiCanvas, drawCandles, summarize, candleAtX } from './sparkline-render';
-  import { fmtPrice } from '../format/format';
+  import type { Candle } from '../types.js';
+  import { setupHiDpiCanvas, drawCandles, summarize, candleAtX } from './sparkline-render.js';
+  import { fmtPrice } from '../format/format.js';
 
   let {
     candles,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { scrollTopFor } from './api';
+import { scrollTopFor } from './api.js';
 
 // viewport: scrollTop 100, height 200 → shows y in [100, 300)
 const view = { top: 100, height: 200 };

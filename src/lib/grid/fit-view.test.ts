@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fitInView } from './fit-view';
+import { fitInView } from './fit-view.js';
 
 describe('fitInView', () => {
   it('leaves a box that fits where it opened', () => {

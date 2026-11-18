@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { compileHotkeys, hotkeyFor } from './hotkeys';
-import { findRow } from './follow';
-import type { GridRow } from './column';
-import type { VisualRow } from './grouping';
+import { compileHotkeys, hotkeyFor } from './hotkeys.js';
+import { findRow } from './follow.js';
+import type { GridRow } from './column.js';
+import type { VisualRow } from './grouping.js';
 
 const key = (k: string, mods: Partial<Record<'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey', boolean>> = {}) => ({
   key: k,

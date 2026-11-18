@@ -1,6 +1,6 @@
-import type { GridRow, SortState } from './column';
-import type { RowRange, RowSource } from './source';
-import type { AnyFilter } from './filtering';
+import type { GridRow, SortState } from './column.js';
+import type { RowRange, RowSource } from './source.js';
+import type { AnyFilter } from './filtering.js';
 
 /**
  * Drives a RowSource for the grid: fetches the visible window, caches rows by

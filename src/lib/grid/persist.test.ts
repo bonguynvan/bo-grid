@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { loadSaved, saveValue, storageKey } from './persist';
+import { loadSaved, saveValue, storageKey } from './persist.js';
 
 afterEach(() => {
   localStorage.clear();

@@ -4,7 +4,7 @@
   // open, Arrow/Home/End move between items, Enter/Space activate, Esc/Tab close.
   // The parent owns open/close state and positions it via x/y; it stays
   // inside the window (fitView).
-  import { fitView } from './fit-view';
+  import { fitView } from './fit-view.js';
 
   let {
     x,

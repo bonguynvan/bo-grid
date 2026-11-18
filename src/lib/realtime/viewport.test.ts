@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createViewportSubscriptions } from './viewport';
+import { createViewportSubscriptions } from './viewport.js';
 
 type Row = { id: number; sym: string };
 const rows = (...syms: string[]): Row[] => syms.map((sym, id) => ({ id, sym }));

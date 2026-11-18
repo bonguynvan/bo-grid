@@ -5,6 +5,33 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+## [3.3.2] — 2026-11-18
+
+**Types and imports for Node-style module resolution.** An app compiled with
+TypeScript's `moduleResolution: "node16"` or `"nodenext"` (the default of
+`tsc --init`) gets bo-grid's full types, and `bo-grid/realtime` and
+`bo-grid/trading` load in Node.js ESM. Apps on a bundler see no change.
+
+### Fixed
+
+- **The published types resolve under `node16`/`nodenext`** ([#87](https://github.com/bonguynvan/bo-grid/issues/87)). The
+  declarations imported their neighbours without a file extension
+  (`./grid/column`), which these modes don't resolve, so nearly every export
+  of `bo-grid`, `bo-grid/realtime`, `bo-grid/trading`, `bo-grid/ladder` and
+  `bo-grid/element` was typed `any`. The `bo-grid/react` props lost `rows`,
+  `columns` and the rest. Every relative import now carries `.js`, and the
+  declarations import components as `./X.svelte.js` so that these modes find
+  `X.svelte.d.ts`.
+- **`bo-grid/realtime` and `bo-grid/trading` load in Node.js ESM.** They threw
+  `ERR_MODULE_NOT_FOUND` for the same missing extensions. (`bo-grid` and
+  `bo-grid/ladder` import `.svelte` files and still need a Svelte-aware
+  bundler.)
+- **No package.json warning on publish.** The `bin` path is written the way npm
+  expects (`dist/cli/bin.js`); the command itself was never affected.
+
+A test now fails on a relative import without its extension, and CI loads the
+built package in Node.js and type-checks it under `nodenext`.
+
 ## [3.3.1] — 2026-11-09
 
 **Keyboard and click fixes for focus.** Enter works straight after Tab, and

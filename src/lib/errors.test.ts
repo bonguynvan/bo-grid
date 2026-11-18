@@ -2,15 +2,15 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { boError, type BoGridErrorCode } from './errors';
-import { compileHotkeys } from './grid/hotkeys';
-import { parseJSON } from './grid/export';
-import { setupHiDpiCanvas } from './sparkline/sparkline-render';
-import { serveFeed } from './realtime/worker-feed';
-import { createOrderBook } from './realtime/book';
-import { createLinger } from './realtime/linger';
-import { TradeTape } from './realtime/tape';
-import { createPositions, type PositionFill } from './trading/positions';
+import { boError, type BoGridErrorCode } from './errors.js';
+import { compileHotkeys } from './grid/hotkeys.js';
+import { parseJSON } from './grid/export.js';
+import { setupHiDpiCanvas } from './sparkline/sparkline-render.js';
+import { serveFeed } from './realtime/worker-feed.js';
+import { createOrderBook } from './realtime/book.js';
+import { createLinger } from './realtime/linger.js';
+import { TradeTape } from './realtime/tape.js';
+import { createPositions, type PositionFill } from './trading/positions.js';
 
 const LIB = dirname(fileURLToPath(import.meta.url));
 const PAGE = join(LIB, '../../site/src/routes/(docs)/docs/errors/+page.md');
@@ -77,7 +77,7 @@ describe('the errors bo-grid throws', () => {
     vi.doMock('xlsx', () => {
       throw new Error('Cannot find package xlsx');
     });
-    const { exportXLSX } = await import('./grid/export-xlsx');
+    const { exportXLSX } = await import('./grid/export-xlsx.js');
     await expect(exportXLSX('out.xlsx', [], [])).rejects.toMatchObject({ code: 'BG1102' });
   });
 });

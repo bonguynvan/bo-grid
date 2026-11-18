@@ -16,7 +16,7 @@ export { default as Sparkline } from './sparkline/Sparkline.svelte';
 export type GridProps = ComponentProps<typeof GridComponent>;
 
 // Server-side (lazy) grouping summary type (for the `lazyGroups` prop)
-export type { LazyGroup } from './grid/grouping';
+export type { LazyGroup } from './grid/grouping.js';
 
 // Column + grid configuration types
 export type {
@@ -36,12 +36,12 @@ export type {
   CellEditorProps,
   BuiltinCellType,
   ShowChangeOptions,
-} from './grid/column';
-export { resolveColumns } from './grid/celltype';
-export { sortRows } from './grid/column';
-export type { DefaultColumn } from './grid/celltype';
-export type { Hotkeys, HotkeyHandler, HotkeyContext } from './grid/hotkeys';
-export type { AggKind, AggResult } from './grid/aggregate';
+} from './grid/column.js';
+export { resolveColumns } from './grid/celltype.js';
+export { sortRows } from './grid/column.js';
+export type { DefaultColumn } from './grid/celltype.js';
+export type { Hotkeys, HotkeyHandler, HotkeyContext } from './grid/hotkeys.js';
+export type { AggKind, AggResult } from './grid/aggregate.js';
 
 // Column filter model (for controlled filtering via `columnFilters`/`onFilterChange`)
 export type {
@@ -55,17 +55,17 @@ export type {
   FilterEditorProps,
   FilterTypeDef,
   FilterTypes,
-} from './grid/filtering';
+} from './grid/filtering.js';
 
 // Value formatters (handy when building custom cell content)
-export { fmtPrice, fmtPercent, fmtVolume, fmtDate, fmtCurrency, relativeTime } from './format/format';
-export type { DateStyle } from './format/format';
+export { fmtPrice, fmtPercent, fmtVolume, fmtDate, fmtCurrency, relativeTime } from './format/format.js';
+export type { DateStyle } from './format/format.js';
 
 // Standalone helpers
-export { aggregate } from './grid/aggregate';
-export { heatColor } from './grid/heatmap';
-export { pivot } from './grid/pivot';
-export type { PivotConfig, PivotResult } from './grid/pivot';
+export { aggregate } from './grid/aggregate.js';
+export { heatColor } from './grid/heatmap.js';
+export { pivot } from './grid/pivot.js';
+export type { PivotConfig, PivotResult } from './grid/pivot.js';
 
 // Theming
 export {
@@ -79,18 +79,18 @@ export {
   tradecanvasTheme,
   tradecanvasLightTheme,
   themePresets,
-} from './grid/theme';
-export type { GridTheme, ThemePreset } from './grid/theme';
-export { DEFAULT_LABELS, resolveLabels } from './grid/labels';
-export { reconcileState, GRID_STATE_VERSION } from './grid/state';
-export { buildMergePlan, colSpanRow } from './grid/merge';
-export type { MergePlan, MergeInput, SpanRun } from './grid/merge';
-export type { GridState } from './grid/state';
-export type { GridApi, ScrollAlign, ViewportRange, FlashCellsOptions } from './grid/api';
-export type { GridLabels } from './grid/labels';
+} from './grid/theme.js';
+export type { GridTheme, ThemePreset } from './grid/theme.js';
+export { DEFAULT_LABELS, resolveLabels } from './grid/labels.js';
+export { reconcileState, GRID_STATE_VERSION } from './grid/state.js';
+export { buildMergePlan, colSpanRow } from './grid/merge.js';
+export type { MergePlan, MergeInput, SpanRun } from './grid/merge.js';
+export type { GridState } from './grid/state.js';
+export type { GridApi, ScrollAlign, ViewportRange, FlashCellsOptions } from './grid/api.js';
+export type { GridLabels } from './grid/labels.js';
 
 // Sparkline canvas primitives (draw candlesticks on your own canvas)
-export { drawCandles, setupHiDpiCanvas } from './sparkline/sparkline-render';
+export { drawCandles, setupHiDpiCanvas } from './sparkline/sparkline-render.js';
 
 // Export + import (CSV is dependency-free; XLSX dynamic-imports the optional `xlsx` peer)
 export {
@@ -102,24 +102,24 @@ export {
   parseJSON,
   parseRows,
   rowsFromObjects,
-} from './grid/export';
-export { exportXLSX } from './grid/export-xlsx';
-export type { ExportOptions } from './grid/export';
+} from './grid/export.js';
+export { exportXLSX } from './grid/export-xlsx.js';
+export type { ExportOptions } from './grid/export.js';
 
 // Printable / export HTML (renders ALL rows, unlike the virtualized grid)
-export { toHTMLTable, printTable, escapeHTML } from './grid/print';
+export { toHTMLTable, printTable, escapeHTML } from './grid/print.js';
 
 // Server-side / windowed data source
-export { createArraySource } from './grid/source';
+export { createArraySource } from './grid/source.js';
 export type {
   RowSource,
   RowRange,
   RowSourceParams,
   RowSourceResult,
   ArraySourceOptions,
-} from './grid/source';
+} from './grid/source.js';
 
 // Shared types
-export type { Candle } from './types';
+export type { Candle } from './types.js';
 // Errors bo-grid throws carry a stable `code` (BG1001…), the fix and a docs link.
-export type { BoGridError, BoGridErrorCode } from './errors';
+export type { BoGridError, BoGridErrorCode } from './errors.js';

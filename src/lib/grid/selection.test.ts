@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Selection } from './selection.svelte';
+import { Selection } from './selection.svelte.js';
 
 describe('Selection', () => {
   it('starts empty', () => {

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import type { ColumnDef, GridRow } from './column';
-import { createArraySource, type RowSourceParams } from './source';
-import { RowSourceController } from './source.svelte';
+import type { ColumnDef, GridRow } from './column.js';
+import { createArraySource, type RowSourceParams } from './source.js';
+import { RowSourceController } from './source.svelte.js';
 
 const _cols: ColumnDef[] = [{ type: 'number', key: 'n', header: 'N' }];
 
