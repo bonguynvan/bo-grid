@@ -2,8 +2,8 @@
 // ladder shows on it (book sizes, depth from the inside out, your orders).
 // Pure functions, so they are tested on their own and the component only
 // wires them to the grid.
-import { roundToTick } from '../trading/bands';
-import type { BookLevel, LadderOrder, LadderRow, Tick } from './types';
+import { roundToTick } from '../trading/bands.js';
+import type { BookLevel, LadderOrder, LadderRow, Tick } from './types.js';
 
 /** Prices compare after this rounding, so float noise in a feed
     (250.05000000001) still meets its level. Ticks finer than this would

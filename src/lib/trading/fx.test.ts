@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fxCentresOpen, fxMarketOpen, fxPipSize, fxQuoteHtml, fxQuoteParts, pipsBetween } from './fx';
+import { fxCentresOpen, fxMarketOpen, fxPipSize, fxQuoteHtml, fxQuoteParts, pipsBetween } from './fx.js';
 
 describe('fxPipSize', () => {
   it('is 0.01 for yen pairs and 0.0001 otherwise, however the pair is written', () => {

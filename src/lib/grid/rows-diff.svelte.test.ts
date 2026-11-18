@@ -4,10 +4,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushSync, mount, unmount } from 'svelte';
 import Grid from './Grid.svelte';
-import type { ColumnDef, GridRow, SortState } from './column';
-import { sortRows } from './column';
-import type { GridApi } from './api';
-import './test-fixtures/mount-grid'; // jsdom stubs (ResizeObserver)
+import type { ColumnDef, GridRow, SortState } from './column.js';
+import { sortRows } from './column.js';
+import type { GridApi } from './api.js';
+import './test-fixtures/mount-grid.js'; // jsdom stubs (ResizeObserver)
 
 const columns: ColumnDef[] = [
   { type: 'text', key: 'sym', header: 'Sym' },

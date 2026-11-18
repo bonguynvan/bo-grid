@@ -4,8 +4,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { flushSync, mount, unmount } from 'svelte';
 import DepthLadder from './DepthLadder.svelte';
-import type { BookLevel, LadderAction, LadderOrder } from './types';
-import '../grid/test-fixtures/mount-grid'; // jsdom stubs (ResizeObserver)
+import type { BookLevel, LadderAction, LadderOrder } from './types.js';
+import '../grid/test-fixtures/mount-grid.js'; // jsdom stubs (ResizeObserver)
 
 const at = (i: number) => Math.round(i * 5) / 100; // tick 0.05, i in ticks
 function book(midTicks: number): { bids: BookLevel[]; asks: BookLevel[] } {

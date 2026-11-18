@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { keyAction, type KeyState } from './keyboard';
+import { keyAction, type KeyState } from './keyboard.js';
 
 const item = { label: 'Buy', onSelect: () => {} };
 

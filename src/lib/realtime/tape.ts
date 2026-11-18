@@ -5,7 +5,7 @@
 // show, so there's nothing to coalesce). What a tape needs instead is a
 // bounded ring buffer: append forever, keep only the newest N, O(1) per push
 // regardless of how long the session runs.
-import { boError } from '../errors';
+import { boError } from '../errors.js';
 
 const DEFAULT_CAPACITY = 500;
 

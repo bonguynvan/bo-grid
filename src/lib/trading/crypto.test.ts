@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CRYPTO_SCHEDULE, fmtSigPrice } from './crypto';
-import { sessionStateAt } from './session';
+import { CRYPTO_SCHEDULE, fmtSigPrice } from './crypto.js';
+import { sessionStateAt } from './session.js';
 
 describe('CRYPTO_SCHEDULE', () => {
   it('is continuous at any hour, weekends too', () => {

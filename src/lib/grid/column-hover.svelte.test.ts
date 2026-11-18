@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest';
 import { flushSync } from 'svelte';
-import type { ColumnDef } from './column';
-import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid';
+import type { ColumnDef } from './column.js';
+import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid.js';
 
 const columns: ColumnDef[] = [
   { type: 'text', key: 'sym', header: 'Sym' },

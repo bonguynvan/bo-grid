@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest';
 import { flushSync } from 'svelte';
-import type { ColumnDef, GridRow } from './column';
-import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid';
+import type { ColumnDef, GridRow } from './column.js';
+import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid.js';
 
 // Rows keyed by a string `id`, with no `getRowId`. The typed literal guards the
 // type: if `GridRow.id` goes back to numbers only, `pnpm check` fails here

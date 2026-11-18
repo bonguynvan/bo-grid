@@ -3,10 +3,10 @@
   // stays out of the core bundle until a filter is opened. Presentation-only:
   // the parent owns open/close + position and applies the resulting filter.
   import { untrack } from 'svelte';
-  import { fitView } from './fit-view';
-  import type { GridLabels } from './labels';
-  import type { ColumnDef } from './column';
-  import { fromDateInput, toDateInput } from './date';
+  import { fitView } from './fit-view.js';
+  import type { GridLabels } from './labels.js';
+  import type { ColumnDef } from './column.js';
+  import { fromDateInput, toDateInput } from './date.js';
   import {
     isFilterActive,
     isBuiltinFilter,
@@ -17,7 +17,7 @@
     type TextOp,
     type NumberOp,
     type DateOp,
-  } from './filtering';
+  } from './filtering.js';
 
   let {
     kind,

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
 import { flushSync } from 'svelte';
-import type { CellEditEvent, ColumnDef, GridRow } from './column';
-import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid';
+import type { CellEditEvent, ColumnDef, GridRow } from './column.js';
+import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid.js';
 
 // The keyboard keeps working through an edit: a key that ends it (Enter,
 // Tab, Escape) gives the focus back to the grid, Tab moves on, and what the
@@ -238,7 +238,7 @@ describe('group headers and the keyboard', () => {
 
 describe('a row source', () => {
   it('a new sort clears the selection (its rows reload)', async () => {
-    const { createArraySource } = await import('./source');
+    const { createArraySource } = await import('./source.js');
     const source = createArraySource(rows());
     m = mountGrid({ columns, rows: [], source, height: 200 });
     await Promise.resolve();

@@ -1,5 +1,5 @@
-import type { Candle } from '../types';
-import { boError } from '../errors';
+import type { Candle } from '../types.js';
+import { boError } from '../errors.js';
 
 const UP = '#34d399';
 const DOWN = '#f87171';

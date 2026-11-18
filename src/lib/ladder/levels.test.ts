@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { vnTickSize } from '../trading/bands';
-import { bestPrices, ladderPrices, ladderRows, midPrice, ordersAt, snapToTick, stepPrice } from './levels';
-import type { BookLevel } from './types';
+import { vnTickSize } from '../trading/bands.js';
+import { bestPrices, ladderPrices, ladderRows, midPrice, ordersAt, snapToTick, stepPrice } from './levels.js';
+import type { BookLevel } from './types.js';
 
 const hose = (p: number) => vnTickSize(p, 'HOSE');
 

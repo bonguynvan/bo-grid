@@ -2,8 +2,8 @@
 // `liveSort`: rows patched in place re-sort and re-filter on a throttle.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushSync } from 'svelte';
-import type { ColumnDef, GridRow } from './column';
-import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid';
+import type { ColumnDef, GridRow } from './column.js';
+import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid.js';
 
 const columns: ColumnDef[] = [
   { type: 'text', key: 'sym', header: 'Sym', editable: true },
@@ -126,14 +126,14 @@ describe('liveSort, edge cases', () => {
     const Grid = (await import('./Grid.svelte')).default;
     const target = document.createElement('div');
     document.body.append(target);
-    let api: import('./api').GridApi | undefined;
+    let api: import('./api.js').GridApi | undefined;
     const props = $state({
       columns,
       rows: rows(),
       height: 200,
       sort: byPxDesc,
       liveSort: false as boolean | number,
-      onReady: (a: import('./api').GridApi) => (api = a),
+      onReady: (a: import('./api.js').GridApi) => (api = a),
     });
     const grid = mount(Grid, { target, props });
     flushSync();

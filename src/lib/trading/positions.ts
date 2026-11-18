@@ -4,7 +4,7 @@
 // flat opens the rest on the other side at the fill price. Unrealized P&L is
 // the position marked at a price you supply (`unrealizedPnl`), so a positions
 // grid can keep the last price as a field of the row and compute it per row.
-import { boError } from '../errors';
+import { boError } from '../errors.js';
 
 /** One execution. */
 export interface PositionFill {

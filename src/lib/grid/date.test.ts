@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dayStart, fromDateInput, toDateInput } from './date';
+import { dayStart, fromDateInput, toDateInput } from './date.js';
 
 // Built from local-time constructors so the tests hold in any time zone.
 describe('local calendar-day helpers', () => {

@@ -2,8 +2,8 @@
 // built-in inline editor, paste and fill; a custom `editor` commits typed values
 // directly and skips this.
 
-import { isNumeric, type ColumnDef, type GridRow } from './column';
-import { fromDateInput } from './date';
+import { isNumeric, type ColumnDef, type GridRow } from './column.js';
+import { fromDateInput } from './date.js';
 
 export type ParseResult = { ok: true; value: unknown } | { ok: false };
 

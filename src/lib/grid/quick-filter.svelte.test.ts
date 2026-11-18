@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { flushSync } from 'svelte';
-import type { ColumnDef, GridRow } from './column';
-import { createArraySource, type RowSourceParams } from './source';
-import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid';
+import type { ColumnDef, GridRow } from './column.js';
+import { createArraySource, type RowSourceParams } from './source.js';
+import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid.js';
 
 const columns: ColumnDef[] = [{ type: 'text', key: 'name', header: 'Name' }];
 const rows: GridRow[] = [

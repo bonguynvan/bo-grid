@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { heatColor } from './heatmap';
+import { heatColor } from './heatmap.js';
 
 describe('heatColor', () => {
   it('is fully red (max alpha) at the minimum', () => {

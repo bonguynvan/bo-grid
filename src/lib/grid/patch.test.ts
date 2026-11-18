@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { patchRowsInPlace, rowView } from './patch';
+import { patchRowsInPlace, rowView } from './patch.js';
 
 type R = { id: number; [k: string]: unknown };
 

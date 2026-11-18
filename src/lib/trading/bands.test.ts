@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { vnTickSize, roundToTick, vnBandPercent, vnBands, vnFuturesBands, VN_FUTURES_TICK } from './bands';
+import { vnTickSize, roundToTick, vnBandPercent, vnBands, vnFuturesBands, VN_FUTURES_TICK } from './bands.js';
 
 describe('vnTickSize', () => {
   it('is 10 VND below 10,000', () => {

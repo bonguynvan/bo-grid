@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createAlerts } from './alerts';
+import { createAlerts } from './alerts.js';
 
 interface Quote {
   sym: string;

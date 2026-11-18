@@ -16,13 +16,13 @@
   // the row as it was shown.
   import { untrack } from 'svelte';
   import Grid from '../grid/Grid.svelte';
-  import type { GridApi } from '../grid/api';
-  import type { ColumnDef, GridRow } from '../grid/column';
-  import type { GridTheme } from '../grid/theme';
-  import { numberFormat } from '../format/intl';
-  import { fmtTradingPrice } from '../trading/format';
-  import { ladderPrices, ladderRows, midPrice, ordersAt, snapToTick, stepPrice } from './levels';
-  import type { BookLevel, LadderAction, LadderHeaders, LadderOrder, LadderRow, Tick } from './types';
+  import type { GridApi } from '../grid/api.js';
+  import type { ColumnDef, GridRow } from '../grid/column.js';
+  import type { GridTheme } from '../grid/theme.js';
+  import { numberFormat } from '../format/intl.js';
+  import { fmtTradingPrice } from '../trading/format.js';
+  import { ladderPrices, ladderRows, midPrice, ordersAt, snapToTick, stepPrice } from './levels.js';
+  import type { BookLevel, LadderAction, LadderHeaders, LadderOrder, LadderRow, Tick } from './types.js';
 
   interface Props {
     /** Resting bids, `[price, size]`, in any order. */

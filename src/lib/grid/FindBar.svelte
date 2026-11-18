@@ -5,9 +5,9 @@
   // never per tick: on a live board the values move under the matches, which
   // is fine for a find.
   import { untrack } from 'svelte';
-  import { formatCell, cellValue, type ColumnDef } from './column';
-  import type { VisualRow } from './grouping';
-  import type { GridLabels } from './labels';
+  import { formatCell, cellValue, type ColumnDef } from './column.js';
+  import type { VisualRow } from './grouping.js';
+  import type { GridLabels } from './labels.js';
 
   let {
     request,

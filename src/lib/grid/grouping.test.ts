@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { GridRow } from './column';
-import { buildFlatRows, activeGroupsAt, buildLazyGroupRows, type LazyGroup } from './grouping';
+import type { GridRow } from './column.js';
+import { buildFlatRows, activeGroupsAt, buildLazyGroupRows, type LazyGroup } from './grouping.js';
 
 const rows = [
   { id: 0, sector: 'Tech', exchange: 'NYSE' },

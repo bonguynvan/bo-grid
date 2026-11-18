@@ -1,8 +1,8 @@
 // Crypto conventions: a market that never closes, and prices that run from
 // tens of thousands down to millionths in one watchlist, where a fixed
 // decimal count suits no row.
-import { numberFormat } from '../format/intl';
-import type { SessionWindow } from './session';
+import { numberFormat } from '../format/intl.js';
+import type { SessionWindow } from './session.js';
 
 /** Round the clock, every day: pass with `{ timeZone: 'UTC', skipWeekends:
     false }` to `sessionStateAt`, which then reads `'continuous'` always. */

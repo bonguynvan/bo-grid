@@ -1,5 +1,5 @@
 // Public types of `bo-grid/ladder`.
-import type { GridRow } from '../grid/column';
+import type { GridRow } from '../grid/column.js';
 
 /** The price step: one size, or a function of the price for a tick table
     (`(p) => vnTickSize(p, 'HOSE')`). It must be a positive number (at least

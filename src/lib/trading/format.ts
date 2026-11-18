@@ -4,7 +4,7 @@
 // right for USD-style quotes, wrong for a whole-VND stock (0 decimals) or an
 // FX pair (4). The right decimal count is a property of the instrument's tick
 // size, not a per-column constant — these read it off the tick instead.
-import { numberFormat } from '../format/intl';
+import { numberFormat } from '../format/intl.js';
 
 // Precision ceiling for the fixed-notation normalization below. Realistic
 // instrument ticks (down to an 8-decimal crypto pip) fit comfortably inside

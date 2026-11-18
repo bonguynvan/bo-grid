@@ -5,9 +5,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { flushSync, mount, unmount } from 'svelte';
 import Grid from './Grid.svelte';
-import type { CellEditEvent, ColumnDef, GridRow } from './column';
-import type { GridApi } from './api';
-import type { HotkeyContext } from './hotkeys';
+import type { CellEditEvent, ColumnDef, GridRow } from './column.js';
+import type { GridApi } from './api.js';
+import type { HotkeyContext } from './hotkeys.js';
 
 globalThis.ResizeObserver ??= class {
   observe() {}

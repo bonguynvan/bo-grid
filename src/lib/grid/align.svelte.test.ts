@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest';
-import type { ColumnDef } from './column';
-import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid';
+import type { ColumnDef } from './column.js';
+import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid.js';
 
 // `align` sets the side for the whole column: header, cells and footer agree,
 // so a value always sits under its title.

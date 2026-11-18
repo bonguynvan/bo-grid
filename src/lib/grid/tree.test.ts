@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildTreeRows, type TreeAccess } from './tree';
-import type { GridRow } from './column';
+import { buildTreeRows, type TreeAccess } from './tree.js';
+import type { GridRow } from './column.js';
 
 const node = (id: number, children?: GridRow[]): GridRow =>
   ({ id, flashSeq: 0, flashDir: 'up', children }) as unknown as GridRow;

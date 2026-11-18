@@ -2,8 +2,8 @@
 // with `// @vitest-environment jsdom`).
 import { mount, unmount, flushSync } from 'svelte';
 import Grid from '../Grid.svelte';
-import type { GridRow } from '../column';
-import type { GridApi } from '../api';
+import type { GridRow } from '../column.js';
+import type { GridApi } from '../api.js';
 
 // jsdom has no ResizeObserver (the grid measures its viewport with one).
 globalThis.ResizeObserver ??= class {

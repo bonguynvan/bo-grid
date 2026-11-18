@@ -5,19 +5,19 @@
 
 <script lang="ts">
   import { flushSync, untrack } from 'svelte';
-  import type { ColumnDef, GridRow, SortState, SortDir } from './column';
-  import { colStyle, baseWidth, MIN_FLEX_W, isNumeric, alignOf, isSortable, isEditable, sortRows, formatCell, cellValue } from './column';
-  import { arrangePinned } from './pin';
-  import { columnWindow, columnOffsets } from './colvirt';
-  import { uniformHeights, variableHeights } from './rowheight';
-  import { themeVars, lightTheme } from './theme';
-  import { Selection } from './selection.svelte';
-  import { aggregate, type AggResult } from './aggregate';
-  import { buildFlatRows, buildLazyGroupRows, activeGroupsAt, type VisualRow, type GroupNode } from './grouping';
-  import { buildTreeRows } from './tree';
-  import { FlashTracker, FlashClock, FlashLoad } from './flash';
-  import { parseClipboard, copyText, pastePlan, fillExtent, fillPlan } from './clipboard';
-  import { applyWidths, applyAutoWidths, clampWidth, contentWidth, frozenWidths, isResizable } from './sizing';
+  import type { ColumnDef, GridRow, SortState, SortDir } from './column.js';
+  import { colStyle, baseWidth, MIN_FLEX_W, isNumeric, alignOf, isSortable, isEditable, sortRows, formatCell, cellValue } from './column.js';
+  import { arrangePinned } from './pin.js';
+  import { columnWindow, columnOffsets } from './colvirt.js';
+  import { uniformHeights, variableHeights } from './rowheight.js';
+  import { themeVars, lightTheme } from './theme.js';
+  import { Selection } from './selection.svelte.js';
+  import { aggregate, type AggResult } from './aggregate.js';
+  import { buildFlatRows, buildLazyGroupRows, activeGroupsAt, type VisualRow, type GroupNode } from './grouping.js';
+  import { buildTreeRows } from './tree.js';
+  import { FlashTracker, FlashClock, FlashLoad } from './flash.js';
+  import { parseClipboard, copyText, pastePlan, fillExtent, fillPlan } from './clipboard.js';
+  import { applyWidths, applyAutoWidths, clampWidth, contentWidth, frozenWidths, isResizable } from './sizing.js';
   import {
     passesFilters,
     isFilterActive,
@@ -25,33 +25,33 @@
     defaultFilterKind,
     distinctValues,
     type AnyFilter,
-  } from './filtering';
-  import { RowSourceController } from './source.svelte';
+  } from './filtering.js';
+  import { RowSourceController } from './source.svelte.js';
   import Cell from './Cell.svelte';
   import GroupRow from './GroupRow.svelte';
   import AggregationBar from './AggregationBar.svelte';
   import Pager from './Pager.svelte';
   import RowMenu from './RowMenu.svelte';
-  import { resolveLabels } from './labels';
-  import { resolveColumns } from './celltype';
-  import { parseCellInput } from './edit';
-  import { dataOrdinals, rowNumberWidth } from './rownumbers';
-  import { scrollTopFor, type FlashCellsOptions, type ScrollAlign, type ViewportRange } from './api';
-  import { buildMergePlan, combinedFlex, type MergePlan, type SpanRun } from './merge';
-  import { GRID_STATE_VERSION, reconcileState, type GridState } from './state';
-  import type { GridPropsDef } from './props';
-  import { createEditHistory } from './history';
-  import { createLiveRows } from './live.svelte';
-  import { createColumnState } from './columns.svelte';
-  import { dismissOnOutside } from './dismiss';
-  import { createRowState } from './rowstate.svelte';
-  import { keyAction, type KeyState } from './keyboard';
-  import { compileHotkeys, hotkeyFor, type HotkeyHandler } from './hotkeys';
-  import { findRow } from './follow';
-  import { TextMeter } from './textmeter';
-  import { mergeChanged, rowOrder, type ViewDelta } from './livesort';
-  import { diffRows, type RowsDiff } from './rowdiff';
-  import { DRIFT_LIMIT, scanTotals, type TotalTarget, type ViewTotals } from './totals';
+  import { resolveLabels } from './labels.js';
+  import { resolveColumns } from './celltype.js';
+  import { parseCellInput } from './edit.js';
+  import { dataOrdinals, rowNumberWidth } from './rownumbers.js';
+  import { scrollTopFor, type FlashCellsOptions, type ScrollAlign, type ViewportRange } from './api.js';
+  import { buildMergePlan, combinedFlex, type MergePlan, type SpanRun } from './merge.js';
+  import { GRID_STATE_VERSION, reconcileState, type GridState } from './state.js';
+  import type { GridPropsDef } from './props.js';
+  import { createEditHistory } from './history.js';
+  import { createLiveRows } from './live.svelte.js';
+  import { createColumnState } from './columns.svelte.js';
+  import { dismissOnOutside } from './dismiss.js';
+  import { createRowState } from './rowstate.svelte.js';
+  import { keyAction, type KeyState } from './keyboard.js';
+  import { compileHotkeys, hotkeyFor, type HotkeyHandler } from './hotkeys.js';
+  import { findRow } from './follow.js';
+  import { TextMeter } from './textmeter.js';
+  import { mergeChanged, rowOrder, type ViewDelta } from './livesort.js';
+  import { diffRows, type RowsDiff } from './rowdiff.js';
+  import { DRIFT_LIMIT, scanTotals, type TotalTarget, type ViewTotals } from './totals.js';
 
   let {
     rows = [],
@@ -2192,7 +2192,7 @@
   }
 
   async function exportViewCSV(filename = 'export.csv'): Promise<void> {
-    const { exportCSV } = await import('./export');
+    const { exportCSV } = await import('./export.js');
     exportCSV(filename, view, cols);
   }
 

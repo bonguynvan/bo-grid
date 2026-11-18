@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { themeVars, lightTheme, darkTheme, themePresets } from './theme';
+import { themeVars, lightTheme, darkTheme, themePresets } from './theme.js';
 
 describe('themeVars', () => {
   it('maps theme keys to --bo-grid-* custom properties', () => {

@@ -2,8 +2,8 @@
 // What a screen reader hears about rows and headers: the selectedRowId row's
 // state, and a column header hidden from sight (headerHidden).
 import { afterEach, describe, expect, it } from 'vitest';
-import type { ColumnDef, GridRow } from './column';
-import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid';
+import type { ColumnDef, GridRow } from './column.js';
+import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid.js';
 
 const columns: ColumnDef[] = [
   { type: 'text', key: 'sym', header: 'Sym' },

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import type { ColumnDef } from './column';
-import { isEditable } from './column';
-import { parseCellInput } from './edit';
+import type { ColumnDef } from './column.js';
+import { isEditable } from './column.js';
+import { parseCellInput } from './edit.js';
 
 const row = { id: 1, a: 'x' };
 

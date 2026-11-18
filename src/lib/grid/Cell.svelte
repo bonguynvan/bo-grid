@@ -8,8 +8,8 @@
 
 <script lang="ts">
   import { untrack, type Snippet } from 'svelte';
-  import type { ColumnDef, GridRow } from './column';
-  import type { GridLabels } from './labels';
+  import type { ColumnDef, GridRow } from './column.js';
+  import type { GridLabels } from './labels.js';
   import {
     formatCell,
     tooltipText,
@@ -22,11 +22,11 @@
     pickIcon,
     toneColor,
     safeHref,
-  } from './column';
-  import { heatColor } from './heatmap';
-  import { toDateInput } from './date';
-  import { rowView } from './patch';
-  import { FlashTracker, resolveFlashMode, isFresh, mergeFlash, holdFlash, FLASH_MS, CHANGE_MS, type CellFlash, type ShownFlash } from './flash';
+  } from './column.js';
+  import { heatColor } from './heatmap.js';
+  import { toDateInput } from './date.js';
+  import { rowView } from './patch.js';
+  import { FlashTracker, resolveFlashMode, isFresh, mergeFlash, holdFlash, FLASH_MS, CHANGE_MS, type CellFlash, type ShownFlash } from './flash.js';
   import Sparkline from '../sparkline/Sparkline.svelte';
 
   let {

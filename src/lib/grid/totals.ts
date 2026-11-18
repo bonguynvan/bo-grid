@@ -20,8 +20,8 @@
 // rescans after DRIFT_LIMIT updates. A computed column must depend only on
 // its own row: one that reads other rows or the clock gets a fresh total on
 // the next new view or api.refresh().
-import type { ColumnDef, GridRow } from './column';
-import { cellValue } from './column';
+import type { ColumnDef, GridRow } from './column.js';
+import { cellValue } from './column.js';
 
 /** How a column's values are read:
     - footer: every finite `Number(value)`; a blank or null reads as 0, as the

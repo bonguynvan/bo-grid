@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compareBySorts, sortRows, type ColumnDef, type GridRow, type SortState } from './column';
+import { compareBySorts, sortRows, type ColumnDef, type GridRow, type SortState } from './column.js';
 
 const row = (over: Record<string, unknown>): GridRow =>
   ({ id: 0, flashSeq: 0, flashDir: 'up', ...over }) as GridRow;

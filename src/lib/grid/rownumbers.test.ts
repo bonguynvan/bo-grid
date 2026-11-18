@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dataOrdinals, rowNumberWidth } from './rownumbers';
+import { dataOrdinals, rowNumberWidth } from './rownumbers.js';
 
 describe('rowNumberWidth', () => {
   it('fits the widest number, with a floor for short lists', () => {

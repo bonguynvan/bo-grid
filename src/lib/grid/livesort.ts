@@ -7,8 +7,8 @@
 // comparisons, a small fraction of a re-sort on a large board. Ties fall back
 // to the rows' order in `rows`, as sortRows does, so the result is the same as
 // filtering and sorting from scratch.
-import type { ColumnDef, GridRow, SortState } from './column';
-import { compareBySorts } from './column';
+import type { ColumnDef, GridRow, SortState } from './column.js';
+import { compareBySorts } from './column.js';
 
 /** A total order for rows: the sorts, then the row's position in `rows`. */
 export function rowOrder(

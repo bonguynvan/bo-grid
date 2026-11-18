@@ -1,5 +1,5 @@
-import type { ColumnDef } from './column';
-import { baseWidth } from './column';
+import type { ColumnDef } from './column.js';
+import { baseWidth } from './column.js';
 
 export type PinSide = 'left' | 'right';
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { decimalsForTick, fmtBps, fmtFraction, fmtTradingPrice, parseFraction } from './format';
+import { decimalsForTick, fmtBps, fmtFraction, fmtTradingPrice, parseFraction } from './format.js';
 
 describe('decimalsForTick', () => {
   it('is 0 for a whole-number tick (e.g. VND)', () => {

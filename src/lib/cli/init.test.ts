@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { END, START, USAGE, main, parseArgs, withSection, type CliEnv } from './init';
+import { END, START, USAGE, main, parseArgs, withSection, type CliEnv } from './init.js';
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const assets = { section: read('./agents-section.md'), skill: read('../skills/bo-grid/SKILL.md') };

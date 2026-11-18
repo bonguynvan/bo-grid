@@ -1,6 +1,6 @@
-import type { GridRow, SortState } from './column';
-import { sortRows } from './column';
-import { passesFilters, type AnyFilter, type FilterTypes } from './filtering';
+import type { GridRow, SortState } from './column.js';
+import { sortRows } from './column.js';
+import { passesFilters, type AnyFilter, type FilterTypes } from './filtering.js';
 
 export interface RowRange {
   /** First row index (inclusive). */

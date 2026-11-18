@@ -1,4 +1,4 @@
-import type { ToneBands } from './bands';
+import type { ToneBands } from './bands.js';
 
 export type { ToneBands };
 

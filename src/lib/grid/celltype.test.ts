@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import type { ColumnDef, CellTypeDef } from './column';
-import { resolveColumns } from './celltype';
-import { formatCell, isNumeric, compareBySorts } from './column';
+import type { ColumnDef, CellTypeDef } from './column.js';
+import { resolveColumns } from './celltype.js';
+import { formatCell, isNumeric, compareBySorts } from './column.js';
 
 const Fake = (() => null) as unknown as NonNullable<CellTypeDef['component']>;
 

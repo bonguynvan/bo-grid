@@ -9,8 +9,8 @@
 // one row bumps one number instead of rebuilding a reactive set. A factory
 // rather than a class, so its state stays in local variables, which minify.
 import { untrack } from 'svelte';
-import type { GridRow } from './column';
-import { loadSaved, saveValue, storageKey } from './persist';
+import type { GridRow } from './column.js';
+import { loadSaved, saveValue, storageKey } from './persist.js';
 
 type RowKey = string | number;
 

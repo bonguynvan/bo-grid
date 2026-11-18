@@ -1,5 +1,5 @@
-import type { GridRow } from './column';
-import type { VisualRow } from './grouping';
+import type { GridRow } from './column.js';
+import type { VisualRow } from './grouping.js';
 
 /** Resolve a row's children (undefined/empty = leaf). Sync. */
 export type GetChildren = (row: GridRow) => GridRow[] | undefined;

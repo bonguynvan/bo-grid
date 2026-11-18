@@ -1,5 +1,5 @@
 // Built-in formatters (proposal Phase 1 §Ticker column + formatting).
-import { dateFormat, numberFormat, relativeFormat } from './intl';
+import { dateFormat, numberFormat, relativeFormat } from './intl.js';
 
 const PRICE: Intl.NumberFormatOptions = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
 

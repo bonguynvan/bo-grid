@@ -1,8 +1,8 @@
 import type { Component } from 'svelte';
-import type { Candle } from '../types';
-import { fmtPrice, fmtPercent, fmtVolume, fmtDate, fmtCurrency, relativeTime, type DateStyle } from '../format/format';
-import type { AggKind } from './aggregate';
-import type { FilterKind } from './filtering';
+import type { Candle } from '../types.js';
+import { fmtPrice, fmtPercent, fmtVolume, fmtDate, fmtCurrency, relativeTime, type DateStyle } from '../format/format.js';
+import type { AggKind } from './aggregate.js';
+import type { FilterKind } from './filtering.js';
 
 export type Align = 'left' | 'right';
 

@@ -13,7 +13,7 @@
 //   });
 //   <Grid {rows} {columns} onViewportChange={subs.update} />
 //   onDestroy(subs.clear);
-import type { ViewportRange } from '../grid/api';
+import type { ViewportRange } from '../grid/api.js';
 
 export interface ViewportSubscriptionsOptions<R, K> {
   /** The feed key of a row (its symbol). */

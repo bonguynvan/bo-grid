@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { ColumnDef, GridRow } from './column';
-  import { colStyle, formatCell, cellValue } from './column';
-  import { aggregate } from './aggregate';
-  import type { GroupNode } from './grouping';
+  import type { ColumnDef, GridRow } from './column.js';
+  import { colStyle, formatCell, cellValue } from './column.js';
+  import { aggregate } from './aggregate.js';
+  import type { GroupNode } from './grouping.js';
 
   let {
     group,

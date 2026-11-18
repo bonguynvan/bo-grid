@@ -5,8 +5,8 @@
 // the behaviour as it is, so moving that code into modules cannot change it.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { flushSync } from 'svelte';
-import type { CellEditEvent, ColumnDef, GridRow } from './column';
-import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid';
+import type { CellEditEvent, ColumnDef, GridRow } from './column.js';
+import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid.js';
 
 const columns: ColumnDef[] = [
   { type: 'text', key: 'sym', header: 'Sym', editable: true },

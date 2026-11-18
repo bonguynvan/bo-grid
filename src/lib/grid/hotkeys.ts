@@ -3,8 +3,8 @@
 // 'Mod+S' (Ctrl or ⌘), 'Delete', '?'; the grid runs a binding
 // before its own keys.
 
-import type { ColumnDef, GridRow } from './column';
-import { boError } from '../errors';
+import type { ColumnDef, GridRow } from './column.js';
+import { boError } from '../errors.js';
 
 /** What a hotkey's handler is given. */
 export interface HotkeyContext {

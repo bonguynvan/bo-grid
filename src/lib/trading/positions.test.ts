@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createPositions, unrealizedPnl } from './positions';
+import { createPositions, unrealizedPnl } from './positions.js';
 
 describe('createPositions (average cost)', () => {
   it('averages the price of fills that open or add to a position', () => {

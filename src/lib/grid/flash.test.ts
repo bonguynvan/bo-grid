@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { FlashTracker, FlashClock, FlashLoad, resolveFlashMode, isFresh, mergeFlash, holdFlash, type CellFlash, type ShownFlash } from './flash';
+import { FlashTracker, FlashClock, FlashLoad, resolveFlashMode, isFresh, mergeFlash, holdFlash, type CellFlash, type ShownFlash } from './flash.js';
 
 describe('resolveFlashMode', () => {
   it('maps legacy `true` to row-driven mode', () => {

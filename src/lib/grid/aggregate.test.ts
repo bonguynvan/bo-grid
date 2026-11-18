@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { aggregate } from './aggregate';
+import { aggregate } from './aggregate.js';
 
 describe('aggregate', () => {
   it('returns null for an empty list', () => {

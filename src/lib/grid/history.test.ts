@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createEditHistory, type EditEntry } from './history';
+import { createEditHistory, type EditEntry } from './history.js';
 
 const edit = (old: number, value: number): EditEntry<string, string> => ({ row: 'r', col: 'c', old, value });
 

@@ -3,8 +3,8 @@
 // on screen; the order is kept over every column, hidden and pinned included.
 import { afterEach, describe, expect, it } from 'vitest';
 import { flushSync } from 'svelte';
-import type { ColumnDef } from './column';
-import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid';
+import type { ColumnDef } from './column.js';
+import { mountGrid, type MountedGrid } from './test-fixtures/mount-grid.js';
 
 const cols = (...keys: string[]): ColumnDef[] => keys.map((k) => ({ type: 'text', key: k, header: k.toUpperCase() }));
 const row = { id: 1, a: 'a', b: 'b', c: 'c', d: 'd' };

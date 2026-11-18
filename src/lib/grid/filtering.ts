@@ -5,10 +5,10 @@
  * them. Filtering is a snapshot operation, not a per-frame one.
  */
 import type { Component } from 'svelte';
-import type { ColumnDef, GridRow } from './column';
-import { isNumeric } from './column';
-import type { GridLabels } from './labels';
-import { dayStart } from './date';
+import type { ColumnDef, GridRow } from './column.js';
+import { isNumeric } from './column.js';
+import type { GridLabels } from './labels.js';
+import { dayStart } from './date.js';
 
 export type FilterKind = 'text' | 'number' | 'date' | 'set';
 export type TextOp = 'contains' | 'notContains' | 'equals' | 'starts' | 'ends';

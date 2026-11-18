@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { ColumnDef, GridRow } from './column';
-import { toHTMLTable, escapeHTML } from './print';
+import type { ColumnDef, GridRow } from './column.js';
+import { toHTMLTable, escapeHTML } from './print.js';
 
 const columns: ColumnDef[] = [
   { type: 'text', key: 'name', header: 'Name' },

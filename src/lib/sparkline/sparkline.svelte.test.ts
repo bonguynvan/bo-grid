@@ -2,7 +2,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { flushSync, mount, unmount } from 'svelte';
 import Sparkline from './Sparkline.svelte';
-import type { Candle } from '../types';
+import type { Candle } from '../types.js';
 
 // The chart fills its cell: it follows the column's width (a resize,
 // fitColumns) instead of a fixed 104px that overflows narrow columns and

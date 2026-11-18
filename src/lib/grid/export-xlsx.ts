@@ -1,6 +1,6 @@
-import type { ColumnDef, GridRow } from './column';
-import { rowsToMatrix, type ExportOptions } from './export';
-import { boError } from '../errors';
+import type { ColumnDef, GridRow } from './column.js';
+import { rowsToMatrix, type ExportOptions } from './export.js';
+import { boError } from '../errors.js';
 
 /**
  * Export rows to a .xlsx file. SheetJS is loaded via dynamic import, so it lands

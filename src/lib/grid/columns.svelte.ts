@@ -6,9 +6,9 @@
 // effects reload the saved state when the inputs change. A factory rather
 // than a class, so its state stays in local variables, which minify.
 import { untrack } from 'svelte';
-import { loadSaved, saveValue, storageKey } from './persist';
-import { moveIndex } from './reorder';
-import type { WidthMap } from './sizing';
+import { loadSaved, saveValue, storageKey } from './persist.js';
+import { moveIndex } from './reorder.js';
+import type { WidthMap } from './sizing.js';
 
 export type PinSide = 'left' | 'right' | false;
 

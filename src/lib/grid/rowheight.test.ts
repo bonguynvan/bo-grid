@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { uniformHeights, variableHeights } from './rowheight';
+import { uniformHeights, variableHeights } from './rowheight.js';
 
 describe('uniformHeights', () => {
   it('computes total, offsets, and index from offset', () => {

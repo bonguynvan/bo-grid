@@ -26,10 +26,10 @@
 //
 // A factory rather than a class: its state stays in local variables, which
 // minify; a class's $state fields compile to named accessors, which do not.
-import type { FlashCellsOptions } from './api';
-import type { GridRow } from './column';
-import type { CellFlash } from './flash';
-import { patchRowsInPlace } from './patch';
+import type { FlashCellsOptions } from './api.js';
+import type { GridRow } from './column.js';
+import type { CellFlash } from './flash.js';
+import { patchRowsInPlace } from './patch.js';
 
 type RowKey = string | number;
 

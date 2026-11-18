@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { GRID_STATE_VERSION, placeColumns, reconcileState, type GridState } from './state';
+import { GRID_STATE_VERSION, placeColumns, reconcileState, type GridState } from './state.js';
 
 const base = (over: Partial<GridState> = {}): GridState => ({
   version: GRID_STATE_VERSION,

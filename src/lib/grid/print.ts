@@ -2,8 +2,8 @@
 // viewport of rows is in the DOM), so printing it directly drops most rows. These
 // helpers render ALL (already filtered/sorted) rows to a standalone HTML table —
 // dependency-free, and they reuse the column formatters so output matches the grid.
-import type { ColumnDef, GridRow } from './column';
-import { formatCell, cellValue, alignOf } from './column';
+import type { ColumnDef, GridRow } from './column.js';
+import { formatCell, cellValue, alignOf } from './column.js';
 
 const ESC: Record<string, string> = {
   '&': '&amp;',

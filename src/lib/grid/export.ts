@@ -1,6 +1,6 @@
-import type { ColumnDef, GridRow } from './column';
-import { formatCell, isNumeric, cellValue } from './column';
-import { boError } from '../errors';
+import type { ColumnDef, GridRow } from './column.js';
+import { formatCell, isNumeric, cellValue } from './column.js';
+import { boError } from '../errors.js';
 
 export interface ExportOptions {
   /** Use formatted display strings instead of raw values. Default false. */

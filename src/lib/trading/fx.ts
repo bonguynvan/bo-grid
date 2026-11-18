@@ -1,8 +1,8 @@
 // FX conventions: pip sizes, the way a dealing screen shows a quote (the big
 // figure small, the pips large, the pipette raised), moves in pips, and the
 // FX week with its trading centres.
-import { decimalsForTick } from './format';
-import { wallClock } from './session';
+import { decimalsForTick } from './format.js';
+import { wallClock } from './session.js';
 
 /** A pair (`'EUR/USD'`, `'USDJPY'`, `'usd_jpy'`) or a pip size. */
 export type PipOf = string | number;

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { aggregate } from './aggregate';
-import type { ColumnDef, GridRow } from './column';
-import { cellValue } from './column';
-import { scanTotals, type TotalTarget, type ViewTotals } from './totals';
+import { aggregate } from './aggregate.js';
+import type { ColumnDef, GridRow } from './column.js';
+import { cellValue } from './column.js';
+import { scanTotals, type TotalTarget, type ViewTotals } from './totals.js';
 
 const qty: ColumnDef = { type: 'number', key: 'qty', header: 'Qty' };
 const notional: ColumnDef = { type: 'number', key: 'notional', header: 'N', value: (r) => (r.px as number) * (r.qty as number) };

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { GridLabels } from './labels';
+  import type { GridLabels } from './labels.js';
   // Pagination bar for the grid. Presentation-only: the parent owns the page
   // state and reorders via `onGoto`.
   let {

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { flushSync } from 'svelte';
-import type { GridRow } from './column';
-import { createLiveRows } from './live.svelte';
+import type { GridRow } from './column.js';
+import { createLiveRows } from './live.svelte.js';
 
 const rows = (): GridRow[] => [
   { id: 1, px: 10, vol: 100 },

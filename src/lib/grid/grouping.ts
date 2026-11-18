@@ -1,4 +1,4 @@
-import type { GridRow } from './column';
+import type { GridRow } from './column.js';
 
 export interface GroupNode {
   /** Unique path, e.g. "Tech" or "Tech/NYSE" for nested groups. */

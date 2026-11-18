@@ -18,7 +18,7 @@ import {
   type ColumnDef,
   type GridRow,
   type IconRule,
-} from './column';
+} from './column.js';
 
 const row = (over: Record<string, unknown> = {}): GridRow =>
   ({ id: 0, flashSeq: 0, flashDir: 'up', ...over }) as GridRow;

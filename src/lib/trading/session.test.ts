@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sessionStateAt, sessionLabel, VN_HOSE_SCHEDULE } from './session';
+import { sessionStateAt, sessionLabel, VN_HOSE_SCHEDULE } from './session.js';
 
 // 2024-01-08 is a Monday (Jan 1 2024 was a Monday); 2024-01-06 is the
 // preceding Saturday. Using calendar-verifiable dates instead of hardcoding
